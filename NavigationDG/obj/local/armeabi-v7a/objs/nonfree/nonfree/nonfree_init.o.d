@@ -2,8 +2,8 @@ obj/local/armeabi-v7a/objs/nonfree/nonfree/nonfree_init.o: \
  jni/nonfree/nonfree_init.cpp jni/nonfree/precomp.hpp \
  jni/nonfree/nonfree.hpp jni/nonfree/features2d.hpp \
  C:/DiamentowyGrant/android-ndk-r8e/platforms/android-8/arch-arm/usr/include/jni.h \
- ../sdk/native/jni/include/opencv2/core/core.hpp \
- ../sdk/native/jni/include/opencv2/core/types_c.h \
+ ../OpenCV-2.4.8-android-sdk/sdk/native/jni/include/opencv2/core/core.hpp \
+ ../OpenCV-2.4.8-android-sdk/sdk/native/jni/include/opencv2/core/types_c.h \
  C:/DiamentowyGrant/android-ndk-r8e/platforms/android-8/arch-arm/usr/include/assert.h \
  C:/DiamentowyGrant/android-ndk-r8e/platforms/android-8/arch-arm/usr/include/sys/cdefs.h \
  C:/DiamentowyGrant/android-ndk-r8e/platforms/android-8/arch-arm/usr/include/sys/cdefs_elf.h \
@@ -34,24 +34,24 @@ obj/local/armeabi-v7a/objs/nonfree/nonfree/nonfree_init.o: \
  C:/DiamentowyGrant/android-ndk-r8e/platforms/android-8/arch-arm/usr/include/machine/limits.h \
  C:/DiamentowyGrant/android-ndk-r8e/platforms/android-8/arch-arm/usr/include/sys/syslimits.h \
  C:/DiamentowyGrant/android-ndk-r8e/platforms/android-8/arch-arm/usr/include/asm/page.h \
- ../sdk/native/jni/include/opencv2/core/version.hpp \
+ ../OpenCV-2.4.8-android-sdk/sdk/native/jni/include/opencv2/core/version.hpp \
  C:/DiamentowyGrant/android-ndk-r8e/sources/cxx-stl/gnu-libstdc++/4.6/include/algorithm \
  C:/DiamentowyGrant/android-ndk-r8e/sources/cxx-stl/gnu-libstdc++/4.6/include/cmath \
  C:/DiamentowyGrant/android-ndk-r8e/sources/cxx-stl/gnu-libstdc++/4.6/include/cstddef \
  C:/DiamentowyGrant/android-ndk-r8e/sources/cxx-stl/gnu-libstdc++/4.6/include/complex \
  C:/DiamentowyGrant/android-ndk-r8e/sources/cxx-stl/gnu-libstdc++/4.6/include/map \
  C:/DiamentowyGrant/android-ndk-r8e/sources/cxx-stl/gnu-libstdc++/4.6/include/vector \
- ../sdk/native/jni/include/opencv2/core/operations.hpp \
+ ../OpenCV-2.4.8-android-sdk/sdk/native/jni/include/opencv2/core/operations.hpp \
  C:/DiamentowyGrant/android-ndk-r8e/sources/cxx-stl/gnu-libstdc++/4.6/include/limits \
- ../sdk/native/jni/include/opencv2/core/mat.hpp \
- ../sdk/native/jni/include/opencv2/imgproc/imgproc.hpp \
- ../sdk/native/jni/include/opencv2/imgproc/types_c.h \
- ../sdk/native/jni/include/opencv2/core/core_c.h \
- ../sdk/native/jni/include/opencv2/features2d/features2d.hpp \
- ../sdk/native/jni/include/opencv2/flann/miniflann.hpp \
- ../sdk/native/jni/include/opencv2/flann/defines.h \
- ../sdk/native/jni/include/opencv2/flann/config.h \
- ../sdk/native/jni/include/opencv2/core/internal.hpp
+ ../OpenCV-2.4.8-android-sdk/sdk/native/jni/include/opencv2/core/mat.hpp \
+ ../OpenCV-2.4.8-android-sdk/sdk/native/jni/include/opencv2/imgproc/imgproc.hpp \
+ ../OpenCV-2.4.8-android-sdk/sdk/native/jni/include/opencv2/imgproc/types_c.h \
+ ../OpenCV-2.4.8-android-sdk/sdk/native/jni/include/opencv2/core/core_c.h \
+ ../OpenCV-2.4.8-android-sdk/sdk/native/jni/include/opencv2/features2d/features2d.hpp \
+ ../OpenCV-2.4.8-android-sdk/sdk/native/jni/include/opencv2/flann/miniflann.hpp \
+ ../OpenCV-2.4.8-android-sdk/sdk/native/jni/include/opencv2/flann/defines.h \
+ ../OpenCV-2.4.8-android-sdk/sdk/native/jni/include/opencv2/flann/config.h \
+ ../OpenCV-2.4.8-android-sdk/sdk/native/jni/include/opencv2/core/internal.hpp
 
 jni/nonfree/precomp.hpp:
 
@@ -61,9 +61,9 @@ jni/nonfree/features2d.hpp:
 
 C:/DiamentowyGrant/android-ndk-r8e/platforms/android-8/arch-arm/usr/include/jni.h:
 
-../sdk/native/jni/include/opencv2/core/core.hpp:
+../OpenCV-2.4.8-android-sdk/sdk/native/jni/include/opencv2/core/core.hpp:
 
-../sdk/native/jni/include/opencv2/core/types_c.h:
+../OpenCV-2.4.8-android-sdk/sdk/native/jni/include/opencv2/core/types_c.h:
 
 C:/DiamentowyGrant/android-ndk-r8e/platforms/android-8/arch-arm/usr/include/assert.h:
 
@@ -125,7 +125,7 @@ C:/DiamentowyGrant/android-ndk-r8e/platforms/android-8/arch-arm/usr/include/sys/
 
 C:/DiamentowyGrant/android-ndk-r8e/platforms/android-8/arch-arm/usr/include/asm/page.h:
 
-../sdk/native/jni/include/opencv2/core/version.hpp:
+../OpenCV-2.4.8-android-sdk/sdk/native/jni/include/opencv2/core/version.hpp:
 
 C:/DiamentowyGrant/android-ndk-r8e/sources/cxx-stl/gnu-libstdc++/4.6/include/algorithm:
 
@@ -139,24 +139,24 @@ C:/DiamentowyGrant/android-ndk-r8e/sources/cxx-stl/gnu-libstdc++/4.6/include/map
 
 C:/DiamentowyGrant/android-ndk-r8e/sources/cxx-stl/gnu-libstdc++/4.6/include/vector:
 
-../sdk/native/jni/include/opencv2/core/operations.hpp:
+../OpenCV-2.4.8-android-sdk/sdk/native/jni/include/opencv2/core/operations.hpp:
 
 C:/DiamentowyGrant/android-ndk-r8e/sources/cxx-stl/gnu-libstdc++/4.6/include/limits:
 
-../sdk/native/jni/include/opencv2/core/mat.hpp:
+../OpenCV-2.4.8-android-sdk/sdk/native/jni/include/opencv2/core/mat.hpp:
 
-../sdk/native/jni/include/opencv2/imgproc/imgproc.hpp:
+../OpenCV-2.4.8-android-sdk/sdk/native/jni/include/opencv2/imgproc/imgproc.hpp:
 
-../sdk/native/jni/include/opencv2/imgproc/types_c.h:
+../OpenCV-2.4.8-android-sdk/sdk/native/jni/include/opencv2/imgproc/types_c.h:
 
-../sdk/native/jni/include/opencv2/core/core_c.h:
+../OpenCV-2.4.8-android-sdk/sdk/native/jni/include/opencv2/core/core_c.h:
 
-../sdk/native/jni/include/opencv2/features2d/features2d.hpp:
+../OpenCV-2.4.8-android-sdk/sdk/native/jni/include/opencv2/features2d/features2d.hpp:
 
-../sdk/native/jni/include/opencv2/flann/miniflann.hpp:
+../OpenCV-2.4.8-android-sdk/sdk/native/jni/include/opencv2/flann/miniflann.hpp:
 
-../sdk/native/jni/include/opencv2/flann/defines.h:
+../OpenCV-2.4.8-android-sdk/sdk/native/jni/include/opencv2/flann/defines.h:
 
-../sdk/native/jni/include/opencv2/flann/config.h:
+../OpenCV-2.4.8-android-sdk/sdk/native/jni/include/opencv2/flann/config.h:
 
-../sdk/native/jni/include/opencv2/core/internal.hpp:
+../OpenCV-2.4.8-android-sdk/sdk/native/jni/include/opencv2/core/internal.hpp:

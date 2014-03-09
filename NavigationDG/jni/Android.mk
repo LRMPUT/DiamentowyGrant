@@ -2,7 +2,7 @@ LOCAL_PATH := $(call my-dir)
 
 # Visual Odometry library
 include $(CLEAR_VARS)
-include ../sdk/native/jni/OpenCV.mk
+include ../OpenCV-2.4.8-android-sdk/sdk/native/jni/OpenCV.mk
 
 LOCAL_MODULE    := visual_odometry 
 LOCAL_SRC_FILES := visual_odometry/visual_odometry.cpp
@@ -30,13 +30,13 @@ LOCAL_LDLIBS +=  -llog -ldl
 include $(BUILD_SHARED_LIBRARY)
 
 # nonfree
-#include $(CLEAR_VARS)
-#include ../sdk/native/jni/OpenCV.mk
+include $(CLEAR_VARS)
+include ../OpenCV-2.4.8-android-sdk/sdk/native/jni/OpenCV.mk
 
-#LOCAL_C_INCLUDES:= ../sdk/native/jni/include
-#LOCAL_MODULE    := nonfree
-#LOCAL_SRC_FILES := nonfree/nonfree_init.cpp nonfree/precomp.cpp nonfree/sift.cpp nonfree/surf.cpp nonfree/export.cpp
-#LOCAL_LDLIBS +=  -llog -ldl
+LOCAL_C_INCLUDES:= ../OpenCV-2.4.8-android-sdk/sdk/native/jni/include
+LOCAL_MODULE    := nonfree
+LOCAL_SRC_FILES := nonfree/nonfree_init.cpp nonfree/precomp.cpp nonfree/sift.cpp nonfree/surf.cpp nonfree/export.cpp
+LOCAL_LDLIBS +=  -llog -ldl
 
-#include $(BUILD_SHARED_LIBRARY)
+include $(BUILD_SHARED_LIBRARY)
 
