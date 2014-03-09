@@ -1,6 +1,7 @@
 package com.example.cam;
 
 import android.util.Log;
+
 import java.io.*;
 import java.net.InetAddress;
 import java.net.Socket;
@@ -8,7 +9,6 @@ import java.net.Socket;
  
 public class TCPClient {
  
-    private String serverMessage;
     public static String SERVERIP;
     public static int SERVERPORT;
     private OnMessageReceived mMessageListener = null;
@@ -87,13 +87,16 @@ public class TCPClient {
                  
                     if (a!=0 && mMessageListener != null) {
                         //call the method messageReceived from MyActivity class
-                    	Log.d("TCP Client", "RECV:" + a);
+                    	String msg = new String(buf,0,a);
+                    	Log.d("TCP Client", "RECV:" + a + " | " + msg);
                     	
-                    	mMessageListener.messageReceived(buf.toString());
-                       
+                    	mMessageListener.messageReceived(msg);
+                    	
+                    	if ( msg.contains("X") )
+                    	{
+                    		break;
+                    	}
                     }
-                    
-                    serverMessage = null;
                 }
  
             } catch (Exception e) {
@@ -103,15 +106,16 @@ public class TCPClient {
             } finally {
                 //the socket must be closed. It is not possible to reconnect to this socket
                 // after it is closed, which means a new socket instance has to be created.
-                socket.close();
+                
             }
  
+            
+            socket.close();
         } catch (Exception e) {
  
-            Log.e("TCP", "C: Error", e);
+            Log.e("TCP", "C: Error TCP: ", e);
  
         }
- 
     }
  
     /**
