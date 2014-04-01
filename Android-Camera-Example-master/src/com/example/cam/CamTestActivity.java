@@ -167,12 +167,12 @@ public class CamTestActivity extends Activity {
 					InetAddress selected_ip;
 					try {
 						selected_ip = InetAddress.getByName("192.168.1.132");
-						ConnectionIPPort adres = new ConnectionIPPort(selected_ip, 3000);
+			//			ConnectionIPPort adres = new ConnectionIPPort(selected_ip, 3000);
 						
 						//selected_ip = InetAddress.getByName("192.168.2.222");
 						//IP_PORT adres = new IP_PORT(selected_ip, 27000);
 
-						new connectionTCP().execute(adres);
+					//	new connectionTCP().execute(adres);
 						
 						Log.e("TCP activity", "Connecting to : " + selected_ip.toString()
 								+ ":" + 3000);
