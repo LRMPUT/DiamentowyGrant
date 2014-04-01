@@ -1,10 +1,12 @@
-package org.dg.main;
+package org.dg.inertialSensors;
+
+
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 
 import android.util.Log;
 
-public class ExtendedKalmanFilter {
+public class AHRSModule {
 	
 	public native long EKFcreate(float Q, float R, float dt);
 	public native void EKFpredict(long addrEKF, long addrW, float dt);
@@ -14,9 +16,9 @@ public class ExtendedKalmanFilter {
 	
 	private long addrEKF;
 	
-	public ExtendedKalmanFilter() {
-		 System.loadLibrary("EKF");
-		 Log.d("EKF", "EKF lib loaded!\n");
+	public AHRSModule() {
+		 System.loadLibrary("AHRSModule");
+		// Log.d("EKF", "EKF lib loaded!\n");
 		 create();
 		 predict();
 		 correct();

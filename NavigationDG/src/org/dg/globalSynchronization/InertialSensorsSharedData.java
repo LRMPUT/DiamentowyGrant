@@ -1,4 +1,4 @@
-package org.dg.main;
+package org.dg.globalSynchronization;
 
 public class InertialSensorsSharedData {
     public boolean write_flag;
