@@ -14,8 +14,12 @@ import org.opencv.core.Mat;
 import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2;
 import org.opencv.highgui.Highgui;
+import org.dg.camera.DetectDescript;
+import org.dg.camera.Preview;
 import org.dg.main.R;
 import org.dg.tcp.ConnectionIPPort;
+
+
 
 
 

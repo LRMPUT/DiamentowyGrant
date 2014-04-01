@@ -1,4 +1,4 @@
-package org.dg.main;
+package org.dg.camera;
 
 import org.opencv.core.Mat;
 

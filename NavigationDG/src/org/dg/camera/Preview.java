@@ -1,4 +1,4 @@
-package org.dg.main;
+package org.dg.camera;
 
 
 import java.io.IOException;
@@ -13,7 +13,7 @@ import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
 
-class Preview extends ViewGroup implements SurfaceHolder.Callback {
+public class Preview extends ViewGroup implements SurfaceHolder.Callback {
     private final String TAG = "Camera::Preview";
 
     SurfaceView mSurfaceView;
@@ -22,7 +22,7 @@ class Preview extends ViewGroup implements SurfaceHolder.Callback {
     List<Size> mSupportedPreviewSizes;
     Camera mCamera;
 
-    Preview(Context context, SurfaceView sv) {
+    public Preview(Context context, SurfaceView sv) {
         super(context);
 
         mSurfaceView = sv;
