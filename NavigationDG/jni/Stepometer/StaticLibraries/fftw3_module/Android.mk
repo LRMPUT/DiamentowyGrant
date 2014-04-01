@@ -13,7 +13,7 @@ include $(LOCAL_PATH)/rdft/scalar/r2cf/sources.mk
 include $(LOCAL_PATH)/rdft/scalar/r2r/sources.mk
 include $(LOCAL_PATH)/reodft/sources.mk
 
-LOCAL_MODULE := fftw3_module
+LOCAL_MODULE := fftw3StaticLibrary
 LOCAL_C_INCLUDES :=  $(LOCAL_PATH)/ \
                                         $(LOCAL_PATH)/api \
                                         $(LOCAL_PATH)/kernel \
