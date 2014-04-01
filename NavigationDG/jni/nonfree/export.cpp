@@ -2,8 +2,8 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/features2d/features2d.hpp>
-#include "features2d.hpp"
-#include "nonfree.hpp"
+#include "nonfree/features2d.hpp"
+#include "nonfree/nonfree.hpp"
 #include <vector>
 
 using namespace std;
@@ -19,6 +19,7 @@ JNIEXPORT int JNICALL Java_org_dg_main_VisualOdometry_SiftDescription(JNIEnv*, j
 
 JNIEXPORT int JNICALL Java_org_dg_main_VisualOdometry_SurfFeatures(JNIEnv*, jobject, jlong addrGray, jint param)
 {
+
     Mat& mGr  = *(Mat*)addrGray;
     vector<KeyPoint> v;
 

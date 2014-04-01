@@ -59,6 +59,9 @@ class Preview extends ViewGroup implements SurfaceHolder.Callback {
     		Camera.Parameters params = mCamera.getParameters();
 
     		List<String> focusModes = params.getSupportedFocusModes();
+    		for (String string : focusModes) {
+				Log.d("FOCUS", "FOCUS mode:" + string + "\n");
+			}
     		/*if (focusModes.contains(Camera.Parameters.FOCUS_MODE_AUTO)) {
     			// set the focus mode
     			params.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);
@@ -66,8 +69,8 @@ class Preview extends ViewGroup implements SurfaceHolder.Callback {
     			mCamera.setParameters(params);
     		}*/
     		params.setRecordingHint(false);
-    		params.setFocusMode(Camera.Parameters.FOCUS_MODE_FIXED);
-    		params.setJpegQuality(100);
+    		params.setFocusMode(Camera.Parameters.FOCUS_MODE_INFINITY);
+    		//params.setJpegQuality(100);
 
     		params.setPreviewSize(1920, 1080);
         	params.setPictureSize(640, 480);
@@ -89,13 +92,21 @@ class Preview extends ViewGroup implements SurfaceHolder.Callback {
                 	
                 	// Write to SD Card
                 	FileOutputStream outStream = null;
-    				String fileName = String.format("/sdcard/_exp/tel/%d.jpg",
-    						System.currentTimeMillis());
+    				//String fileName = String.format("/sdcard/_exp/tel/%d.jpg",
+    				//		System.currentTimeMillis());
+                	
+                	
     				
     				
     				try {
     					if ( SharedData.globalInstance.write_flag )
         				{
+    						File dir = new File(String.format("/sdcard/_exp/tel/%d/", SharedData.id) );
+    	                	dir.mkdirs();
+    	                	
+    	                	String fileName = String.format("/sdcard/_exp/tel/%d/%05d.jpg",
+    	    						SharedData.id, (System.currentTimeMillis()-SharedData.startTimestamp)%10000);
+    	                	
 	    					Camera.Parameters parameters = _camera.getParameters(); 
 	    			        Size size = parameters.getPreviewSize(); 
 	    			        outStream = new FileOutputStream(fileName);
@@ -118,9 +129,9 @@ class Preview extends ViewGroup implements SurfaceHolder.Callback {
 							}
 	    					
 	    					outStream.close();
-	    					SharedData.globalInstance.write_flag = false;
+	    					//SharedData.globalInstance.write_flag = false;
 	    					
-	    					CamTestActivity.mTcpClient.sendMessage("READY");
+	    					//CamTestActivity.mTcpClient.sendMessage("READY");
         				}
     					
     					_camera.addCallbackBuffer(_data);

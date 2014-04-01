@@ -14,6 +14,7 @@ import java.io.PrintStream;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.List;
+import java.util.Locale;
 
 import com.example.cam.IP_PORT;
 import com.example.cam.TCPClient;
@@ -32,6 +33,7 @@ import android.hardware.Camera.AutoFocusCallback;
 import android.hardware.Camera.PictureCallback;
 import android.hardware.Camera.ShutterCallback;
 import android.hardware.SensorManager;
+import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -70,6 +72,7 @@ public class CamTestActivity extends Activity {
 	
 	private int ile = 0;
 	private long timestampStart;
+	private int id = 0;
 	
 	
 	// Inertial sensors
@@ -107,6 +110,7 @@ public class CamTestActivity extends Activity {
 			// Connection is established properly
   	      	if(connected == false)
 			{
+  	      		inertialSensors.start(id);
 			}
   	        connected = true;
   	      	
@@ -117,6 +121,8 @@ public class CamTestActivity extends Activity {
 			if ( msg[0].contains("X") )
 			{
 				connected = false;
+				inertialSensors.stop();
+				id++;
 //				sensorManager.unregisterListener(sensorEventListener);
 //				accStream.close();
 //				gyroStream.close();
@@ -146,10 +152,10 @@ public class CamTestActivity extends Activity {
 
 		setContentView(R.layout.main);
 		
-		//preview = new Preview(this, (SurfaceView)findViewById(R.id.surfaceView));
-		//preview.setLayoutParams(new LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT));
-		//((FrameLayout) findViewById(R.id.preview)).addView(preview);
-		//preview.setKeepScreenOn(true);
+		preview = new Preview(this, (SurfaceView)findViewById(R.id.surfaceView));
+		preview.setLayoutParams(new LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
+		((FrameLayout) findViewById(R.id.preview)).addView(preview);
+		preview.setKeepScreenOn(true);
 		
 		buttonClick = (Button) findViewById(R.id.buttonClick);
 		
@@ -161,7 +167,7 @@ public class CamTestActivity extends Activity {
 					InetAddress selected_ip;
 					try {
 						selected_ip = InetAddress.getByName("192.168.1.132");
-						IP_PORT adres = new IP_PORT(selected_ip, 3000);
+						ConnectionIPPort adres = new ConnectionIPPort(selected_ip, 3000);
 						
 						//selected_ip = InetAddress.getByName("192.168.2.222");
 						//IP_PORT adres = new IP_PORT(selected_ip, 27000);
@@ -247,7 +253,7 @@ public class CamTestActivity extends Activity {
 				{
 					
 					wifiReceiver.startScanning();
-					inertialSensors.start();
+					inertialSensors.start(0);
 					
 					Button buttonWiFiStartScan = (Button) findViewById(R.id.buttonWiFi);
 					buttonWiFiStartScan.setText("Stop scanning");
@@ -264,13 +270,38 @@ public class CamTestActivity extends Activity {
 			}
 		});
 	    
+	    // Inertial Sensors
+	    Button buttonInertialSensors = (Button) findViewById(R.id.buttonInertialSensors);
+	    buttonInertialSensors.setOnClickListener(new OnClickListener() {
+			public void onClick(View v) {
+				if ( inertialSensors.getState() == false)
+				{
+					inertialSensors.start(0);
+					
+					Button buttonInertialSensors = (Button) findViewById(R.id.buttonInertialSensors);
+					buttonInertialSensors.setText("Inertial sensors stop");
+							
+				}
+				else
+				{
+					inertialSensors.stop();
+			
+					Button buttonInertialSensors = (Button) findViewById(R.id.buttonInertialSensors);
+					buttonInertialSensors.setText("Inertial sensors start");
+				}
+			}
+		});
+	    
+	    
+	    id = 0;
+	    //inertialSensors.startNoSave();
 	}
 
 	
 	private void setupWiFi()
 	{
 	    wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);   
-	    wifiReceiver = new WifiReceiver(wifiManager);
+	    wifiReceiver = new WifiReceiver(wifiManager, inertialSensors);
 	    
 	    Button buttonWiFiStartScan = (Button) findViewById(R.id.buttonWiFi);
 	    Button buttonSingleWiFi = (Button) findViewById(R.id.buttonSingleWiFi);
@@ -295,11 +326,44 @@ public class CamTestActivity extends Activity {
 			}
 		});
 	    
-	    buttonSingleWiFi.setOnClickListener(new OnClickListener() {
+		buttonSingleWiFi.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
-					wifiReceiver.doSingleScan();
+				/*float acc[] = inertialSensors.getCurrentAcc();
+				float mag[] = inertialSensors.getCurrentMagnetometer();
+				float orient[] = inertialSensors.getCurrentOrient();
+
+				String fileName = String.format(Locale.getDefault(),
+						Environment.getExternalStorageDirectory().toString()
+								+ "/_exp/wifi/%04d.inertial", id);
+				
+				FileOutputStream foutStream;
+				try {
+					foutStream = new FileOutputStream(fileName);
+
+					PrintStream outStream = new PrintStream(foutStream);
+
+					outStream.print(acc[0] + " " + acc[1] + " " + acc[2] + " "
+							+ mag[0] + " " + mag[1] + " " + mag[2] + " "
+							+ orient[0] + " " + orient[1] + " " + orient[2]
+							+ "\n");
+
+					outStream.close();
+				} catch (FileNotFoundException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}*/
+				
+				SharedData.id++;
+				SharedData.startTimestamp = System.currentTimeMillis();
+				SharedData.globalInstance.write_flag = true;
+				inertialSensors.start(id);
+				wifiReceiver.doSingleScan(id);
+				
+				
+				
+				id++;
 			}
-			
+
 		});
 	}
 	
@@ -311,7 +375,6 @@ public class CamTestActivity extends Activity {
 		registerReceiver(wifiReceiver, new IntentFilter(
 				WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
 		
-		// preview.camera = Camera.open();
 		if (connected) {
 			//try {
 			//	activateSensors();
@@ -320,9 +383,9 @@ public class CamTestActivity extends Activity {
 			//	e.printStackTrace();
 			//}
 		}
-		//camera = Camera.open();
-		//camera.startPreview();
-		//preview.setCamera(camera);
+		camera = Camera.open();
+		camera.startPreview();
+		preview.setCamera(camera);
 	}
 
 	@Override

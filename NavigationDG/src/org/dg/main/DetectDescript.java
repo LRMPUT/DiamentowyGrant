@@ -41,7 +41,10 @@ public class DetectDescript implements Runnable {
 		FileOutputStream outStream;
 		String nl = System.getProperty("line.separator");
 		
-		int setSize = 100;
+		
+		int wantedFreq = 1;
+		
+		int setSize = 600;
 		int startTime, difference;
 		try {
 			
@@ -70,7 +73,7 @@ public class DetectDescript implements Runnable {
 			}
 			
 			// For all descriptors
-			for (int k = 5; k < 6; k++) {
+			for (int k = 3; k < 4; k++) {
 				String fi = String.format("%04d_desc_java", k);
 				File file = new File(root, "_exp/desk/res/" + fi + ".txt");
 				outStream = new FileOutputStream(file.getAbsolutePath());
@@ -104,7 +107,9 @@ public class DetectDescript implements Runnable {
 					double sumdesk = 0, imga = 0;
 					double srdesk = 0;
 					for (int i = 1; i < setSize; i++) {
-
+						double oneTime = 0;
+						
+						
 						// Read image
 						String name = String.format("%04d.png", i);
 						file = new File(root, "_exp/desk/" + name);
@@ -115,7 +120,7 @@ public class DetectDescript implements Runnable {
 							detector[j].detect(img, keypoints);
 						difference = (int) (System.currentTimeMillis() - startTime);
 
-						
+						oneTime += difference;
 						
 						int siz = (keypoints.toList()).size();
 						
@@ -131,6 +136,14 @@ public class DetectDescript implements Runnable {
 						startTime = (int) System.currentTimeMillis();
 							extractor[k].compute(img, keypoints, desc);
 						difference = (int) (System.currentTimeMillis() - startTime);
+						
+						oneTime += difference;
+						
+						if ( 1000/wantedFreq - oneTime > 0 )
+						{
+							Thread.sleep((long) (1000/wantedFreq - oneTime));
+							Log.d("xx", "Sleep time : " + (1000/wantedFreq - oneTime));
+						}
 						
 						//sumdesk += ( difference * 1.0 / siz );
 						imga++;
@@ -202,7 +215,6 @@ public class DetectDescript implements Runnable {
 			e.printStackTrace();
 		}
 		Log.e("TEST", "Ended computation");
-
 	}
 
 }

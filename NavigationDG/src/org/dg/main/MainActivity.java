@@ -4,6 +4,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
@@ -13,12 +15,17 @@ import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2;
 import org.opencv.highgui.Highgui;
 import org.dg.main.R;
+import org.dg.tcp.ConnectionIPPort;
+
+
+
 
 import android.app.Activity;
 import android.content.Context;
 import android.hardware.Camera;
 import android.hardware.Camera.PictureCallback;
 import android.hardware.Camera.ShutterCallback;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.Environment;
 import android.util.Log;
@@ -61,6 +68,77 @@ public class MainActivity extends Activity {
 	String fileName;
     Activity act;
 	Context ctx;
+	public long startTime = 0, startTimeGlobal = 0;
+	
+	public static org.dg.tcp.TCPClient mTcpClient;
+	boolean connected = false;
+	public int synchronizationTime = 0;
+	
+	public class connectionTCP extends AsyncTask<ConnectionIPPort,String,Void> {
+	   	 
+		@Override
+		protected Void doInBackground(ConnectionIPPort... adres) {
+
+			
+			mTcpClient = new org.dg.tcp.TCPClient(adres[0],new org.dg.tcp.TCPClient.OnMessageReceived() {
+				@Override
+				// here the messageReceived method is implemented
+				public void messageReceived(String message) {
+					// this method calls the onProgressUpdate
+					publishProgress(message);
+				}
+			});
+			mTcpClient.run();
+			
+			return null;
+		}
+
+		@Override
+		protected void onProgressUpdate(String... msg) {
+  	      	
+			long timeTaken = (System.nanoTime() - startTimeGlobal) - startTime;
+			
+			Log.e("TCP", "Progress: " + msg[0]);
+
+			// Connection is established properly
+			if (connected == false) {
+				// We start something
+				connected = true;
+				startTime =0 ;
+				startTimeGlobal =  System.nanoTime();
+			}
+
+			// Message -> show as toast
+			int duration = Toast.LENGTH_LONG;
+			Toast.makeText(getApplicationContext(), msg[0], duration).show();
+
+			if (msg[0].contains("SYN")) {
+				String[] separated = msg[0].split(" ");
+				long compTime =  Long.parseLong(separated[1].trim());
+				Log.d("TCP", "timeTaken: " + timeTaken + "\n");
+				Log.d("TCP", "Computer time: " + compTime + "\n");
+				Log.d("TCP", "Time for ping/pong in ns: " + (timeTaken-compTime) + "\n");
+				Log.d("TCP", "Time for ping/pong in ms: " + (timeTaken-compTime)/1000000 + "\n");
+				
+				if ((timeTaken-compTime)/1000000 <= 3)
+				{
+					mTcpClient.sendMessage("END " + (timeTaken-compTime)/2 + "\n");
+				}
+			}
+
+			if (msg[0].contains("START")) {
+				startTime = System.nanoTime() - startTimeGlobal;
+				Log.d("TCP", "Sending: " + "SYN " + startTime + "\n");
+				mTcpClient.sendMessage("SYN " + startTime + "\n");
+			}
+
+			if (msg[0].contains("X")) {
+				// We end something
+				connected = false;
+			}
+
+		}
+	}
 
     private BaseLoaderCallback  mLoaderCallback = new BaseLoaderCallback(this) {
         @Override
@@ -136,18 +214,46 @@ public class MainActivity extends Activity {
 		
 		buttonExp.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
-				File root = Environment.getExternalStorageDirectory();
+				/*File root = Environment.getExternalStorageDirectory();
 				File file = new File(root, "_exp/desk/0001.png");
 				
 				Toast.makeText(MainActivity.this,"xx", 5000).show();
 				
 				Mat img = Highgui.imread(file.getAbsolutePath());
 				Toast.makeText(MainActivity.this,"Height: " + img.cols() + " Width: " + img.rows(), 5000).show();
-				
+				*/
 				DetectDescript det = new DetectDescript();
 				
 				(new Thread(det)).start();
+				//ExtendedKalmanFilter EKF = new ExtendedKalmanFilter();
 				
+			}
+		});
+		
+		Button buttonTimeSync = (Button) findViewById(R.id.ButtonTimeSync);
+		buttonTimeSync.setOnClickListener(new OnClickListener() {
+			public void onClick(View v) {
+				
+				if (connected == false) {
+					
+					InetAddress selected_ip;
+					try {
+//						selected_ip = InetAddress.getByName("192.168.1.132");
+						selected_ip = InetAddress.getByName("192.168.0.11");
+						ConnectionIPPort adres = new ConnectionIPPort(selected_ip, 3000);
+						
+						//selected_ip = InetAddress.getByName("192.168.2.222");
+						//IP_PORT adres = new IP_PORT(selected_ip, 27000);
+
+						new connectionTCP().execute(adres);
+						
+						Log.e("TCP activity", "Connecting to : " + selected_ip.toString()
+								+ ":" + 3000);
+					} catch (UnknownHostException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+				} 
 			}
 		});
 		
@@ -178,17 +284,17 @@ public class MainActivity extends Activity {
 	@Override
 	protected void onPause() {
 		if(camera != null) {
-			camera.stopPreview();
-			preview.setCamera(null);
-			camera.release();
+			//camera.stopPreview();
+			//preview.setCamera(null);
+			//camera.release();
 			camera = null;
 		}
 		super.onPause();
 	}
 
 	private void resetCam() {
-		camera.startPreview();
-		preview.setCamera(camera);
+		//camera.startPreview();
+		//preview.setCamera(camera);
 	}
 
 	ShutterCallback shutterCallback = new ShutterCallback() {

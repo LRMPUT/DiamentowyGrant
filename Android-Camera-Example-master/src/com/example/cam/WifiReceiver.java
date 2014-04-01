@@ -12,6 +12,7 @@ import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.os.Environment;
 import android.util.Log;
+import android.widget.Toast;
 
 public class WifiReceiver extends BroadcastReceiver {
 
@@ -19,11 +20,15 @@ public class WifiReceiver extends BroadcastReceiver {
 	boolean scanning;
 	boolean singleScan;
 	long startTimestamp, startTimestampNano;
+	private int id;
+	private InertialSensors inertialSensors;
 	
-	public WifiReceiver(WifiManager _wifiManager) {
+	public WifiReceiver(WifiManager _wifiManager, InertialSensors _inertial) {
 		wifiManager = _wifiManager;
+		inertialSensors = _inertial;
 		scanning = false;
 		singleScan = false;
+		id = 0;
 	}
 	
 	
@@ -44,9 +49,10 @@ public class WifiReceiver extends BroadcastReceiver {
 		scanning = false;
 	}
 	
-	public void doSingleScan()
+	public void doSingleScan(int _id)
 	{
 		singleScan = true;
+		id = _id;
 		wifiManager.startScan();
 	}
 	
@@ -62,9 +68,20 @@ public class WifiReceiver extends BroadcastReceiver {
 			List<ScanResult> wifiList = wifiManager.getScanResults();
 
 			try {
-				String fileName = String.format(Locale.getDefault(), Environment.getExternalStorageDirectory().toString() + "/_exp/wifi/%d.wifi",
-						System.currentTimeMillis() - startTimestamp);
-	
+				String fileName = "" ;
+				if (singleScan) {
+					fileName = String.format(Locale.getDefault(), Environment
+							.getExternalStorageDirectory().toString()
+							+ "/_exp/wifi/%04d.wifi", id);
+					SharedData.globalInstance.write_flag = false;
+					inertialSensors.stop();
+				} else {
+					fileName = String.format(Locale.getDefault(), Environment
+							.getExternalStorageDirectory().toString()
+							+ "/_exp/wifi/%04d.wifi", System.currentTimeMillis()
+							- startTimestamp);
+				}
+
 				FileOutputStream foutStream = new FileOutputStream(fileName);
 				PrintStream outStream = new PrintStream(foutStream);
 	
@@ -82,6 +99,10 @@ public class WifiReceiver extends BroadcastReceiver {
 			{
 				Log.d("WiFi","Scanning failed\n");
 			}
+			
+			Toast toast = Toast.makeText(arg0.getApplicationContext(), "Single scan finished", Toast.LENGTH_SHORT);
+			toast.show();
+			
 			
 			singleScan = false;
 			if ( scanning ) wifiManager.startScan();

@@ -1,0 +1,539 @@
+K 25
+svn:wc:ra_dav:version-url
+V 57
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb
+END
+hc2cbdft2_16.c
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/hc2cbdft2_16.c
+END
+r2cb_3.c
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/r2cb_3.c
+END
+r2cbIII_10.c
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/r2cbIII_10.c
+END
+r2cb_5.c
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/r2cb_5.c
+END
+codlist.c
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/codlist.c
+END
+r2cbIII_12.c
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/r2cbIII_12.c
+END
+r2cb_128.c
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/r2cb_128.c
+END
+r2cb_7.c
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/r2cb_7.c
+END
+r2cb_9.c
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/r2cb_9.c
+END
+r2cbIII_16.c
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/r2cbIII_16.c
+END
+r2cbIII_3.c
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/r2cbIII_3.c
+END
+r2cb_20.c
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/r2cb_20.c
+END
+r2cb_64.c
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/r2cb_64.c
+END
+sources.mk
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/sources.mk
+END
+r2cbIII_5.c
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/r2cbIII_5.c
+END
+r2cbIII_7.c
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/r2cbIII_7.c
+END
+r2cbIII_9.c
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/r2cbIII_9.c
+END
+hb2_20.c
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/hb2_20.c
+END
+hc2cb_20.c
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/hc2cb_20.c
+END
+hb_25.c
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/hb_25.c
+END
+hc2cb_2.c
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/hc2cb_2.c
+END
+hc2cb_4.c
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/hc2cb_4.c
+END
+hc2cb_6.c
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/hc2cb_6.c
+END
+hb2_5.c
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/hb2_5.c
+END
+hb_3.c
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/hb_3.c
+END
+hc2cb_8.c
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/hc2cb_8.c
+END
+hc2cbdft_2.c
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/hc2cbdft_2.c
+END
+hb_5.c
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/hb_5.c
+END
+hc2cb2_4.c
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/hc2cb2_4.c
+END
+hc2cbdft_4.c
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/hc2cbdft_4.c
+END
+hb_7.c
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/hb_7.c
+END
+hc2cbdft_6.c
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/hc2cbdft_6.c
+END
+hb_9.c
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/hb_9.c
+END
+hc2cb2_8.c
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/hc2cb2_8.c
+END
+hc2cbdft_8.c
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/hc2cbdft_8.c
+END
+r2cbIII_25.c
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/r2cbIII_25.c
+END
+r2cb_10.c
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/r2cb_10.c
+END
+r2cb_12.c
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/r2cb_12.c
+END
+hc2cb2_32.c
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/hc2cb2_32.c
+END
+hc2cbdft_32.c
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/hc2cbdft_32.c
+END
+r2cb_14.c
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/r2cb_14.c
+END
+hb_32.c
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/hb_32.c
+END
+r2cb_16.c
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/r2cb_16.c
+END
+hc2cb_10.c
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/hc2cb_10.c
+END
+hc2cbdft2_32.c
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/hc2cbdft2_32.c
+END
+hb_15.c
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/hb_15.c
+END
+hc2cb_12.c
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/hc2cb_12.c
+END
+hb2_16.c
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/hb2_16.c
+END
+hc2cb_16.c
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/hc2cb_16.c
+END
+r2cb_2.c
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/r2cb_2.c
+END
+r2cbIII_32.c
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/r2cbIII_32.c
+END
+r2cb_4.c
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/r2cb_4.c
+END
+r2cb_6.c
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/r2cb_6.c
+END
+r2cb_8.c
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/r2cb_8.c
+END
+r2cbIII_15.c
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/r2cbIII_15.c
+END
+r2cbIII_2.c
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/r2cbIII_2.c
+END
+r2cbIII_4.c
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/r2cbIII_4.c
+END
+hc2cb2_20.c
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/hc2cb2_20.c
+END
+hc2cbdft_20.c
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/hc2cbdft_20.c
+END
+r2cbIII_6.c
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/r2cbIII_6.c
+END
+hb_20.c
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/hb_20.c
+END
+hb_64.c
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/hb_64.c
+END
+r2cbIII_8.c
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/r2cbIII_8.c
+END
+r2cb_25.c
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/r2cb_25.c
+END
+hc2cbdft2_20.c
+K 25
+svn:wc:ra_dav:version-url
+V 72
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/hc2cbdft2_20.c
+END
+hb2_25.c
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/hb2_25.c
+END
+hc2cbdft2_4.c
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/hc2cbdft2_4.c
+END
+hb2_4.c
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/hb2_4.c
+END
+hb_2.c
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/hb_2.c
+END
+hb_4.c
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/hb_4.c
+END
+hc2cbdft2_8.c
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/hc2cbdft2_8.c
+END
+hb2_8.c
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/hb2_8.c
+END
+hb_6.c
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/hb_6.c
+END
+hb_8.c
+K 25
+svn:wc:ra_dav:version-url
+V 64
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/hb_8.c
+END
+r2cbIII_20.c
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/r2cbIII_20.c
+END
+r2cbIII_64.c
+K 25
+svn:wc:ra_dav:version-url
+V 70
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/r2cbIII_64.c
+END
+r2cb_32.c
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/r2cb_32.c
+END
+r2cb_11.c
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/r2cb_11.c
+END
+hc2cbdft_10.c
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/hc2cbdft_10.c
+END
+r2cb_13.c
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/r2cb_13.c
+END
+hb_10.c
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/hb_10.c
+END
+hc2cbdft_12.c
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/hc2cbdft_12.c
+END
+r2cb_15.c
+K 25
+svn:wc:ra_dav:version-url
+V 67
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/r2cb_15.c
+END
+hb2_32.c
+K 25
+svn:wc:ra_dav:version-url
+V 66
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/hb2_32.c
+END
+hb_12.c
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/hb_12.c
+END
+hc2cb2_16.c
+K 25
+svn:wc:ra_dav:version-url
+V 69
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/hc2cb2_16.c
+END
+hc2cb_32.c
+K 25
+svn:wc:ra_dav:version-url
+V 68
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/hc2cb_32.c
+END
+hc2cbdft_16.c
+K 25
+svn:wc:ra_dav:version-url
+V 71
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/hc2cbdft_16.c
+END
+hb_16.c
+K 25
+svn:wc:ra_dav:version-url
+V 65
+/boolean/DroID3Tagger/svn/!svn/ver/3/src/rdft/scalar/r2cb/hb_16.c
+END

@@ -40,6 +40,7 @@ containing a value of this type.
         public static final int icon=0x7f020000;
     }
     public static final class id {
+        public static final int ButtonTimeSync=0x7f040008;
         public static final int any=0x7f040000;
         public static final int back=0x7f040001;
         public static final int buttonClick=0x7f040006;

@@ -67,6 +67,12 @@
                     android:layout_height="wrap_content"
                     android:text="WiFi + Inertial" />
 
+                <Button
+                    android:id="@+id/buttonInertialSensors"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Inertial sensors start" />
+
             </LinearLayout>
         </LinearLayout>
     </FrameLayout>

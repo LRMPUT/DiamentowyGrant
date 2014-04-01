@@ -13,18 +13,19 @@
 
         <SurfaceView
             android:id="@+id/surfaceView"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content" />
+            android:layout_width="343dp"
+            android:layout_height="341dp" />
 
         <LinearLayout
-            android:layout_width="fill_parent"
-            android:layout_height="fill_parent" >"
+            android:layout_width="619dp"
+            android:layout_height="fill_parent" >
+
 			<LinearLayout
-			    android:layout_width="fill_parent"
+			    android:layout_width="88dp"
 			    android:layout_height="2px"
 			    android:layout_gravity="center_vertical"
-			    android:background="#ff0000" 
-			    android:layout_weight=".80" />
+			    android:background="#ff0000" />
+
             <Button
                 android:id="@+id/buttonClick"
                 android:layout_width="wrap_content"
@@ -38,6 +39,13 @@
                 android:layout_height="120dp"
                 android:layout_gravity="center_vertical"
                 android:text="Experiment" />
+
+            <Button
+                android:id="@+id/ButtonTimeSync"
+                android:layout_width="164dp"
+                android:layout_height="120dp"
+                android:layout_gravity="center_vertical"
+                android:text="Sync time" />
 
         </LinearLayout>
     </FrameLayout>
