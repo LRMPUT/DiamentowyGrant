@@ -7,7 +7,11 @@
 using namespace std;
 using namespace cv;
 
+
 extern "C" {
+
+#define DEBUG_TAG "NDK_MainActivity"
+
 
 // Export declarations
 JNIEXPORT int JNICALL Java_org_dg_main_VisualOdometry_detectFeatures(JNIEnv*,

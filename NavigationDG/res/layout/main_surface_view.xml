@@ -20,11 +20,11 @@
             android:layout_width="619dp"
             android:layout_height="fill_parent" >
 
-			<LinearLayout
-			    android:layout_width="88dp"
-			    android:layout_height="2px"
-			    android:layout_gravity="center_vertical"
-			    android:background="#ff0000" />
+            <LinearLayout
+                android:layout_width="88dp"
+                android:layout_height="2px"
+                android:layout_gravity="center_vertical"
+                android:background="#ff0000" />
 
             <Button
                 android:id="@+id/buttonClick"
@@ -47,7 +47,15 @@
                 android:layout_gravity="center_vertical"
                 android:text="Sync time" />
 
+            <Button
+                android:id="@+id/buttonFivePoint"
+                android:layout_width="wrap_content"
+                android:layout_height="85dp"
+                android:layout_gravity="center"
+                android:layout_weight="0.35"
+                android:text="FivePoint Test" />
         </LinearLayout>
+
     </FrameLayout>
 
 </LinearLayout>

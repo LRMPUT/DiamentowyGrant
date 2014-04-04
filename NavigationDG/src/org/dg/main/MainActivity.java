@@ -16,8 +16,10 @@ import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2;
 import org.opencv.highgui.Highgui;
 import org.dg.camera.DetectDescript;
 import org.dg.camera.Preview;
+import org.dg.camera.VisualOdometry;
 import org.dg.main.R;
 import org.dg.tcp.ConnectionIPPort;
+
 
 
 
@@ -258,6 +260,19 @@ public class MainActivity extends Activity {
 						e.printStackTrace();
 					}
 				} 
+			}
+		});
+		
+		Button buttonFivePoint= (Button) findViewById(R.id.buttonFivePoint);
+
+		buttonFivePoint.setOnClickListener(new OnClickListener() {
+			public void onClick(View v) {
+				
+				VisualOdometry vo = new VisualOdometry();
+				
+				(new Thread(vo)).start();
+				//ExtendedKalmanFilter EKF = new ExtendedKalmanFilter();
+				
 			}
 		});
 		

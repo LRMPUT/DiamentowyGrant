@@ -3,17 +3,61 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/features2d/features2d.hpp>
 #include <vector>
+#include <android/log.h>
+
+#include "FivePoint/FivePointAlgorithm.h"
+//#include "../FivePoint/FivePointAlgorithm.h"
 
 using namespace std;
 using namespace cv;
 
+#define DEBUG_TAG "NDK_MainActivity"
+
 extern "C" {
 
 // Export declarations
+JNIEXPORT int JNICALL Java_org_dg_camera_VisualOdometry_testFivePoint(JNIEnv*,
+		jobject, jlong addrPoints1, jlong addrPoints2);
+
 JNIEXPORT int JNICALL Java_org_dg_main_VisualOdometry_detectFeatures(JNIEnv*,
 		jobject, jlong addrGray, jint param);
 JNIEXPORT int JNICALL Java_org_dg_main_VisualOdometry_descriptFeatures(JNIEnv*,
 		jobject, jlong addrGray, jint param, jint param2);
+
+JNIEXPORT int JNICALL Java_org_dg_camera_VisualOdometry_testFivePoint(JNIEnv*,
+		jobject, jlong addrPoints1, jlong addrPoints2) {
+	Mat& points1 = *(Mat*) addrPoints1;
+	Mat& points2 = *(Mat*) addrPoints2;
+	Mat rotation;
+	Mat translation;
+
+	struct timeval start;
+	struct timeval end;
+
+	gettimeofday(&start, NULL);
+	FP::RotationTranslationFromFivePointAlgorithm(points2, points1, 1. / 500.,
+			rotation, translation);
+	gettimeofday(&end, NULL);
+
+	int ret = ((end.tv_sec * 1000000 + end.tv_usec)
+			- (start.tv_sec * 1000000 + start.tv_usec)) / 1000;
+
+	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "Five point time : %d ms",
+			ret);
+
+	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "Five point : %f %f %f",
+			rotation.at<double>(0, 0), rotation.at<double>(0, 1),
+			rotation.at<double>(0, 2));
+	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "Five point : %f %f %f",
+			rotation.at<double>(1, 0), rotation.at<double>(1, 1),
+			rotation.at<double>(1, 2));
+	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "Five point : %f %f %f",
+			rotation.at<double>(2, 0), rotation.at<double>(2, 1),
+			rotation.at<double>(2, 2));
+	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "Five point : %f %f %f",
+			translation.at<double>(0), translation.at<double>(1),
+			translation.at<double>(2));
+}
 
 JNIEXPORT int JNICALL Java_org_dg_main_VisualOdometry_detectFeatures(JNIEnv*,
 		jobject, jlong addrGray, jint param) {

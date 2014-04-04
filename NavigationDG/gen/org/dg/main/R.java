@@ -45,6 +45,7 @@ containing a value of this type.
         public static final int back=0x7f040001;
         public static final int buttonClick=0x7f040006;
         public static final int buttonExp=0x7f040007;
+        public static final int buttonFivePoint=0x7f040009;
         public static final int front=0x7f040002;
         public static final int layout=0x7f040003;
         public static final int preview=0x7f040004;
