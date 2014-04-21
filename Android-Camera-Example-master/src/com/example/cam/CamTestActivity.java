@@ -16,6 +16,12 @@ import java.net.UnknownHostException;
 import java.util.List;
 import java.util.Locale;
 
+
+import org.opencv.android.BaseLoaderCallback;
+import org.opencv.android.LoaderCallbackInterface;
+import org.opencv.android.OpenCVLoader;
+
+import com.example.cam.DetectDescript;
 import com.example.cam.IP_PORT;
 import com.example.cam.TCPClient;
 
@@ -142,8 +148,38 @@ public class CamTestActivity extends Activity {
 	}
 	
 	
+	  private BaseLoaderCallback  mLoaderCallback = new BaseLoaderCallback(this) {
+	        @Override
+	        public void onManagerConnected(int status) {
+	            switch (status) {
+	                case LoaderCallbackInterface.SUCCESS:
+	                {
+	                    Log.i(TAG, "OpenCV loaded successfully");
+
+	                    // Loading libraries
+	                    // System.loadLibrary("imu");
+	                    //System.loadLibrary("nonfree");
+	                    // System.loadLibrary("scale_estimation");
+	                    // System.loadLibrary("visual_odometry");
+
+	                    Toast.makeText(CamTestActivity.this,"Loaded all libraries", 5000).show();
+	                } break;
+	                default:
+	                {
+	                    super.onManagerConnected(status);
+	                } break;
+	            }
+	        }
+	    };
+	
 	@Override
 	public void onCreate(Bundle savedInstanceState) {
+		
+		if (!OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_2_4_8, this, mLoaderCallback))
+        {
+    		Log.e(TAG, "Cannot connect to OpenCV Manager");
+        }
+		
 		super.onCreate(savedInstanceState);
 		ctx = this;
 		act = this;
@@ -228,7 +264,7 @@ public class CamTestActivity extends Activity {
 		buttonConvertYUV2RGB.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
 				//File parentDir = new File("/sdcard/_exp/Przejazd1/imgs/");
-				File parentDir = new File(Environment.getExternalStorageDirectory().toString() + "/_exp/Przejazd3/");
+				File parentDir = new File(Environment.getExternalStorageDirectory().toString() + "/_exp/convertIn/");
 				
 				ConversionYUV2RGB conversion = new ConversionYUV2RGB(parentDir);
 				(new Thread(conversion)).start();
@@ -237,6 +273,19 @@ public class CamTestActivity extends Activity {
 			
 		});
 		
+		Button buttonPEMRA = (Button) findViewById(R.id.buttonPEMRA);
+		
+		buttonPEMRA.setOnClickListener(new OnClickListener() {
+
+			@Override
+			public void onClick(View arg0) {
+				// TODO Auto-generated method stub
+				DetectDescript det = new DetectDescript();
+				
+				(new Thread(det)).start();
+			}
+			
+		});
 		
 	    
 		SensorManager sensorManager = (SensorManager) getSystemService(Context.SENSOR_SERVICE);

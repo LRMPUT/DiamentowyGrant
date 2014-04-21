@@ -15,18 +15,28 @@ import android.util.Log;
 
 public class ConversionYUV2RGB implements Runnable {
 	private File parentDir;
+	private List<File> dirToProcess;
 	
 	
 	public ConversionYUV2RGB(File _parentDir) {
 		parentDir = _parentDir;
+		dirToProcess = new ArrayList<File>();
 	}
 
-	void convertFilesInDirectory() {
-		List<File> files = getListFiles(parentDir); 
+	void convertFilesInDirectory(File dir) {
 		
-		for (File file : files)
+		dirToProcess.add(dir);
+		while(!dirToProcess.isEmpty())
 		{
-			convertFile(file);
+			Log.d("Conversion", "Size:" + dirToProcess.size());
+			dir = dirToProcess.get(0);
+			dirToProcess.remove(0);
+			List<File> files = getListFiles(dir); 
+		
+			for (File file : files)
+			{
+				convertFile(file);
+			}
 		}
 	}
 	
@@ -44,40 +54,57 @@ public class ConversionYUV2RGB implements Runnable {
 	        if (!file.isDirectory()) {
 				inFiles.add(file);
 			}
+	        else
+	        {
+	        	Log.d("Conversion", "Directory: " + file.getAbsolutePath());
+	        	dirToProcess.add(file);
+	        }
 		}
 		return inFiles;
 	}
 
 	void convertFile(File file) {
 
-		try {
-			// Read stream
-			FileInputStream inStream = new FileInputStream(file);
+		if (!file.getAbsolutePath().contains("converted"))
+		{
 			
-			// Reading data
-			byte fileContent[] = new byte[(int) file.length()];
-			inStream.read(fileContent);
-			YuvImage image = new YuvImage(fileContent, ImageFormat.NV21, 1920,
-					1080, null);
+			try {
+				// Read stream
+				FileInputStream inStream = new FileInputStream(file);
+				
+				// Reading data
+				byte fileContent[] = new byte[(int) file.length()];
+				inStream.read(fileContent);
+				YuvImage image = new YuvImage(fileContent, ImageFormat.NV21, 1920,
+						1080, null);
+	
+				// Save Stream
+				//String absPath = file.getAbsolutePath().replaceAll("ConvertIN", "ConvertOut");
+				
+				Log.d("Conversion", "File: " + file.getAbsolutePath());
+				
+				String dir = file.getParent().replaceAll("convertIn", "convertOut");
+				Log.d("Conversion", "Dir " + dir);
+				creatingSaveDir(new File(dir));
+				
+				String fileName = dir + "/" + file.getName();
+				FileOutputStream outStream = new FileOutputStream(fileName);
+				
+				// Conversion and save to file
+				image.compressToJpeg(new Rect(0, 0, 1920, 1080), 100, outStream);
+				
+				// Closing used streams
+				inStream.close();
+				outStream.close();
+				
+				Log.d("Conversion", "File " + file.getName() + " converted successfully");
+				
+			} catch (FileNotFoundException e) {
+				Log.e("Conversion", "Error : " + e.toString() );
+			} catch (IOException e) {
+				Log.e("Conversion", "Error : " + e.toString() );
+			}
 
-			// Save Stream
-			creatingSaveDir(new File(file.getParent() + "/converted"));
-			String fileName = file.getParent() + "/converted/" + file.getName();
-			FileOutputStream outStream = new FileOutputStream(fileName);
-			
-			// Conversion and save to file
-			image.compressToJpeg(new Rect(0, 0, 1920, 1080), 100, outStream);
-			
-			// Closing used streams
-			inStream.close();
-			outStream.close();
-			
-			Log.d("Conversion", "File " + file.getName() + " converted successfully");
-			
-		} catch (FileNotFoundException e) {
-			Log.e("Conversion", "Error : " + e.toString() );
-		} catch (IOException e) {
-			Log.e("Conversion", "Error : " + e.toString() );
 		}
 	}
 
@@ -90,7 +117,7 @@ public class ConversionYUV2RGB implements Runnable {
 	 * - size of all images is 1920x1080
 	 */
 	public void run() {
-		convertFilesInDirectory();
+		convertFilesInDirectory(parentDir);
 		Log.d("Conversion", "Conversion of whole directory ended successfully");
 	}
 }
