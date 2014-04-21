@@ -42,6 +42,8 @@ Modules that was used:
 // MF: for triangulatePoints
 #include <opencv2/calib3d/calib3d.hpp>
 
+#include <android/log.h>
+
 namespace cv
 {
 	class FivePointSolver
@@ -346,6 +348,7 @@ namespace cv
 				esz1 /= sizeof(int);
 				esz2 /= sizeof(int);
 
+
 				for (; iters < maxAttempts; iters++)
 				{
 					for (i = 0; i < modelPoints && iters < maxAttempts;)
@@ -456,6 +459,11 @@ namespace cv
 					return true;
 				}
 
+				struct timeval start;
+					struct timeval end;
+
+				double tttime = 0;
+				int ile = 0;
 				for (iter = 0; iter < niters; iter++)
 				{
 					int i, goodCount, nmodels;
@@ -470,7 +478,21 @@ namespace cv
 						}
 					}
 
+					gettimeofday(&start, NULL);
+					Mat fundamentalMatrixInliers;
+//					double error = .1/500;
+//					model  = findFundamentalMat(ms1, ms2, FM_RANSAC, error, 0.99, fundamentalMatrixInliers);
+//					nmodels = 5;
 					nmodels = runKernel(ms1, ms2, model);
+					gettimeofday(&end, NULL);
+
+					int ret = ((end.tv_sec * 1000000 + end.tv_usec)
+								- (start.tv_sec * 1000000 + start.tv_usec));
+
+					tttime += ret;
+					__android_log_print(ANDROID_LOG_DEBUG, "FivePoint", "Five point time : %d us",
+								ret);
+
 					if (nmodels <= 0)
 						continue;
 					CV_Assert(model.rows % nmodels == 0);
@@ -489,6 +511,8 @@ namespace cv
 							niters = RANSACUpdateNumIters(confidence, (double)(count - goodCount) / count, modelPoints, niters);
 						}
 					}
+					ile++;
+					//niters = 1000;
 				}
 
 				if (maxGoodCount > 0)
@@ -505,6 +529,10 @@ namespace cv
 				}
 				else
 					_model.release();
+
+				__android_log_print(ANDROID_LOG_DEBUG, "FivePoint", "Avg. five point time : %f ns",
+						tttime*1.0/ile);
+
 
 				return result;
 			}
