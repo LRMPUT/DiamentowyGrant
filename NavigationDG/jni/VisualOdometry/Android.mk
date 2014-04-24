@@ -13,6 +13,7 @@ LOCAL_SRC_FILES += FivePoint/FivePointAlgorithm.cpp VisualOdometryModuleExport.c
 #LOCAL_SHARED_LIBRARIES := nonFreeModule
 #LOCAL_CFLAGS += -fopenmp -O3
 LOCAL_LDLIBS +=  -llog -ldl -O3 #-fopenmp -O3
+LOCAL_CFLAGS += -DNDEBUG
 
 include $(BUILD_SHARED_LIBRARY)
 

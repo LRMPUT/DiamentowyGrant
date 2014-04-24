@@ -329,6 +329,7 @@ namespace cv
 				Mat& ms1, Mat& ms2, RNG& rng,
 				int maxAttempts = 1000)
 			{
+				//modelPoints = 8;
 				cv::AutoBuffer<int> _idx(modelPoints);
 				int* idx = _idx;
 				int i = 0, j, k, iters = 0;
@@ -483,6 +484,10 @@ namespace cv
 //					double error = .1/500;
 //					model  = findFundamentalMat(ms1, ms2, FM_RANSAC, error, 0.99, fundamentalMatrixInliers);
 //					nmodels = 5;
+				//	model  = findFundamentalMat(ms1, ms2, FM_8POINT);
+
+
+
 					nmodels = runKernel(ms1, ms2, model);
 					gettimeofday(&end, NULL);
 
@@ -492,6 +497,8 @@ namespace cv
 					tttime += ret;
 					__android_log_print(ANDROID_LOG_DEBUG, "FivePoint", "Five point time : %d us",
 								ret);
+					ile++;
+					niters = 1000;
 
 					if (nmodels <= 0)
 						continue;
@@ -511,8 +518,7 @@ namespace cv
 							niters = RANSACUpdateNumIters(confidence, (double)(count - goodCount) / count, modelPoints, niters);
 						}
 					}
-					ile++;
-					//niters = 1000;
+					niters = 1000;
 				}
 
 				if (maxGoodCount > 0)
@@ -530,7 +536,7 @@ namespace cv
 				else
 					_model.release();
 
-				__android_log_print(ANDROID_LOG_DEBUG, "FivePoint", "Avg. five point time : %f ns",
+				__android_log_print(ANDROID_LOG_DEBUG, "FivePoint", "Avg. five point time : %f us",
 						tttime*1.0/ile);
 
 
