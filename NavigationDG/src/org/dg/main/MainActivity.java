@@ -17,8 +17,10 @@ import org.opencv.highgui.Highgui;
 import org.dg.camera.DetectDescript;
 import org.dg.camera.Preview;
 import org.dg.camera.VisualOdometry;
+import org.dg.inertialSensors.Stepometer;
 import org.dg.main.R;
 import org.dg.tcp.ConnectionIPPort;
+
 
 
 
@@ -272,6 +274,18 @@ public class MainActivity extends Activity {
 				
 				(new Thread(vo)).start();
 				//ExtendedKalmanFilter EKF = new ExtendedKalmanFilter();
+				
+			}
+		});
+		
+		
+		Button buttonStepometer = (Button) findViewById(R.id.buttonStepometer);
+
+		buttonStepometer.setOnClickListener(new OnClickListener() {
+			public void onClick(View v) {
+				
+				Stepometer stepometer = new Stepometer();
+				(new Thread(stepometer)).start();
 				
 			}
 		});

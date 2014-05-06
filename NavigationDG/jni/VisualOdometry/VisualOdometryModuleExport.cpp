@@ -10,8 +10,9 @@
 #include <vector>
 #include <android/log.h>
 
-#include "FivePoint/FivePointAlgorithm.h"
+//#include "FivePoint/FivePointAlgorithm.h"
 //#include "../FivePoint/FivePointAlgorithm.h"
+#include "FivePointMadeEasy/5point.h"
 
 using namespace std;
 using namespace cv;
@@ -175,8 +176,26 @@ JNIEXPORT int JNICALL Java_org_dg_camera_VisualOdometry_testFivePoint(JNIEnv*,
 	struct timeval end;
 
 	gettimeofday(&start, NULL);
-	FP::RotationTranslationFromFivePointAlgorithm(points2, points1, 1. / 500.,
-			rotation, translation);
+//	FP::RotationTranslationFromFivePointAlgorithm(points2, points1, 1. / 500.,
+//			rotation, translation);
+
+	std::vector<EMatrix> ret_E;
+	std::vector<PMatrix> ret_P;
+	std::vector<int> ret_inliers;
+
+	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "Five point: Now print size");
+	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "Five point pts size: %d x %d ",
+				points1.rows, points1.cols);
+	double pts1[10];
+	double pts2[10];
+	for(int i=0;i<10;i++)
+	{
+		pts1[i] = points1.at<float>(i/2,i%5);
+		pts2[i] = points2.at<float>(i/2,i%5);
+	}
+//
+	for(int i=0;i<1000;i++)
+		Solve5PointEssential(pts1, pts2, 5, ret_E, ret_P, ret_inliers);
 	gettimeofday(&end, NULL);
 
 	int ret = ((end.tv_sec * 1000000 + end.tv_usec)
@@ -185,18 +204,18 @@ JNIEXPORT int JNICALL Java_org_dg_camera_VisualOdometry_testFivePoint(JNIEnv*,
 	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "Five point time : %d ms",
 			ret);
 
-	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "Five point : %f %f %f",
-			rotation.at<double>(0, 0), rotation.at<double>(0, 1),
-			rotation.at<double>(0, 2));
-	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "Five point : %f %f %f",
-			rotation.at<double>(1, 0), rotation.at<double>(1, 1),
-			rotation.at<double>(1, 2));
-	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "Five point : %f %f %f",
-			rotation.at<double>(2, 0), rotation.at<double>(2, 1),
-			rotation.at<double>(2, 2));
-	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "Five point : %f %f %f",
-			translation.at<double>(0), translation.at<double>(1),
-			translation.at<double>(2));
+//	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "Five point : %f %f %f",
+//			rotation.at<double>(0, 0), rotation.at<double>(0, 1),
+//			rotation.at<double>(0, 2));
+//	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "Five point : %f %f %f",
+//			rotation.at<double>(1, 0), rotation.at<double>(1, 1),
+//			rotation.at<double>(1, 2));
+//	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "Five point : %f %f %f",
+//			rotation.at<double>(2, 0), rotation.at<double>(2, 1),
+//			rotation.at<double>(2, 2));
+//	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "Five point : %f %f %f",
+//			translation.at<double>(0), translation.at<double>(1),
+//			translation.at<double>(2));
 }
 
 JNIEXPORT int JNICALL Java_org_dg_main_VisualOdometry_detectFeatures(JNIEnv*,

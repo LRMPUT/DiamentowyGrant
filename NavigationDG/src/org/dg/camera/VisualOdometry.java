@@ -42,72 +42,74 @@ public class VisualOdometry implements Runnable {
 	@Override
 	public void run() {
 		
-		testingFivePoint();
-//		Log.d("PEMRA", "Started");
-//
-//		File root = Environment.getExternalStorageDirectory();
-//
-//		int setSize = 1;
-//		int startTime, difference;
-//		try {
-//			for (int i = 1; i <= setSize; i++) {
-//				Log.d("PEMRA", "Start reading");
-//
-//				int classCount = 14;
-//				
-//				double resizingTime = 0 ;
-//				double wordTime = 0;
-//				for (int a = 0; a < classCount; a++) {
-//					// Read image
-//					String name = String.format("%d.jpg", a);
-//					File file = new File(root, "_exp/PEMRA_ref/" + name);
-//					Log.d("PEMRA", "Path :" + file.getAbsolutePath());
-//	
-//					Mat img = Highgui.imread(file.getAbsolutePath()), dst = new Mat();
-//	
-//					Log.d("PEMRA", "Img size:" + img.height() + "x" + img.width());
-//
-//					// Resizing to 640x480
-//					startTime = (int) System.currentTimeMillis();
-//					Imgproc.resize(img, dst, new Size(480,640));
-//					//dst = img;
-//					difference = (int) (System.currentTimeMillis() - startTime);
-//					resizingTime += difference;
-//					Log.d("PEMRA", "Resize time :" + difference + " ms");
-//					
-//	
-//					Log.d("PEMRA", "Dst size:" + dst.height() + "x" + dst.width());
-//
-//					// JAVA part
-//					bufImgs[a] = new Mat();
-//					detectDescript(dst.getNativeObjAddr(), bufImgs[a].getNativeObjAddr());
-//
-//					Log.d("PEMRA", "Size of desc: " + bufImgs[a].rows() + "x"+ bufImgs[a].cols());
-//				}
-//				
-//				Log.d("PEMRA", "Average resizing time: " + resizingTime/14);
-//				//int K = 100;
-//				//int attempts = 10;
-//				//Mat bestLabels = new Mat();
-//				// http://docs.opencv.org/modules/core/doc/clustering.html
-//				//Mat dataIn = desc;
-//				// kmeans(dataIn, K, bestLabels, TermCriteria.MAX_ITER,
-//				// attempts, Core.KMEANS_PP_CENTERS);
-//				
-//				kmeansCenters = new Mat();
-//				int K = 1500;
-//				kmeans(K, classCount);
-//				for (int a = 0; a < classCount; a++) {
-//					startTime = (int) System.currentTimeMillis();
-//					words[a] = createWord(bufImgs[a], K);
-//					difference = (int) (System.currentTimeMillis() - startTime);
-//					wordTime += difference;
-//				}
-//				Log.d("PEMRA", "Average word creation time: " + wordTime/14);
-//				
-//				
-//
-//				// Find 1 image in each wifi scan
+//		testingFivePoint();
+		Log.d("PEMRA", "Started");
+
+		File root = Environment.getExternalStorageDirectory();
+
+		int setSize = 1;
+		int startTime, difference;
+		try {
+			for (int i = 1; i <= setSize; i++) {
+				Log.d("PEMRA", "Start reading");
+
+				int classCount = 14;
+				
+				double resizingTime = 0 ;
+				double wordTime = 0;
+				for (int a = 0; a < classCount; a++) {
+					// Read image
+					String name = String.format("%d.jpg", a);
+					File file = new File(root, "_exp/PEMRA_ref/" + name);
+					Log.d("PEMRA", "Path :" + file.getAbsolutePath());
+	
+					Mat img = Highgui.imread(file.getAbsolutePath()), dst = new Mat();
+	
+					Log.d("PEMRA", "Img size:" + img.height() + "x" + img.width());
+
+					// Resizing to 640x480
+					startTime = (int) System.currentTimeMillis();
+					Imgproc.resize(img, dst, new Size(480,640));
+					//dst = img;
+					difference = (int) (System.currentTimeMillis() - startTime);
+					resizingTime += difference;
+					Log.d("PEMRA", "Resize time :" + difference + " ms");
+					
+	
+					Log.d("PEMRA", "Dst size:" + dst.height() + "x" + dst.width());
+
+					// JAVA part
+					bufImgs[a] = new Mat();
+					detectDescript(dst.getNativeObjAddr(), bufImgs[a].getNativeObjAddr());
+
+					Log.d("PEMRA", "Size of desc: " + bufImgs[a].rows() + "x"+ bufImgs[a].cols());
+				}
+				
+				Log.d("PEMRA", "Average resizing time: " + resizingTime/14);
+				//int K = 100;
+				//int attempts = 10;
+				//Mat bestLabels = new Mat();
+				// http://docs.opencv.org/modules/core/doc/clustering.html
+				//Mat dataIn = desc;
+				// kmeans(dataIn, K, bestLabels, TermCriteria.MAX_ITER,
+				// attempts, Core.KMEANS_PP_CENTERS);
+				
+				kmeansCenters = new Mat();
+				int K = 20;
+				kmeans(K, classCount);
+				for (int a = 0; a < classCount; a++) {
+					startTime = (int) System.currentTimeMillis();
+					words[a] = createWord(bufImgs[a], K);
+					difference = (int) (System.currentTimeMillis() - startTime);
+					wordTime += difference;
+					String wordzik = words[a].dump();
+					Log.d("PEMRA", "Word: " + wordzik +"\n");
+				}
+				Log.d("PEMRA", "Average word creation time: " + wordTime/14);
+				
+				
+
+				// Find 1 image in each wifi scan
 //				ArrayList<File> inFiles = new ArrayList<File>();
 //				File parentDir = new File(root, "_exp/PEMRA/");
 //
@@ -152,15 +154,15 @@ public class VisualOdometry implements Runnable {
 //					g++;
 //				}
 //				resultStream.close();
-//
-//			}
-//
-//		} catch (Exception e) {
-//			// TODO Auto-generated catch block
-//			// e.printStackTrace();
-//			Log.e("PEMRA", "Error: " + e.getMessage());
-//		}
-//		Log.e("TEST", "Ended computation");
+
+			}
+
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			// e.printStackTrace();
+			Log.e("PEMRA", "Error: " + e.getMessage());
+		}
+		Log.e("TEST", "Ended computation");
 		
 	}
 	

@@ -44,8 +44,25 @@ Modules that was used:
 
 #include <android/log.h>
 
+#include <pthread.h>
+
+
 namespace cv
 {
+
+	// Parallel stuff
+			pthread_mutex_t mutex;
+			int  maxGoodCount;
+			int counter ;
+
+			void *thread_function(void *dummyPtr)
+			{
+			 //  printf("Thread number %ld\n", pthread_self());
+			   pthread_mutex_lock( &mutex );
+			   counter++;
+			   pthread_mutex_unlock( &mutex );
+			}
+
 	class FivePointSolver
 	{
 		private:
@@ -54,6 +71,10 @@ namespace cv
 			double threshold;
 			double confidence;
 			int maxIters;
+
+			Mat m1, m2, bestModel;
+			Mat bestMask0, bestMask;
+			int counterek;
 
 			void getCoeffMat(double *e, double *A) const
 			{
@@ -416,16 +437,77 @@ namespace cv
 				return denom >= 0 || -num >= maxIters*(-denom) ? maxIters : cvRound(num / denom);
 			}
 
+
+
+			void *RANSAC(void)
+			{
+				counter++;
+				RNG rng((uint64)-1);
+				Mat err, mask, model, bestModel, ms1, ms2;
+				for (int iter = 0; iter < 500/*niters*/; iter++)
+				{
+					int i, goodCount, nmodels;
+				 	if (counterek > modelPoints)
+					{
+							bool found = getSubset(m1, m2, ms1, ms2, rng);
+//										if (!found)
+//										{
+//										//	if (iter == 0)
+//										//		return false;
+//										//	break;
+//										}
+//									}
+//
+									nmodels = runKernel(ms1, ms2, model);
+//
+									if (nmodels <= 0)
+										continue;
+									CV_Assert(model.rows % nmodels == 0);
+									Size modelSize(model.cols, model.rows / nmodels);
+//
+									for (i = 0; i < nmodels; i++)
+									{
+										Mat model_i = model.rowRange(i*modelSize.height, (i + 1)*modelSize.height);
+										goodCount = findInliers(m1, m2, model_i, err, mask, threshold);
+//
+										pthread_mutex_lock (&mutex);
+										if (goodCount > MAX(maxGoodCount, modelPoints - 1))
+										{
+											std::swap(mask, bestMask);
+//
+											model_i.copyTo(bestModel);
+											maxGoodCount = goodCount;
+//
+//										//	niters = RANSACUpdateNumIters(confidence, (double)(count - goodCount) / count, modelPoints, niters);
+									    }
+										pthread_mutex_unlock(&mutex);
+									}
+					}
+				}
+				return 0;
+
+			}
+
+			static void *RANSAC_helper(void *context)
+			{
+				 return ((FivePointSolver *)context)->RANSAC();
+			}
+
+
+
 			bool run(InputArray _m1, InputArray _m2, OutputArray _model, OutputArray _mask)
 			{
 				bool result = false;
-				Mat m1 = _m1.getMat(), m2 = _m2.getMat();
-				Mat err, mask, model, bestModel, ms1, ms2;
+				//Mat m1 = _m1.getMat(), m2 = _m2.getMat();
+				m1 = _m1.getMat(); m2 = _m2.getMat();
+				Mat err, mask, model, ms1, ms2;
 
 				int iter, niters = MAX(maxIters, 1);
 				int d1 = m1.channels() > 1 ? m1.channels() : m1.cols;
 				int d2 = m2.channels() > 1 ? m2.channels() : m2.cols;
-				int count = m1.checkVector(d1), count2 = m2.checkVector(d2), maxGoodCount = 0;
+				int count = m1.checkVector(d1), count2 = m2.checkVector(d2);//, maxGoodCount = 0;
+				counterek = count;
+				maxGoodCount = 0;
 
 				RNG rng((uint64)-1);
 
@@ -437,7 +519,7 @@ namespace cv
 				if (count < modelPoints)
 					return false;
 
-				Mat bestMask0, bestMask;
+				//Mat bestMask0, bestMask;
 
 				if (_mask.needed())
 				{
@@ -461,11 +543,40 @@ namespace cv
 				}
 
 				struct timeval start;
-					struct timeval end;
+				struct timeval end;
+				struct timeval xxx,yyy;
 
 				double tttime = 0;
 				int ile = 0;
-				for (iter = 0; iter < niters; iter++)
+
+
+				gettimeofday(&xxx, NULL);
+
+				pthread_t thread_id[2];
+				counter = 0;
+				for(int i=0; i < 2; i++)
+			    {
+					pthread_create( &thread_id[i], NULL, &FivePointSolver::RANSAC_helper, this );
+				}
+
+				for(int j=0; j < 2; j++)
+			    {
+					pthread_join( thread_id[j], NULL);
+				}
+
+				gettimeofday(&yyy, NULL);
+
+				int ret = ((yyy.tv_sec * 1000000 + yyy.tv_usec)
+												- (xxx.tv_sec * 1000000 + xxx.tv_usec));
+
+				__android_log_print(ANDROID_LOG_DEBUG, "FivePoint", "Final counter value: %d\n",
+						counter);
+
+				__android_log_print(ANDROID_LOG_DEBUG, "FivePoint", "Parallel time taken: %d\n",
+										ret);
+
+				gettimeofday(&xxx, NULL);
+				for (iter = 0; iter < 1000/*niters*/; iter++)
 				{
 					int i, goodCount, nmodels;
 					if (count > modelPoints)
@@ -473,9 +584,9 @@ namespace cv
 						bool found = getSubset(m1, m2, ms1, ms2, rng);
 						if (!found)
 						{
-							if (iter == 0)
-								return false;
-							break;
+						//	if (iter == 0)
+						//		return false;
+						//	break;
 						}
 					}
 
@@ -494,10 +605,10 @@ namespace cv
 					int ret = ((end.tv_sec * 1000000 + end.tv_usec)
 								- (start.tv_sec * 1000000 + start.tv_usec));
 
-					tttime += ret;
-					__android_log_print(ANDROID_LOG_DEBUG, "FivePoint", "Five point time : %d us",
-								ret);
-					ile++;
+					//tttime += ret;
+					//__android_log_print(ANDROID_LOG_DEBUG, "FivePoint", "Five point time : %d us",
+					//			ret);
+					//ile++;
 					niters = 1000;
 
 					if (nmodels <= 0)
@@ -520,6 +631,14 @@ namespace cv
 					}
 					niters = 1000;
 				}
+
+				gettimeofday(&yyy, NULL);
+
+				ret = ((yyy.tv_sec * 1000000 + yyy.tv_usec)
+												- (xxx.tv_sec * 1000000 + xxx.tv_usec));
+
+				__android_log_print(ANDROID_LOG_DEBUG, "FivePoint", "Total five time : %d us",
+										ret);
 
 				if (maxGoodCount > 0)
 				{

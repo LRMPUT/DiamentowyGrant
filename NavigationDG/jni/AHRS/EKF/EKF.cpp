@@ -29,40 +29,40 @@ cv::Mat EKF::jacobian(long addrW) {
 
 	// 1st row
 	F.at<float>(0, 0) = 1.0;
-	F.at<float>(0, 1) = -0.5 * (w.at<float>(2) - this->x_apriori.at<float>(6))
+	F.at<float>(0, 1) = - 0.5 * (w.at<float>(0) - this->x_apriori.at<float>(4))
 			* this->dt;
-	F.at<float>(0, 2) = 0.5 * (w.at<float>(1) - this->x_apriori.at<float>(5)) * this->dt;
-	F.at<float>(0, 3) = 0.5 * (w.at<float>(0) - this->x_apriori.at<float>(4)) * this->dt;
-	F.at<float>(0, 4) = -0.5 * this->dt * this->x_apriori.at<float>(3);
-	F.at<float>(0, 5) = -0.5 * this->dt * this->x_apriori.at<float>(2);
-	F.at<float>(0, 6) = 0.5 * this->dt * this->x_apriori.at<float>(1);
+	F.at<float>(0, 2) = - 0.5 * (w.at<float>(1) - this->x_apriori.at<float>(5)) * this->dt;
+	F.at<float>(0, 3) = - 0.5 * (w.at<float>(2) - this->x_apriori.at<float>(6)) * this->dt;
+	F.at<float>(0, 4) = 0.5 * this->dt * this->x_apriori.at<float>(1);
+	F.at<float>(0, 5) = 0.5 * this->dt * this->x_apriori.at<float>(2);
+	F.at<float>(0, 6) = 0.5 * this->dt * this->x_apriori.at<float>(3);
 
 	// 2nd row
-	F.at<float>(1, 0) = 0.5 * (w.at<float>(2) - this->x_apriori.at<float>(6)) * this->dt;
+	F.at<float>(1, 0) = 0.5 * (w.at<float>(0) - this->x_apriori.at<float>(4)) * this->dt;
 	F.at<float>(1, 1) = 1;
-	F.at<float>(1, 2) = - 0.5 * (w.at<float>(0) - this->x_apriori.at<float>(4)) * this->dt;
-	F.at<float>(1, 3) = 0.5 * (w.at<float>(1) - this->x_apriori.at<float>(5)) * this->dt;
-	F.at<float>(1, 4) = 0.5 * this->dt * this->x_apriori.at<float>(2);
-	F.at<float>(1, 5) = - 0.5 * this->dt * this->x_apriori.at<float>(3);
-	F.at<float>(1, 6) = - 0.5 * this->dt * this->x_apriori.at<float>(0);
+	F.at<float>(1, 2) = 0.5 * (w.at<float>(2) - this->x_apriori.at<float>(6)) * this->dt;
+	F.at<float>(1, 3) = - 0.5 * (w.at<float>(1) - this->x_apriori.at<float>(5)) * this->dt;
+	F.at<float>(1, 4) = - 0.5 * this->dt * this->x_apriori.at<float>(0);
+	F.at<float>(1, 5) =  0.5 * this->dt * this->x_apriori.at<float>(3);
+	F.at<float>(1, 6) = - 0.5 * this->dt * this->x_apriori.at<float>(2);
 
 	// 3rd row
-	F.at<float>(2, 0) = -0.5 * (w.at<float>(1) - this->x_apriori.at<float>(5)) * this->dt;
-	F.at<float>(2, 1) = 0.5 * (w.at<float>(0) - this->x_apriori.at<float>(4)) * this->dt;
+	F.at<float>(2, 0) = 0.5 * (w.at<float>(1) - this->x_apriori.at<float>(5)) * this->dt;
+	F.at<float>(2, 1) = - 0.5 * (w.at<float>(2) - this->x_apriori.at<float>(6)) * this->dt;
 	F.at<float>(2, 2) = 1;
-	F.at<float>(2, 3) = 0.5 * (w.at<float>(2) - this->x_apriori.at<float>(6)) * this->dt;
-	F.at<float>(2, 4) = - 0.5 * this->dt * this->x_apriori.at<float>(1);
-	F.at<float>(2, 5) = 0.5 * this->dt * this->x_apriori.at<float>(0);
-	F.at<float>(2, 6) = - 0.5 * this->dt * this->x_apriori.at<float>(3);
+	F.at<float>(2, 3) = 0.5 * (w.at<float>(0) - this->x_apriori.at<float>(4)) * this->dt;
+	F.at<float>(2, 4) = - 0.5 * this->dt * this->x_apriori.at<float>(3);
+	F.at<float>(2, 5) = - 0.5 * this->dt * this->x_apriori.at<float>(0);
+	F.at<float>(2, 6) = 0.5 * this->dt * this->x_apriori.at<float>(1);
 
 	// 4th row
-	F.at<float>(3, 0) = -0.5 * (w.at<float>(0) - this->x_apriori.at<float>(4)) * this->dt;
-	F.at<float>(3, 1) =	- 0.5 * (w.at<float>(1) - this->x_apriori.at<float>(5)) * this->dt;
-	F.at<float>(3, 2) =	- 0.5 * (w.at<float>(2) - this->x_apriori.at<float>(6)) * this->dt;
+	F.at<float>(3, 0) = 0.5 * (w.at<float>(2) - this->x_apriori.at<float>(6)) * this->dt;
+	F.at<float>(3, 1) =	0.5 * (w.at<float>(1) - this->x_apriori.at<float>(5)) * this->dt;
+	F.at<float>(3, 2) =	- 0.5 * (w.at<float>(0) - this->x_apriori.at<float>(4)) * this->dt;
 	F.at<float>(3, 3) = 1;
-	F.at<float>(3, 4) = 0.5 * this->dt * this->x_apriori.at<float>(0);
-	F.at<float>(3, 5) = 0.5 * this->dt * this->x_apriori.at<float>(1);
-	F.at<float>(3, 6) = 0.5 * this->dt * this->x_apriori.at<float>(2);
+	F.at<float>(3, 4) = 0.5 * this->dt * this->x_apriori.at<float>(2);
+	F.at<float>(3, 5) = - 0.5 * this->dt * this->x_apriori.at<float>(1);
+	F.at<float>(3, 6) = - 0.5 * this->dt * this->x_apriori.at<float>(0);
 
 	// 5th row
 	F.at<float>(4,4) = 1.0;

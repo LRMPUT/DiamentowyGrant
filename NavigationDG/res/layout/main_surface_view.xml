@@ -24,36 +24,49 @@
                 android:layout_width="88dp"
                 android:layout_height="2px"
                 android:layout_gravity="center_vertical"
+                android:layout_weight="0.79"
                 android:background="#ff0000" />
 
-            <Button
-                android:id="@+id/buttonClick"
+            <LinearLayout
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center_vertical"
-                android:text="Click" />
+                android:layout_height="match_parent"
+                android:orientation="vertical" >
 
-            <Button
-                android:id="@+id/buttonExp"
-                android:layout_width="164dp"
-                android:layout_height="120dp"
-                android:layout_gravity="center_vertical"
-                android:text="Experiment" />
+                <Button
+                    android:id="@+id/buttonFivePoint"
+                    android:layout_width="160dp"
+                    android:layout_height="80dp"
+                    android:layout_weight="0.14"
+                    android:text="FivePoint Test" />
 
-            <Button
-                android:id="@+id/ButtonTimeSync"
-                android:layout_width="164dp"
-                android:layout_height="120dp"
-                android:layout_gravity="center_vertical"
-                android:text="Sync time" />
+                <Button
+                    android:id="@+id/buttonExp"
+                    android:layout_width="160dp"
+                    android:layout_height="80dp"
+                    android:layout_weight="0.14"
+                    android:text="Experiment" />
 
-            <Button
-                android:id="@+id/buttonFivePoint"
-                android:layout_width="wrap_content"
-                android:layout_height="85dp"
-                android:layout_gravity="center"
-                android:layout_weight="0.35"
-                android:text="FivePoint Test" />
+                <Button
+                    android:id="@+id/buttonClick"
+                    android:layout_width="160dp"
+                    android:layout_height="80dp"
+                    android:layout_weight="0.14"
+                    android:text="Click" />
+
+                <Button
+                    android:id="@+id/ButtonTimeSync"
+                    android:layout_width="160dp"
+                    android:layout_height="80dp"
+                    android:layout_weight="0.14"
+                    android:text="Sync time" />
+
+                <Button
+                    android:id="@+id/buttonStepometer"
+                    android:layout_width="160dp"
+                    android:layout_height="80dp"
+                    android:layout_weight="0.21"
+                    android:text="Stepometer test" />
+            </LinearLayout>
         </LinearLayout>
 
     </FrameLayout>

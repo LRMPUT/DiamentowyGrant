@@ -2,6 +2,7 @@
 #define __MY_FIVE_POINT_H__
 
 #include <opencv2/core/core.hpp>
+#include <omp.h>
 
 namespace FP // FivePoint
 {
