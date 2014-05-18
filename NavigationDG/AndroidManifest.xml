@@ -26,7 +26,7 @@
                       android:largeScreens="true"
                       android:anyDensity="true" />
 
-    <uses-sdk android:minSdkVersion="17" />
+    <uses-sdk android:minSdkVersion="15" />
 
     
     <uses-feature android:name="android.hardware.camera" />

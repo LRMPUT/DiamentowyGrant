@@ -14,7 +14,7 @@ import org.opencv.core.Mat;
 import org.opencv.android.CameraBridgeViewBase;
 import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2;
 import org.opencv.highgui.Highgui;
-import org.dg.camera.DetectDescript;
+import org.dg.camera.DetectDescribe;
 import org.dg.camera.Preview;
 import org.dg.camera.VisualOdometry;
 import org.dg.inertialSensors.Stepometer;
@@ -185,7 +185,7 @@ public class MainActivity extends Activity {
     	//	Log.e(TAG, "Cannot connect to OpenCV Manager");
         //}
     	
-    	if (!OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_2_4_7, this, mLoaderCallback))
+    	if (!OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_2_4_8, this, mLoaderCallback))
         {
     		Log.e(TAG, "Cannot connect to OpenCV Manager");
         }
@@ -230,7 +230,7 @@ public class MainActivity extends Activity {
 				Mat img = Highgui.imread(file.getAbsolutePath());
 				Toast.makeText(MainActivity.this,"Height: " + img.cols() + " Width: " + img.rows(), 5000).show();
 				*/
-				DetectDescript det = new DetectDescript();
+				DetectDescribe det = new DetectDescribe();
 				
 				(new Thread(det)).start();
 				//ExtendedKalmanFilter EKF = new ExtendedKalmanFilter();

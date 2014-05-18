@@ -9,13 +9,15 @@ include $(LOCAL_PATH)/NonFree/Android.mk
 
 
 LOCAL_MODULE    := VisualOdometryModule
-LOCAL_SRC_FILES += FivePoint/FivePointAlgorithm.cpp VisualOdometryModuleExport.cpp
+LOCAL_SRC_FILES += FivePoint/FivePointAlgorithm.cpp DetectDescribe/DetectDescribe.cpp VisualOdometryModuleExport.cpp
+
+LOCAL_SRC_FILES += LDB/ldb.cpp
 
 #LOCAL_C_INCLUDES := Eigen
-LOCAL_SRC_FILES += FivePointMadeEasy/Rpoly.cpp FivePointMadeEasy/5point.cpp FivePointMadeEasy/main.cpp
+#LOCAL_SRC_FILES += FivePointMadeEasy/Rpoly.cpp FivePointMadeEasy/5point.cpp FivePointMadeEasy/main.cpp
 #LOCAL_SHARED_LIBRARIES := nonFreeModule
 #LOCAL_CFLAGS += -fopenmp -O3
-LOCAL_LDLIBS +=  -llog -ldl -O3 
+LOCAL_LDLIBS +=  -llog -ldl -O3 -DNDEBUG
 LOCAL_LDFLAGS +=  -pthread
 LOCAL_CFLAGS += -DNDEBUG 
 

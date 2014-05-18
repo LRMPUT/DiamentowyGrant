@@ -51,22 +51,24 @@ namespace cv
 {
 
 	// Parallel stuff
-			pthread_mutex_t mutex;
-			int  maxGoodCount;
-			int counter ;
+	pthread_mutex_t mutex;
+	int  maxGoodCount;
+	int counter ;
+	int niters;
 
-			void *thread_function(void *dummyPtr)
-			{
-			 //  printf("Thread number %ld\n", pthread_self());
-			   pthread_mutex_lock( &mutex );
-			   counter++;
-			   pthread_mutex_unlock( &mutex );
-			}
+	void *thread_function(void *dummyPtr)
+	{
+			//  printf("Thread number %ld\n", pthread_self());
+		pthread_mutex_lock( &mutex );
+		counter++;
+		pthread_mutex_unlock( &mutex );
+	}
 
 	class FivePointSolver
 	{
 		private:
 			int modelPoints;
+			int numOfThreads;
 			bool checkPartialSubsets;
 			double threshold;
 			double confidence;
@@ -441,12 +443,29 @@ namespace cv
 
 			void *RANSAC(void)
 			{
+			//	__android_log_print(ANDROID_LOG_DEBUG, "DetectDescribe", "Start parallel RANSAC: %d\n",numOfThreads);
 				counter++;
 				RNG rng((uint64)-1);
-				Mat err, mask, model, bestModel, ms1, ms2;
-				for (int iter = 0; iter < 500/*niters*/; iter++)
+				Mat err, mask, model,  ms1, ms2;
+
+				struct timeval start;
+				struct timeval end;
+				bool interrupted = false;
+				gettimeofday(&start, NULL);
+
+				for (int iter = 0; iter < niters/numOfThreads; iter++)
 				{
+//					__android_log_print(ANDROID_LOG_DEBUG, "DetectDescribe", "x\n");
+					gettimeofday(&end, NULL);
+					int ret = ((end.tv_sec * 1000000 + end.tv_usec) - (start.tv_sec * 1000000 + start.tv_usec)) / 1000;
+					if ( ret > 5000)
+					{
+						interrupted = true;
+						break;
+					}
+
 					int i, goodCount, nmodels;
+//					__android_log_print(ANDROID_LOG_DEBUG, "DetectDescribe", "CMP: %d %d\n",counterek, modelPoints);
 				 	if (counterek > modelPoints)
 					{
 							bool found = getSubset(m1, m2, ms1, ms2, rng);
@@ -458,7 +477,16 @@ namespace cv
 //										}
 //									}
 //
-									nmodels = runKernel(ms1, ms2, model);
+							if ( modelPoints == 5)
+							{
+								nmodels = runKernel(ms1, ms2, model);
+							}
+							else if ( modelPoints == 8)
+							{
+								model  = findFundamentalMat(ms1, ms2, FM_8POINT);
+								nmodels = 1;
+							}
+
 //
 									if (nmodels <= 0)
 										continue;
@@ -477,8 +505,8 @@ namespace cv
 //
 											model_i.copyTo(bestModel);
 											maxGoodCount = goodCount;
-//
-//										//	niters = RANSACUpdateNumIters(confidence, (double)(count - goodCount) / count, modelPoints, niters);
+											int count = 500;
+											niters = RANSACUpdateNumIters(confidence, (double)(count - goodCount) / count, modelPoints, niters);
 									    }
 										pthread_mutex_unlock(&mutex);
 									}
@@ -502,10 +530,11 @@ namespace cv
 				m1 = _m1.getMat(); m2 = _m2.getMat();
 				Mat err, mask, model, ms1, ms2;
 
-				int iter, niters = MAX(maxIters, 1);
+				int iter;
+				niters = MAX(maxIters, 1);
 				int d1 = m1.channels() > 1 ? m1.channels() : m1.cols;
 				int d2 = m2.channels() > 1 ? m2.channels() : m2.cols;
-				int count = m1.checkVector(d1), count2 = m2.checkVector(d2);//, maxGoodCount = 0;
+				int count = m1.checkVector(d1), count2 = m2.checkVector(d2);
 				counterek = count;
 				maxGoodCount = 0;
 
@@ -542,121 +571,121 @@ namespace cv
 					return true;
 				}
 
-				struct timeval start;
-				struct timeval end;
-				struct timeval xxx,yyy;
 
-				double tttime = 0;
-				int ile = 0;
+				// IF numOfthreads
 
-
-				gettimeofday(&xxx, NULL);
-
-				pthread_t thread_id[2];
-				counter = 0;
-				for(int i=0; i < 2; i++)
-			    {
-					pthread_create( &thread_id[i], NULL, &FivePointSolver::RANSAC_helper, this );
-				}
-
-				for(int j=0; j < 2; j++)
-			    {
-					pthread_join( thread_id[j], NULL);
-				}
-
-				gettimeofday(&yyy, NULL);
-
-				int ret = ((yyy.tv_sec * 1000000 + yyy.tv_usec)
-												- (xxx.tv_sec * 1000000 + xxx.tv_usec));
-
-				__android_log_print(ANDROID_LOG_DEBUG, "FivePoint", "Final counter value: %d\n",
-						counter);
-
-				__android_log_print(ANDROID_LOG_DEBUG, "FivePoint", "Parallel time taken: %d\n",
-										ret);
-
-				gettimeofday(&xxx, NULL);
-				for (iter = 0; iter < 1000/*niters*/; iter++)
+				if ( numOfThreads > 1)
 				{
-					int i, goodCount, nmodels;
-					if (count > modelPoints)
+					pthread_t thread_id[4];
+					for(int i=0; i < numOfThreads; i++)
 					{
-						bool found = getSubset(m1, m2, ms1, ms2, rng);
-						if (!found)
-						{
-						//	if (iter == 0)
-						//		return false;
-						//	break;
-						}
+						pthread_create( &thread_id[i], NULL, &FivePointSolver::RANSAC_helper, this );
 					}
 
-					gettimeofday(&start, NULL);
-					Mat fundamentalMatrixInliers;
-//					double error = .1/500;
-//					model  = findFundamentalMat(ms1, ms2, FM_RANSAC, error, 0.99, fundamentalMatrixInliers);
-//					nmodels = 5;
-				//	model  = findFundamentalMat(ms1, ms2, FM_8POINT);
-
-
-
-					nmodels = runKernel(ms1, ms2, model);
-					gettimeofday(&end, NULL);
-
-					int ret = ((end.tv_sec * 1000000 + end.tv_usec)
-								- (start.tv_sec * 1000000 + start.tv_usec));
-
-					//tttime += ret;
-					//__android_log_print(ANDROID_LOG_DEBUG, "FivePoint", "Five point time : %d us",
-					//			ret);
-					//ile++;
-					niters = 1000;
-
-					if (nmodels <= 0)
-						continue;
-					CV_Assert(model.rows % nmodels == 0);
-					Size modelSize(model.cols, model.rows / nmodels);
-
-					for (i = 0; i < nmodels; i++)
+					for(int j=0; j < numOfThreads; j++)
 					{
-						Mat model_i = model.rowRange(i*modelSize.height, (i + 1)*modelSize.height);
-						goodCount = findInliers(m1, m2, model_i, err, mask, threshold);
-
-						if (goodCount > MAX(maxGoodCount, modelPoints - 1))
-						{
-							std::swap(mask, bestMask);
-							model_i.copyTo(bestModel);
-							maxGoodCount = goodCount;
-							niters = RANSACUpdateNumIters(confidence, (double)(count - goodCount) / count, modelPoints, niters);
-						}
+						pthread_join( thread_id[j], NULL);
 					}
-					niters = 1000;
-				}
-
-				gettimeofday(&yyy, NULL);
-
-				ret = ((yyy.tv_sec * 1000000 + yyy.tv_usec)
-												- (xxx.tv_sec * 1000000 + xxx.tv_usec));
-
-				__android_log_print(ANDROID_LOG_DEBUG, "FivePoint", "Total five time : %d us",
-										ret);
-
-				if (maxGoodCount > 0)
-				{
-					if (bestMask.data != bestMask0.data)
-					{
-						if (bestMask.size() == bestMask0.size())
-							bestMask.copyTo(bestMask0);
-						else
-							transpose(bestMask, bestMask0);
-					}
-					bestModel.copyTo(_model);
-					result = true;
+				//	__android_log_print(ANDROID_LOG_DEBUG, "DetectDescribe", "END PARALLEL \n");
 				}
 				else
-					_model.release();
+				{
+//
+//				c
 
-				__android_log_print(ANDROID_LOG_DEBUG, "FivePoint", "Avg. five point time : %f us",
-						tttime*1.0/ile);
+					struct timeval start;
+					struct timeval end;
+					bool interrupted = false;
+					gettimeofday(&start, NULL);
+					for (iter = 0; iter < niters; iter++)
+					{
+						gettimeofday(&end, NULL);
+						int ret = ((end.tv_sec * 1000000 + end.tv_usec) - (start.tv_sec * 1000000 + start.tv_usec)) / 1000;
+						if ( ret > 5000)
+						{
+							interrupted = true;
+							break;
+						}
+
+
+						int i, goodCount, nmodels;
+						if (count > modelPoints)
+						{
+							bool found = getSubset(m1, m2, ms1, ms2, rng);
+							if (!found)
+							{
+							//	if (iter == 0)
+							//		return false;
+							//	break;
+							}
+						}
+
+
+						Mat fundamentalMatrixInliers;
+	//					double error = .1/500;
+
+						if ( modelPoints == 5)
+						{
+							nmodels = runKernel(ms1, ms2, model);
+						}
+						else if ( modelPoints == 8)
+						{
+							//model  = findFundamentalMat(ms1, ms2, FM_RANSAC, error, 0.99, fundamentalMatrixInliers);
+							model  = findFundamentalMat(ms1, ms2, FM_8POINT);
+							nmodels = 1;
+						}
+
+
+
+						if (nmodels <= 0)
+							continue;
+						CV_Assert(model.rows % nmodels == 0);
+						Size modelSize(model.cols, model.rows / nmodels);
+
+						for (i = 0; i < nmodels; i++)
+						{
+							Mat model_i = model.rowRange(i*modelSize.height, (i + 1)*modelSize.height);
+							goodCount = findInliers(m1, m2, model_i, err, mask, threshold);
+
+	//						__android_log_print(ANDROID_LOG_DEBUG, "DetectDescribe", "RANSAC goodCount: %d, err: %f\n", goodCount, threshold);
+
+
+							if (goodCount > MAX(maxGoodCount, modelPoints - 1))
+							{
+	//							__android_log_print(ANDROID_LOG_DEBUG, "DetectDescribe", "RANSAC model : %f %f %f",
+	//									model_i.at<double>(0, 0), model_i.at<double>(0, 1),
+	//									model_i.at<double>(0, 2));
+	//								__android_log_print(ANDROID_LOG_DEBUG, "DetectDescribe", "RANSAC model : %f %f %f",
+	//										model_i.at<double>(1, 0), model_i.at<double>(1, 1),
+	//										model_i.at<double>(1, 2));
+	//								__android_log_print(ANDROID_LOG_DEBUG, "DetectDescribe", "RANSAC model : %f %f %f",
+	//										model_i.at<double>(2, 0), model_i.at<double>(2, 1),
+	//										model_i.at<double>(2, 2));
+
+							//	__android_log_print(ANDROID_LOG_DEBUG, "DetectDescribe", "RANSAC count : %d \n", count);
+								std::swap(mask, bestMask);
+								model_i.copyTo(bestModel);
+								maxGoodCount = goodCount;
+								niters = RANSACUpdateNumIters(confidence, (double)(count - goodCount) / count, modelPoints, niters);
+							}
+						}
+					}
+				//	__android_log_print(ANDROID_LOG_DEBUG, "DetectDescribe", "RANSAC maxGoodCount: %d\n", maxGoodCount);
+				}
+					if (maxGoodCount > 0)// && interrupted == false)
+					{
+						if (bestMask.data != bestMask0.data)
+						{
+							if (bestMask.size() == bestMask0.size())
+								bestMask.copyTo(bestMask0);
+							else
+								transpose(bestMask, bestMask0);
+						}
+						bestModel.copyTo(_model);
+						result = true;
+					}
+					else
+						_model.release();
 
 
 				return result;
@@ -771,13 +800,14 @@ namespace cv
 			}
 
 		public:
-			void Solve(int nrPoints, double threshold, double prob, const Mat& points1, const Mat& points2, Mat& E, OutputArray _mask)
+			void Solve(int nrPoints, double threshold, double prob, const Mat& points1, const Mat& points2, Mat& E, OutputArray _mask, int _numOfThreads)
 			{
 				this->modelPoints = nrPoints;
+				this->numOfThreads = _numOfThreads;
 				this->threshold = threshold;
 				this->confidence = prob;
-			
-				this->maxIters = 1000;
+
+				this->maxIters = 500000;
 				this->checkPartialSubsets = true;
 
 				run(points1, points2, E, _mask);
@@ -794,7 +824,7 @@ namespace FP
 	//! finds essential matrix from a set of corresponding 2D points using five-point algorithm
 	// Input should be a vector of n 2D points or a Nx2 matrix
 	static cv::Mat findEssentialMat(cv::InputArray _points1, cv::InputArray _points2, double focal, cv::Point2d pp,
-		int method, double prob, double threshold, cv::OutputArray _mask)
+		int method, double prob, double threshold, cv::OutputArray _mask, int NPoint, int numOfThreads)
 	{
 		cv::Mat points1, points2;
 		_points1.getMat().convertTo(points1, CV_64F);
@@ -831,17 +861,18 @@ namespace FP
 			// MF: original line:
 			//cv::createRANSACPointSetRegistrator(cv::makePtr<cv::EMEstimatorCallback>(), 5, threshold, prob)->run(points1, points2, E, _mask);
 			cv::FivePointSolver fpSolver;
-			fpSolver.Solve(5, threshold, prob, points1, points2, E, _mask);
-			
+		//	__android_log_print(ANDROID_LOG_DEBUG, "DetectDescribe", "RANSAC nPoint: %d, numOfThreads: %d\n", NPoint, numOfThreads);
+			fpSolver.Solve(NPoint, threshold, prob, points1, points2, E, _mask, numOfThreads);
+
 		}
 
-			
+
 
 
 
 		return E;
 	}
-	
+
 	//! decompose essential matrix to possible rotation matrix and one translation vector
 	static void decomposeEssentialMat(cv::InputArray _E, cv::OutputArray _R1, cv::OutputArray _R2, cv::OutputArray _t)
 	{
@@ -1025,16 +1056,16 @@ namespace FP
 	 row n:	xn		yn				xn'		yn'
 	 the size of each Mat is n rows and 2 cols (500x2)
 
-	 - threshold – Parameter used for RANSAC. It is the maximum distance from a point to an epipolar line in pixels, beyond which the point is considered an outlier and is not used for computing the final fundamental matrix. It can be set to something like 1-3, depending on the accuracy of the point localization, image resolution, and the image noise.
+	 - threshold Ö Parameter used for RANSAC. It is the maximum distance from a point to an epipolar line in pixels, beyond which the point is considered an outlier and is not used for computing the final fundamental matrix. It can be set to something like 1-3, depending on the accuracy of the point localization, image resolution, and the image noise.
 
 	 output:
 	 - rotation (matrix of size 3x3)
 	 - translation (matrix of size 3x1)
 	*/
-	void RotationTranslationFromFivePointAlgorithm(const cv::Mat& points1, const cv::Mat& points2, double threshold, cv::Mat& rotation, cv::Mat& translation)
+	void RotationTranslationFromFivePointAlgorithm(const cv::Mat& points1, const cv::Mat& points2, double threshold, int numOfThreads, int Npoint, cv::Mat& rotation, cv::Mat& translation)
 	{
 		cv::Mat essentialMatrixInliers;
-		cv::Mat essentialMatrix = FP::findEssentialMat(points1, points2, 1.0, cv::Point2d(0, 0), cv::FM_RANSAC, 0.99, threshold, essentialMatrixInliers);
+		cv::Mat essentialMatrix = FP::findEssentialMat(points1, points2, 1.0, cv::Point2d(0, 0), cv::FM_RANSAC, 0.99, threshold, essentialMatrixInliers, Npoint, numOfThreads);
 
 		cv::Mat R, t;
 		FP::recoverPose(essentialMatrix, points1, points2, R, t, 1.0, cv::Point2d(0, 0), essentialMatrixInliers);
@@ -1043,5 +1074,3 @@ namespace FP
 		translation = t;
 	}
 }
-
-

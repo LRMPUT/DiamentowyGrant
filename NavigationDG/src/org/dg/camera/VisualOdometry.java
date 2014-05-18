@@ -31,14 +31,21 @@ public class VisualOdometry implements Runnable {
 	private Mat[] bufImgs = new Mat[20];
 	private Mat[] words = new Mat[20];
 
+	public int keypointsDetected, descriptionSize, detectionTime,
+			descriptionTime;
+	public int trackingTime,  matchingTime;
+	public int trackingSize, matchingSize1, matchingSize2;
+	public int RANSACTime, RANSACCorrect;
+
 	static {
 		System.loadLibrary("VisualOdometryModule");
 	}
 
 	public VisualOdometry() {
-
+	
 	}
 
+	// PEMRA
 	@Override
 	public void run() {
 		
@@ -204,6 +211,7 @@ public class VisualOdometry implements Runnable {
 		return normalizedWord;
 	}
 
+	// FivePointTests
 	void testingFivePoint() {
 		Mat points1 = new Mat(500, 2, CvType.CV_32FC1);
 		Mat points2 = new Mat(500, 2, CvType.CV_32FC1);
@@ -245,18 +253,36 @@ public class VisualOdometry implements Runnable {
 			}
 		}
 
-		testFivePoint(points1.getNativeObjAddr(), points2.getNativeObjAddr());
+		//testFivePoint(points1.getNativeObjAddr(), points2.getNativeObjAddr());
 	}
 
-	public int detect(Mat img, int j) {
-		if (j == 3) {
-			return SiftFeatures(img.getNativeObjAddr(), j);
-		} else if (j == 4) {
-			return SurfFeatures(img.getNativeObjAddr(), j);
-		}
-		return detectFeatures(img.getNativeObjAddr(), j);
+	// IWCMC / ICIAR
+	public void detectDescribe(Mat img, int N, int detector, int descriptor) {
+		// Single threaded
+		if ( N == 1)
+			detectDescribeFeatures(img.getNativeObjAddr(), detector, descriptor);
+		// Multi-threaded
+		else
+			parallelDetectDescribeFeatures(img.getNativeObjAddr(), N,  detector, descriptor);
 	}
+	
+	
+	public void trackingMatching(Mat image, Mat image2, int keypointSize, int N, int detector, int descriptor)
+	{
+		trackingMatchingTest(image.getNativeObjAddr(), image2.getNativeObjAddr(), keypointSize, N, detector, descriptor);
+	}
+	
+//	public void tracking(Mat image, Mat image2, int N, int detector)
+//	{
+//		parallelTrackingTest(image.getNativeObjAddr(), image2.getNativeObjAddr(), N, detector);
+//	}
 
+	
+	public void RANSAC(Mat points1, Mat points2, int numOfThreads, int nPoint)
+	{
+		RANSACTest(points1.getNativeObjAddr(), points2.getNativeObjAddr(), numOfThreads, nPoint);
+	}
+	
 	// PEMRA
 	public native int detectDescript(long matAddrImg, long matAddrDescriptors);
 
@@ -264,17 +290,16 @@ public class VisualOdometry implements Runnable {
 
 	// REST
 
-	public native int testFivePoint(long matAddrPoints1, long matAddrPoints2);
+	
 
-	public native int detectFeatures(long matAddrGr, int param);
+	public native void detectDescribeFeatures(long matAddrGr, int param, int param2);
+	
+	public native void parallelDetectDescribeFeatures(long matAddrGr, int N, int param, int param2);
+	
+	public native void trackingMatchingTest(long image, long image2, int keypointSize, int N, int param, int param2);
+	
+	public native void parallelTrackingTest(long image, long image2, int N, int param);
+	
+	public native int RANSACTest(long matAddrPoints1, long matAddrPoints2, int numOfThreads, int nPoint);
 
-	public native int descriptFeatures(long matAddrGr, int param, int param2);
-
-	public native int SurfFeatures(long matAddrGr, int param);
-
-	public native int SurfDescription(long matAddrGr, int param);
-
-	public native int SiftFeatures(long matAddrGr, int param);
-
-	public native int SiftDescription(long matAddrGr, int param);
 }

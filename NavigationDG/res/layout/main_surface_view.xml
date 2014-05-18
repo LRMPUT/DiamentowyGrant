@@ -44,7 +44,7 @@
                     android:layout_width="160dp"
                     android:layout_height="80dp"
                     android:layout_weight="0.14"
-                    android:text="Experiment" />
+                    android:text="Detect/Describe test" />
 
                 <Button
                     android:id="@+id/buttonClick"

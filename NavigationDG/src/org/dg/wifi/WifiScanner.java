@@ -89,8 +89,8 @@ public class WifiScanner extends BroadcastReceiver {
 				
 				for (int i = 0; i < wifiList.size(); i++) {
 					ScanResult scanResult = wifiList.get(i);
-					outStream.print(scanResult.timestamp + "\t" + scanResult.BSSID + "\t" + scanResult.SSID
-							+ "\t" + scanResult.level + "\t" + scanResult.frequency + "\n");
+//					outStream.print(scanResult.timestamp + "\t" + scanResult.BSSID + "\t" + scanResult.SSID
+//							+ "\t" + scanResult.level + "\t" + scanResult.frequency + "\n");
 					
 				}
 	
