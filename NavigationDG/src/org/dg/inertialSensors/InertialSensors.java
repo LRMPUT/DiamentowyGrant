@@ -4,7 +4,11 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Semaphore;
 
+import android.content.MutableContextWrapper;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
@@ -12,24 +16,51 @@ import android.hardware.SensorManager;
 import android.os.Environment;
 import android.util.Log;
 
-public  class InertialSensors {
+public class InertialSensors {
 
 	// Main Android handler
 	SensorManager sensorManager;
 
 	// Streams to save data
-	PrintStream accStream, gyroStream, magStream, accwogStream, orientStream;
+	boolean save2file = false;
+	PrintStream accStream, gyroStream, magStream, accwogStream, orientStream,
+			myOrientStream, myOrientEulerStream, pressureStream;
 
-	// Starting timestamp
-	long timestampStart;
-	
+	// Starting timestamp and current timestamp
+	long timestampStart, currentTimestamp;
+
 	// Last estimates
+	private final Semaphore orientMtx = new Semaphore(1, true);
+	int id = 0;
 	float acc[], mag[], accwog[], gyro[], orient[];
-	
+
 	// isRunning
 	boolean isStarted;
 
-	InertialSensors(SensorManager _sensorManager) {
+	// Should we estimate the orientation ?
+	boolean performOrientationEstimation = true;
+	AHRSModule orientationEstimator = null;
+
+	// Stepometer
+	private List<Float> accWindow;
+	boolean stepometerStarted = false;
+	int stepometerRunningCounter = 0;
+	final int stepometerWindowSize = 1024;
+	float lastYawZ = 0.0f;
+	Stepometer stepometer;
+	
+	// Magnetic recognition
+	private final Semaphore magneticWindowMtx = new Semaphore(1, true);
+	private List<Float> magneticWindow;
+	int magneticRecognitionCounter = 0;
+	final int magneticWindowSize = 512;
+	MagneticRecognition magneticRecognition;
+	
+	// Barometer
+	float lastBarometerValue = 0;
+	BarometerProcessing barometer;
+
+	public InertialSensors(SensorManager _sensorManager) {
 		sensorManager = _sensorManager;
 		isStarted = false;
 		acc = new float[3];
@@ -37,14 +68,150 @@ public  class InertialSensors {
 		accwog = new float[3];
 		gyro = new float[3];
 		orient = new float[3];
+		performOrientationEstimation = true;
+		accWindow = new ArrayList<Float>();
+		stepometer = new Stepometer();
+		
+		magneticWindow = new ArrayList<Float>();
+		magneticRecognition = new MagneticRecognition();
+		
+		barometer = new BarometerProcessing();
 	}
-	
-	public boolean getState()
-	{
+
+	public InertialSensors save2file(boolean _save2file) {
+		this.save2file = _save2file;
+		return this;
+	}
+
+	public InertialSensors performOrientationEstimation(
+			boolean _performOrientationEstimation) {
+		this.performOrientationEstimation = _performOrientationEstimation;
+		return this;
+	}
+
+	public InertialSensors id(int _id) {
+		this.id = _id;
+		return this;
+	}
+
+	public boolean getState() {
 		return isStarted;
 	}
 
-	public void startNoSave() {
+	
+	// Stepometer
+	public void startStepometer() {
+		stepometerStarted = true;
+	}
+
+	public void stopStepometer() {
+		stepometerStarted = false;
+	}
+	
+	public boolean isStepometerStarted() {
+		return stepometerStarted;
+	}
+
+	public float getLastDetectedFrequency() {
+		return stepometer.getLastFoundFreq();
+	}
+
+	public float getCovertedStepDistance() {
+		return stepometer.getCoveredStepDistance();
+	}
+	
+	public float getGraphStepDistance() {
+		return stepometer.getGraphStepDistance();
+	}
+
+	public float getDetectedNumberOfSteps() {
+		return stepometer.getDetectedNumberOfSteps();
+	}
+	
+	public float getYawForStepometer() {
+		float yawZ = orient[2];
+		float deltaYaw = yawZ - lastYawZ;
+		lastYawZ = yawZ;
+		return deltaYaw;
+	}
+	
+	// Magnetic recognition
+	public int recognizePlaceBasedOnMagneticScan()
+	{
+		try {
+			magneticWindowMtx.acquire();
+			List<Float> copy = new ArrayList<Float>(magneticWindow.subList(0, 512));
+			magneticWindowMtx.release();
+			
+			return magneticRecognition.recognizePlace(copy);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+			return -1;
+		}
+	}
+	
+	public void addMagneticRecognitionPlace()
+	{
+		
+		try {
+			magneticWindowMtx.acquire();
+			List<Float> copy = new ArrayList<Float>(magneticWindow.subList(0, 512));
+			magneticWindowMtx.release();
+			
+			magneticRecognition.addPlace(copy);
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+		
+	}
+	
+	public int getSizeOfPlaceDatabase()
+	{
+		return magneticRecognition.getSizeOfPlaceDatabase();
+	}
+	
+	
+	// Barometer
+	public void startBarometerProcessing() {
+		barometer.start(lastBarometerValue);
+	}
+	
+	public void stopBarometerProcessing() {
+		barometer.stop();
+	}
+	
+	public boolean isBarometerProcessingStarted() {
+		return barometer.isStarted();
+	}
+	
+	public float getEstimatedHeight() {
+		return barometer.getEstimateHeight();
+	}
+	
+	public int getCurrentFloor() {
+		barometer.setCurrentHeight(lastBarometerValue);
+		return barometer.getCurrentFloor();
+	}
+	
+	
+
+	// Start
+	public void start() {
+
+		// Initialize out orientation estimation
+		if (performOrientationEstimation)
+			orientationEstimator = new AHRSModule();
+
+		isStarted = true;
+		timestampStart = 0;
+		if (save2file) {
+			try {
+				openStreamsToFiles(id);
+				id++;
+			} catch (FileNotFoundException e) {
+				save2file = false;
+			}
+		}
 
 		// Sensor handlers
 		Sensor accelerometer = sensorManager
@@ -56,6 +223,7 @@ public  class InertialSensors {
 				.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
 		Sensor orientation = sensorManager
 				.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);
+		Sensor pressureSensor = sensorManager.getDefaultSensor(Sensor.TYPE_PRESSURE);
 
 		// Starting listeners
 		sensorManager.registerListener(sensorEventListener, accelerometer,
@@ -68,177 +236,120 @@ public  class InertialSensors {
 				SensorManager.SENSOR_DELAY_FASTEST);
 		sensorManager.registerListener(sensorEventListener, orientation,
 				SensorManager.SENSOR_DELAY_FASTEST);
+		sensorManager.registerListener(sensorEventListener, pressureSensor,
+				SensorManager.SENSOR_DELAY_FASTEST);
 
 	}
 
-	public void start(int id) {
-
-		isStarted = true;
+	// Stop the processing
+	public void stop() {
+		isStarted = false;
 		timestampStart = 0;
-		try {
-			openStreams(id);
-		} catch (FileNotFoundException e) {
-			e.printStackTrace();
+
+		sensorManager.unregisterListener(sensorEventListener);
+
+		if (performOrientationEstimation) {
+			orientationEstimator.destroy();
+			orientationEstimator = null;
 		}
 
-		// Sensor handlers
-		Sensor accelerometer = sensorManager
-				.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-		Sensor gyro = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE);
-		Sensor magnetic = sensorManager
-				.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
-		Sensor acc_wo_gravity = sensorManager
-				.getDefaultSensor(Sensor.TYPE_LINEAR_ACCELERATION);
-		Sensor orientation = sensorManager
-				.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR);
-
-		// Starting listeners
-		sensorManager.registerListener(sensorEventListenerSave, accelerometer,
-				SensorManager.SENSOR_DELAY_FASTEST);
-		sensorManager.registerListener(sensorEventListenerSave, gyro,
-				SensorManager.SENSOR_DELAY_FASTEST);
-		sensorManager.registerListener(sensorEventListenerSave, magnetic,
-				SensorManager.SENSOR_DELAY_FASTEST);
-		sensorManager.registerListener(sensorEventListenerSave, acc_wo_gravity,
-				SensorManager.SENSOR_DELAY_FASTEST);
-		sensorManager.registerListener(sensorEventListenerSave, orientation,
-				SensorManager.SENSOR_DELAY_FASTEST);
-
+		if (save2file)
+			closeStreams();
 	}
 
-	public void stopNoSave() {
-		sensorManager.unregisterListener(sensorEventListener);
-	}
-	
-	public void stop() {
-		isStarted=false;
-		timestampStart = 0;
-		unregister();
-		closeStreams();
-	}
+	public float[] getCurrentMagnetometer() {
 
-	public void unregister() {
-		sensorManager.unregisterListener(sensorEventListenerSave);
-	}
-	
-	public float[] getCurrentMagnetometer()
-	{
 		return mag;
 	}
 
-	public float[] getCurrentAcc()
-	{
+	public float[] getCurrentAcc() {
 		return acc;
 	}
 
-	public float[] getCurrentOrient()
-	{
-		return orient;
+	public float[] getCurrentOrient() {
+		float[] orientToReturn = null;
+		try {
+			orientMtx.acquire();
+			orientToReturn = orient.clone();
+			orientMtx.release();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+
+		return orientToReturn;
 	}
-	
-	private void openStreams(int id ) throws FileNotFoundException {
-		
-		File dir = new File(String.format("/sdcard/_exp/inertial/%d/", id ));
-		if (!dir.exists())
-		{
+
+	public long getTimestamp() {
+		return (currentTimestamp - timestampStart);
+	}
+
+	private void openStreamsToFiles(int id) throws FileNotFoundException {
+
+		File folder = new File(Environment.getExternalStorageDirectory()
+				+ "/DG");
+
+		if (!folder.exists()) {
+			folder.mkdir();
+		}
+
+		File dir = new File(String.format(
+				Environment.getExternalStorageDirectory() + "/DG/%d", id));
+		if (!dir.exists()) {
 			dir.mkdirs();
 		}
 
-		String fileName = Environment.getExternalStorageDirectory().toString() + "/_exp/inertial/"+id+"/acc.log";
+		String fileName = dir.toString() + "/acc.log";
 		FileOutputStream faccStream = new FileOutputStream(fileName);
 		accStream = new PrintStream(faccStream);
 
-		fileName = Environment.getExternalStorageDirectory()
-				.toString() + "/_exp/inertial/"+id+"/gyro.log";
+		fileName = dir.toString() + "/gyro.log";
 		FileOutputStream fgyroStream = new FileOutputStream(fileName);
 		gyroStream = new PrintStream(fgyroStream);
 
-		fileName = Environment.getExternalStorageDirectory()
-				.toString() + "/_exp/inertial/"+id+"/mag.log";
+		fileName = dir.toString() + "/mag.log";
 		FileOutputStream fmagStream = new FileOutputStream(fileName);
 		magStream = new PrintStream(fmagStream);
 
-		fileName = Environment.getExternalStorageDirectory()
-				.toString() + "/_exp/inertial/"+id+"/accwog.log";
+		fileName = dir.toString() + "/accwog.log";
 		FileOutputStream faccwogStream = new FileOutputStream(fileName);
 		accwogStream = new PrintStream(faccwogStream);
 
-		fileName = Environment.getExternalStorageDirectory()
-				.toString() + "/_exp/inertial/"+id+"/orient.log";
+		fileName = dir.toString() + "/orient.log";
 		FileOutputStream forientStream = new FileOutputStream(fileName);
 		orientStream = new PrintStream(forientStream);
 
+		if (performOrientationEstimation) {
+			fileName = dir.toString() + "/myOrient.log";
+			FileOutputStream fmyOrientStream = new FileOutputStream(fileName);
+			myOrientStream = new PrintStream(fmyOrientStream);
+
+			fileName = dir.toString() + "/myOrientEuler.log";
+			FileOutputStream fmyOrientEulerStream = new FileOutputStream(
+					fileName);
+			myOrientEulerStream = new PrintStream(fmyOrientEulerStream);
+		}
+		
+		fileName = dir.toString() + "/pressure.log";
+		FileOutputStream fpressureStream = new FileOutputStream(fileName);
+		pressureStream = new PrintStream(fpressureStream);
+
 	}
 
+	// Closing the data streams
 	private void closeStreams() {
 		accStream.close();
 		gyroStream.close();
 		magStream.close();
 		accwogStream.close();
 		orientStream.close();
+		if (performOrientationEstimation) {
+			myOrientStream.close();
+			myOrientEulerStream.close();
+		}
+		pressureStream.close();
 	}
 
-	private SensorEventListener sensorEventListenerSave = new SensorEventListener() {
-
-		public void onAccuracyChanged(Sensor sensor, int accuracy) {
-
-		}
-
-		public void onSensorChanged(SensorEvent event) {
-			
-			if (timestampStart == 0)
-			{
-				timestampStart = event.timestamp;
-			}
-
-			
-			String nl = System.getProperty("line.separator");
-
-			if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
-				accStream.print(Long.toString(event.timestamp - timestampStart)
-						+ " " + Float.toString(event.values[0]) + " "
-						+ Float.toString(event.values[1]) + " "
-						+ Float.toString(event.values[2]) + nl);
-
-			} else if (event.sensor.getType() == Sensor.TYPE_GYROSCOPE) {
-
-				gyroStream.print(Long.toString(event.timestamp - timestampStart)
-						+ " " + Float.toString(event.values[0]) + " "
-						+ Float.toString(event.values[1]) + " "
-						+ Float.toString(event.values[2]) + nl);
-
-			} else if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD) {
-
-				magStream.print(Long.toString(event.timestamp - timestampStart)
-						+ " " + Float.toString(event.values[0]) + " "
-						+ Float.toString(event.values[1]) + " "
-						+ Float.toString(event.values[2]) + nl);
-
-			} else if (event.sensor.getType() == Sensor.TYPE_LINEAR_ACCELERATION) {
-				accwogStream.print(Long.toString(event.timestamp
-						- timestampStart)
-						+ " "
-						+ Float.toString(event.values[0])
-						+ " "
-						+ Float.toString(event.values[1])
-						+ " "
-						+ Float.toString(event.values[2]) + nl);
-
-			} else if (event.sensor.getType() == Sensor.TYPE_ROTATION_VECTOR) {
-
-				orientStream.print(Long.toString(event.timestamp
-						- timestampStart)
-						+ " "
-						+ Float.toString(event.values[0])
-						+ " "
-						+ Float.toString(event.values[1])
-						+ " "
-						+ Float.toString(event.values[2]) + nl);
-
-			}
-		}
-	};
-	
+	// Listener pushing the data into the files
 	private SensorEventListener sensorEventListener = new SensorEventListener() {
 
 		public void onAccuracyChanged(Sensor sensor, int accuracy) {
@@ -247,33 +358,163 @@ public  class InertialSensors {
 
 		public void onSensorChanged(SensorEvent event) {
 
+			currentTimestamp = event.timestamp;
+			if (timestampStart == 0) {
+				timestampStart = event.timestamp;
+			}
+
 			if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
+
 				acc[0] = event.values[0];
 				acc[1] = event.values[1];
 				acc[2] = event.values[2];
 
+				float accVal = (float) Math.sqrt(acc[0] * acc[0] + acc[1]
+						* acc[1] + acc[2] * acc[2]);
+				accWindow.add(Float.valueOf(accVal));
+
+				if (save2file)
+					saveToStream(accStream, getTimestamp(), acc);
+				
+				if (stepometerStarted && stepometerRunningCounter > 200)
+				{
+					if ( accWindow.size() > stepometerWindowSize)
+					{
+						 Log.d("Main::Activity", "X");
+						 
+						 // Reduce list size to stepometerWindowSize
+						 accWindow = accWindow.subList(accWindow.size() - stepometerWindowSize, accWindow.size());
+						 
+						 // Copying from list to float array, so we can process in new thread
+						 int accWindowSize = accWindow.size();
+						 float [] accWindowFloat = new float[accWindowSize];
+						 for (int i=0;i<accWindowSize;i++)
+						 {
+							accWindowFloat[i] = accWindow.get(i);
+						 }
+						 stepometer.setAccWindow(accWindowFloat, accWindowSize);
+						
+						 // Run stepometer
+						 new Thread(stepometer).start();
+						 Log.d("Main::Activity", "Y");
+					}
+					stepometerRunningCounter = 0;
+				}
+				stepometerRunningCounter = stepometerRunningCounter + 1;
+
 			} else if (event.sensor.getType() == Sensor.TYPE_GYROSCOPE) {
+
 				gyro[0] = event.values[0];
 				gyro[1] = event.values[1];
 				gyro[2] = event.values[2];
+				if (performOrientationEstimation) {
+					orientationEstimator.predict(gyro[0], gyro[1], gyro[2]);
+				}
+
+				if (save2file)
+					saveToStream(gyroStream, getTimestamp(), gyro);
 
 			} else if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD) {
+
 				mag[0] = event.values[0];
 				mag[1] = event.values[1];
 				mag[2] = event.values[2];
+				
+				float magneticModule = (float) Math.sqrt(Math.pow(mag[0],2) + Math.pow(mag[1],2) + Math.pow(mag[2],2));
+				
+				try {
+					magneticWindowMtx.acquire();
+					magneticWindow.add(magneticModule);
+					
+					if ( magneticRecognitionCounter > 200 && magneticWindow.size() > magneticWindowSize)
+					{
+						// Reduce list size to stepometerWindowSize
+						//Log.d("Main::Activity", "Mag1 : "+ (magneticWindow.size() - magneticWindowSize) +" " + magneticWindow.size());
+						magneticWindow = magneticWindow.subList(magneticWindow.size() - magneticWindowSize, magneticWindow.size());
+						//Log.d("Main::Activity", "Mag2 : " + magneticWindow.size());
+						
+						magneticRecognitionCounter = 0;
+					}
+					
+					magneticWindowMtx.release();
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+				
+				magneticRecognitionCounter++;
+
+				if (save2file)
+					saveToStream(magStream, getTimestamp(), mag);
 
 			} else if (event.sensor.getType() == Sensor.TYPE_LINEAR_ACCELERATION) {
-				
+				if (save2file)
+					saveToStream(accwogStream, getTimestamp(), event.values);
 
 			} else if (event.sensor.getType() == Sensor.TYPE_ROTATION_VECTOR) {
-				orient[0] = event.values[0];
-				orient[1] = event.values[1];
-				orient[2] = event.values[2];
-				
 
+				if (save2file)
+					saveToStream(orientStream, getTimestamp(), event.values);
+
+				if (performOrientationEstimation) {
+					float[] quaternion = new float[4];
+					SensorManager.getQuaternionFromVector(quaternion,
+							event.values);
+					orientationEstimator.correct(quaternion[0], quaternion[1],
+							quaternion[2], quaternion[3]);
+
+					float w = quaternion[0];
+					float x = quaternion[1];
+					float y = quaternion[2];
+					float z = quaternion[3];
+
+					if (save2file)
+						saveToStream(myOrientStream, getTimestamp(), quaternion);
+
+					// Should be X Y Z
+					// http://answers.unity3d.com/questions/416169/finding-pitchrollyaw-from-quaternions.html
+					float rollX = (float) (Math.atan2(2 * y * w - 2 * x * z, 1
+							- 2 * y * y - 2 * z * z) * 180.0 / Math.PI);
+					float pitchY = (float) (Math.atan2(2 * x * w - 2 * y * z, 1
+							- 2 * x * x - 2 * z * z) * 180.0 / Math.PI);
+					float yawZ = (float) (Math.asin(2 * x * y + 2 * z * w) * 180.0 / Math.PI);
+
+					try {
+						orientMtx.acquire();
+						orient[0] = rollX;
+						orient[1] = pitchY;
+						orient[2] = yawZ;
+						orientMtx.release();
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+
+					if (save2file)
+						saveToStream(myOrientEulerStream, getTimestamp(),
+								orient);
+
+				}
+
+			} else if (event.sensor.getType() == Sensor.TYPE_PRESSURE) {
+				event.values[2] = SensorManager.getAltitude(SensorManager.PRESSURE_STANDARD_ATMOSPHERE, event.values[0]);
+				lastBarometerValue = event.values[1];
+				
+				if (save2file)
+					saveToStream(pressureStream, getTimestamp(), event.values);
+		
 			}
+		}
+
+		/**
+		 */
+		private void saveToStream(PrintStream stream, Long timestamp,
+				float[] values) {
+
+			stream.print(Long.toString(timestamp));
+			for (int i = 0; i < values.length; i++) {
+				stream.print(" " + Float.toString(values[i]));
+			}
+			stream.print(System.getProperty("line.separator"));
 		}
 	};
 
 }
-

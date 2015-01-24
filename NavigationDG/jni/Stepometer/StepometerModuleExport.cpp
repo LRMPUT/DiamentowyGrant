@@ -2,6 +2,7 @@
 #include <vector>
 
 #include "EigenUnsupported/FFT"
+#include "android/log.h"
 //#include "../fftw3/api/fftw3.h"
 
 
@@ -14,54 +15,57 @@ extern "C" {
 
 
 // Export declarations
-JNIEXPORT int JNICALL Java_org_dg_inertialSensors_Stepometer_fftTest(JNIEnv*,
-		jobject);
-
-JNIEXPORT int JNICALL Java_org_dg_inertialSensors_Stepometer_fftTest(JNIEnv*,
-		jobject) {
+JNIEXPORT float JNICALL Java_org_dg_inertialSensors_Stepometer_fftFindDominantFrequency(JNIEnv* env,
+		jobject, jfloatArray processingWindowArray, jfloat accelerometerMeasurementFrequency) {
 
 
-	struct timeval start;
-	struct timeval end;
+	// Getting an array of acceletometer measurements from JAVA
+	jsize processingWindowSize = env->GetArrayLength(processingWindowArray);
+	float * accWindow  = new float[processingWindowSize];
+	env->GetFloatArrayRegion(processingWindowArray,0,processingWindowSize,accWindow);
 
+	// We just log the window size to make sure that everything is ok
+	__android_log_print(ANDROID_LOG_DEBUG, "Stepometer",
+									"Window size: %d\n", processingWindowSize);
 
+	// We need to convert float* to vector<float> -> do it smartly with c++11
+	std::vector<float> accWindowVec{accWindow, accWindow + processingWindowSize};
+
+	// Using Eigen::fft implementation
 	Eigen::FFT<float> fft;
 
-	std::vector<float> timevec;
-	for (int i=0;i<512;i++)
-	{
-		timevec.push_back(sin(i/5));
-	}
+	// Vector to store the signal in the frequency domain
 	std::vector<std::complex<float> > freqvec;
 
+	// Do the FFT
+	fft.fwd( freqvec, accWindowVec);
 
-	gettimeofday(&start, NULL);
-	// Time measured operation
-	for (int i=0;i<10000;i++)
-		fft.fwd( freqvec,timevec);
-	fft.inv( timevec,freqvec);
+	// Find the dominant frequency index
+	// -> checking only half the spectrum
+	int indMax = 0;
+	float greatestVal = std::abs(freqvec[0]);
+	for (int i=1;i<=processingWindowSize/2;i++)
+	{
+		if ( std::abs(freqvec[i]) > greatestVal )
+		{
+			indMax = i;
+			greatestVal = std::abs(freqvec[i]);
+		}
+	}
 
-//	int N = 1024;
-//	fftwf_complex *in, *out;
-//	fftwf_plan p;
-//
-//	in = (fftwf_complex*) fftwf_malloc(sizeof(fftwf_complex) * N);
-//	out = (fftwf_complex*) fftwf_malloc(sizeof(fftwf_complex) * N);
-//	//p = fftwf_plan_dft_1d(N, in, out, FFTW_FORWARD, FFTW_ESTIMATE);
-//	fftwf_plan_dft(1, (int const*)1024 ,in, out, FFTW_FORWARD, FFTW_ESTIMATE);
-//
-//	fftwf_execute(p); /* repeat as needed */
-//
-//	fftwf_destroy_plan(p);
-//	fftwf_free(in); fftwf_free(out);
+	// Compute dominant frequency
+	float foundFreq = indMax * accelerometerMeasurementFrequency / processingWindowSize;
 
-	gettimeofday(&end, NULL);
+	// Some debug information
+	__android_log_print(ANDROID_LOG_DEBUG, "Stepometer", "NDK fft:  max index : %d, max value: %f \n", indMax, greatestVal);
+	__android_log_print(ANDROID_LOG_DEBUG, "Stepometer", "NDK fft:  found frequency: %f \n", foundFreq);
 
+	// Clean after yourself
+	delete[] accWindow;
 
-	int ret = ((end.tv_sec * 1000000 + end.tv_usec)
-			- (start.tv_sec * 1000000 + start.tv_usec)) / 1000;
+	// Return frequency
 
-	return ret;
+	return foundFreq;
 }
 
 }

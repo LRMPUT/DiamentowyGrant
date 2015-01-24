@@ -2,97 +2,75 @@
 #include <string.h>
 #include <android/log.h>
 
-#include "g2o/core/sparse_optimizer.h"
-#include "g2o/core/block_solver.h"
-#include "g2o/core/optimization_algorithm_gauss_newton.h"
-#include "g2o/core/optimization_algorithm_levenberg.h"
-#include "g2o/solvers/csparse/linear_solver_csparse.h"
-
-#include "g2o/core/factory.h"
-#include "g2o/stuff/command_args.h"
-
-#define DEBUG_TAG "NDK_MainActivity"
+#include "graphManager.h"
 
 using namespace std;
 using namespace g2o;
 
+#ifndef DEBUG_TAG
+#define DEBUG_TAG "NDK_MainActivity"
+#endif
+
 extern "C" {
+// Exported methods to call on graph
+JNIEXPORT jlong JNICALL Java_org_dg_graphManager_GraphManager_NDKGraphCreate(
+		JNIEnv* env, jobject self);
 
-	JNIEXPORT void JNICALL Java_com_example_czm_MainActivity_helloLog(JNIEnv * env, jobject self, jstring logThis);
+JNIEXPORT void JNICALL Java_org_dg_graphManager_GraphManager_NDKGraphAddVertexEdge(
+		JNIEnv* env, jobject self, jlong addrGraph, jstring g2oVertexEdge);
 
-	JNIEXPORT void JNICALL Java_com_example_czm_MainActivity_helloLog(JNIEnv * env, jobject self, jstring logThis)
-	{
-		jboolean isCopy;
-		const char * szLogThis = env->GetStringUTFChars(logThis, &isCopy);
-		string path(szLogThis);
-		__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK:LC: [%s]", szLogThis);
+JNIEXPORT void JNICALL Java_org_dg_graphManager_GraphManager_NDKGraphOptimize(
+		JNIEnv* env, jobject self, jlong addrGraph, jint iterationCount,
+		jstring logThis);
+
+JNIEXPORT void JNICALL Java_org_dg_graphManager_GraphManager_NDKGraphDestroy(
+		JNIEnv* env, jobject self, jlong addrGraph);
+
+JNIEXPORT jlong JNICALL Java_org_dg_graphManager_GraphManager_NDKGraphCreate(
+		JNIEnv* env, jobject self) {
+	// Create new object
+	return (long) (new GraphManager());
+}
 
 
-		string outputFilename = path + "parking-out.g2o";
-		string inputFilename = path + "parking-garage.g2o";
+JNIEXPORT void JNICALL Java_org_dg_graphManager_GraphManager_NDKGraphAddVertexEdge(
+		JNIEnv* env, jobject self, jlong addrGraph, jstring g2oVertexEdge) {
+	// Calling
+	GraphManager &graphManager = *(GraphManager*) addrGraph;
 
-		// create the linear solver
-		BlockSolverX::LinearSolverType * linearSolver = new LinearSolverCSparse<BlockSolverX::PoseMatrixType>();
+	// Retrieve string from jstring concerning the g2o
+	jboolean isCopy;
+	const char * szLogThis = env->GetStringUTFChars(g2oVertexEdge, &isCopy);
+	string g2oStream(szLogThis);
+	env->ReleaseStringUTFChars(g2oVertexEdge, szLogThis);
 
-		__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK:LC: [%s]", "debug 1");
+	// Adding all elements
+	graphManager.addToGraph(g2oStream);
+}
 
-		// create the block solver on top of the linear solver
-		BlockSolverX* blockSolver = new BlockSolverX(linearSolver);
+JNIEXPORT void JNICALL Java_org_dg_graphManager_GraphManager_NDKGraphOptimize(
+		JNIEnv* env, jobject self, jlong addrGraph, jint iterationCount,
+		jstring logThis) {
+	// Calling
+	GraphManager &graphManager = *(GraphManager*) addrGraph;
+	graphManager.optimize(iterationCount);
 
-		__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK:LC: [%s]", "debug 2");
+	// Retrieve string from jstring concerning the path
+	jboolean isCopy;
+	const char * szLogThis = env->GetStringUTFChars(logThis, &isCopy);
+	string path(szLogThis);
+	env->ReleaseStringUTFChars(logThis, szLogThis);
 
-		// create the algorithm to carry out the optimization
-		//OptimizationAlgorithmGaussNewton* optimizationAlgorithm = new OptimizationAlgorithmGaussNewton(blockSolver);
-		OptimizationAlgorithmLevenberg* optimizationAlgorithm = new OptimizationAlgorithmLevenberg(blockSolver);
+	// Save result
+	ofstream ofs(path + "lastCreatedOptimizedGraph.g2o");
+	graphManager.saveOptimizationResult(ofs);
+	ofs.close();
 
-		__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK:LC: [%s]", "debug 3");
+}
 
-		// NOTE: We skip to fix a variable here, either this is stored in the file
-		// itself or Levenberg will handle it.
-
-		// create the optimizer to load the data and carry out the optimization
-		SparseOptimizer optimizer;
-		optimizer.setVerbose(true);
-		optimizer.setAlgorithm(optimizationAlgorithm);
-
-		__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK:LC: [%s]", "debug 4");
-
-		ifstream ifs(inputFilename.c_str());
-		if (! ifs) {
-			__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK:LC: [%s]", "unable to open input file");
-			return;
-		}
-
-		string line;
-		getline(ifs,line);
-		__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK:LC: [%s]", line.c_str());
-
-		__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK:LC: [%s]", "debug 5");
-
-		optimizer.load(ifs);
-		__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK:LC: [%s]", "debug 6");
-		optimizer.initializeOptimization();
-		__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK:LC: [%s]", "debug 7");
-		optimizer.optimize(10);
-
-		ofstream ofs(outputFilename.c_str());
-
-		if (! ofs) {
-			__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK:LC: [%s]", "unable to open output file");
-			return;
-		}
-
-		ofs<<"test\n";
-
-		__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK:LC: [%s]", "saving");
-		bool result = optimizer.save(ofs);
-		if(result) {
-			__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK:LC: [%s]", "saved");
-		}
-
-		ofs.close();
-		ifs.close();
-
-		env->ReleaseStringUTFChars(logThis, szLogThis);
-	}
+JNIEXPORT void JNICALL Java_org_dg_graphManager_GraphManager_NDKGraphDestroy(
+		JNIEnv* env, jobject self, jlong addrGraph) {
+	// Destroy object
+	delete (GraphManager*) (addrGraph);
+}
 }

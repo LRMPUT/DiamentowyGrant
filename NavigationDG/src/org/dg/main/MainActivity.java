@@ -1,41 +1,29 @@
 package org.dg.main;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
+import java.util.List;
+import java.util.Locale;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
-import org.opencv.core.Mat;
-import org.opencv.android.CameraBridgeViewBase;
-import org.opencv.android.CameraBridgeViewBase.CvCameraViewListener2;
-import org.opencv.highgui.Highgui;
-import org.dg.camera.DetectDescribe;
+import org.dg.camera.CameraSaver;
 import org.dg.camera.Preview;
-import org.dg.camera.VisualOdometry;
+import org.dg.graphManager.GraphManager;
+import org.dg.graphManager.wiFiMeasurement;
 import org.dg.inertialSensors.Stepometer;
 import org.dg.main.R;
-import org.dg.tcp.ConnectionIPPort;
-
-
-
-
-
-
-
+import org.dg.wifi.WifiScanner;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.IntentFilter;
 import android.hardware.Camera;
-import android.hardware.Camera.PictureCallback;
-import android.hardware.Camera.ShutterCallback;
-import android.os.AsyncTask;
+import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -47,155 +35,91 @@ import android.view.View.OnClickListener;
 import android.view.ViewGroup.LayoutParams;
 import android.widget.Button;
 import android.widget.FrameLayout;
+import android.widget.TextView;
 import android.widget.Toast;
+import android.app.ActionBar;
 
 public class MainActivity extends Activity {
-    private static final String    TAG = "Main::Activity";
+	// public class MainActivity extends ActionBarActivity {
+	private static final String TAG = "Main::Activity";
 
-    private static final int       VIEW_MODE_RGBA     = 0;
-    private static final int       VIEW_MODE_GRAY     = 1;
-    private static final int       VIEW_MODE_CANNY    = 2;
-    private static final int       VIEW_MODE_FEATURES = 5;
+	private static final int VIEW_MODE_PREVIEW = 0;
+	private static final int VIEW_MODE_RECORD = 1;
+	private static final int VIEW_MODE_RUN = 2;
 
-    private int                    mViewMode;
-    private Mat                    mRgba;
-    private Mat                    mIntermediateMat;
-    private Mat                    mGray;
+	private int mViewMode = VIEW_MODE_PREVIEW;
+	private MenuItem mItemPreviewMode;
+	private MenuItem mItemRecordMode;
+	private MenuItem mItemRunMode;
+	private MenuItem mItemAbout;
 
-    private MenuItem               mItemPreviewRGBA;
-    private MenuItem               mItemPreviewGray;
-    private MenuItem               mItemPreviewCanny;
-    private MenuItem               mItemPreviewFeatures;
-
-    private CameraBridgeViewBase   mOpenCvCameraView;
-    
-    
-    Preview preview;
-	Button buttonClick;
+	Preview preview;
 	Camera camera;
 	String fileName;
-    Activity act;
+	Activity act;
 	Context ctx;
-	public long startTime = 0, startTimeGlobal = 0;
-	
-	public static org.dg.tcp.TCPClient mTcpClient;
-	boolean connected = false;
-	public int synchronizationTime = 0;
-	
-	public class connectionTCP extends AsyncTask<ConnectionIPPort,String,Void> {
-	   	 
+
+	// Orient in main update
+	private Timer orientAndWiFiScanUpdateTimer = new Timer();
+	boolean wiFiRecognitionStarted = false;
+	private Timer wiFiRecognitionTimer = new Timer();
+	private Timer updateGraphTimer = new Timer();
+	public Handler mHandlerOrient, mHandlerWiFiRecognition;
+
+	// Inertial sensors
+	android.hardware.SensorManager sensorManager;
+	org.dg.inertialSensors.InertialSensors inertialSensors;
+
+	// WiFi
+	WifiManager wifiManager;
+	org.dg.wifi.WifiScanner wifiScanner;
+
+	// Graph
+	GraphManager graphManager;
+
+	// Methods
+	private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
 		@Override
-		protected Void doInBackground(ConnectionIPPort... adres) {
+		public void onManagerConnected(int status) {
+			switch (status) {
+			case LoaderCallbackInterface.SUCCESS: {
+				Log.i(TAG, "OpenCV loaded successfully");
 
-			
-			mTcpClient = new org.dg.tcp.TCPClient(adres[0],new org.dg.tcp.TCPClient.OnMessageReceived() {
-				@Override
-				// here the messageReceived method is implemented
-				public void messageReceived(String message) {
-					// this method calls the onProgressUpdate
-					publishProgress(message);
-				}
-			});
-			mTcpClient.run();
-			
-			return null;
+				// Loading libraries
+				// System.loadLibrary("imu");
+				// System.loadLibrary("nonfree");
+				// System.loadLibrary("scale_estimation");
+				// System.loadLibrary("visual_odometry");
+				// System.loadLibrary("AHRSModule");
+
+				Toast.makeText(MainActivity.this, "Loaded all libraries",
+						Toast.LENGTH_LONG).show();
+			}
+				break;
+			default: {
+				super.onManagerConnected(status);
+			}
+				break;
+			}
 		}
+	};
 
-		@Override
-		protected void onProgressUpdate(String... msg) {
-  	      	
-			long timeTaken = (System.nanoTime() - startTimeGlobal) - startTime;
-			
-			Log.e("TCP", "Progress: " + msg[0]);
-
-			// Connection is established properly
-			if (connected == false) {
-				// We start something
-				connected = true;
-				startTime =0 ;
-				startTimeGlobal =  System.nanoTime();
-			}
-
-			// Message -> show as toast
-			int duration = Toast.LENGTH_LONG;
-			Toast.makeText(getApplicationContext(), msg[0], duration).show();
-
-			if (msg[0].contains("SYN")) {
-				String[] separated = msg[0].split(" ");
-				long compTime =  Long.parseLong(separated[1].trim());
-				Log.d("TCP", "timeTaken: " + timeTaken + "\n");
-				Log.d("TCP", "Computer time: " + compTime + "\n");
-				Log.d("TCP", "Time for ping/pong in ns: " + (timeTaken-compTime) + "\n");
-				Log.d("TCP", "Time for ping/pong in ms: " + (timeTaken-compTime)/1000000 + "\n");
-				
-				if ((timeTaken-compTime)/1000000 <= 3)
-				{
-					mTcpClient.sendMessage("END " + (timeTaken-compTime)/2 + "\n");
-				}
-			}
-
-			if (msg[0].contains("START")) {
-				startTime = System.nanoTime() - startTimeGlobal;
-				Log.d("TCP", "Sending: " + "SYN " + startTime + "\n");
-				mTcpClient.sendMessage("SYN " + startTime + "\n");
-			}
-
-			if (msg[0].contains("X")) {
-				// We end something
-				connected = false;
-			}
-
-		}
+	public MainActivity() {
+		Log.i(TAG, "Instantiated new " + this.getClass());
 	}
 
-    private BaseLoaderCallback  mLoaderCallback = new BaseLoaderCallback(this) {
-        @Override
-        public void onManagerConnected(int status) {
-            switch (status) {
-                case LoaderCallbackInterface.SUCCESS:
-                {
-                    Log.i(TAG, "OpenCV loaded successfully");
+	/** Called when the activity is first created. */
+	@SuppressWarnings("deprecation")
+	@Override
+	public void onCreate(Bundle savedInstanceState) {
+		// Loading OpenCV
+		if (!OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_2_4_9, this,
+				mLoaderCallback)) {
+			Log.e(TAG, "Cannot connect to OpenCV Manager");
+		}
 
-                    // Loading libraries
-                    // System.loadLibrary("imu");
-                    //System.loadLibrary("nonfree");
-                    // System.loadLibrary("scale_estimation");
-                    // System.loadLibrary("visual_odometry");
-
-                    Toast.makeText(MainActivity.this,"Loaded all libraries", 5000).show();
-                } break;
-                default:
-                {
-                    super.onManagerConnected(status);
-                } break;
-            }
-        }
-    };
-
-    public MainActivity() {
-        Log.i(TAG, "Instantiated new " + this.getClass());
-    }
-
-    /** Called when the activity is first created. */
-    @Override
-    public void onCreate(Bundle savedInstanceState) {
-    	// Loading OpenCV
-    	//if (!OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_2_4_7, this, mLoaderCallback))
-        //{
-    	//	Log.e(TAG, "Cannot connect to OpenCV Manager");
-        //}
-    	
-    	if (!OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_2_4_8, this, mLoaderCallback))
-        {
-    		Log.e(TAG, "Cannot connect to OpenCV Manager");
-        }
-    	
-    	
-        Log.i(TAG, "called onCreate");
-        super.onCreate(savedInstanceState);
-       
-  
-        
+		Log.i(TAG, "called onCreate");
+		super.onCreate(savedInstanceState);
 
 		ctx = this;
 		act = this;
@@ -203,193 +127,541 @@ public class MainActivity extends Activity {
 		getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
 		setContentView(R.layout.main_surface_view);
-		
-		preview = new Preview(this, (SurfaceView)findViewById(R.id.surfaceView));
-		preview.setLayoutParams(new LayoutParams(LayoutParams.FILL_PARENT, LayoutParams.FILL_PARENT));
+
+		preview = new Preview(this,
+				(SurfaceView) findViewById(R.id.surfaceView));
+		preview.setLayoutParams(new LayoutParams(LayoutParams.FILL_PARENT,
+				LayoutParams.FILL_PARENT));
 		((FrameLayout) findViewById(R.id.preview)).addView(preview);
 		preview.setKeepScreenOn(true);
-		
-		buttonClick = (Button) findViewById(R.id.buttonClick);
-		
-		buttonClick.setOnClickListener(new OnClickListener() {
-			public void onClick(View v) {
-				 	camera.takePicture(shutterCallback, rawCallback, jpegCallback);
-			}
-		});
-		
-		
-		Button buttonExp = (Button) findViewById(R.id.buttonExp);
-		
-		buttonExp.setOnClickListener(new OnClickListener() {
-			public void onClick(View v) {
-				/*File root = Environment.getExternalStorageDirectory();
-				File file = new File(root, "_exp/desk/0001.png");
-				
-				Toast.makeText(MainActivity.this,"xx", 5000).show();
-				
-				Mat img = Highgui.imread(file.getAbsolutePath());
-				Toast.makeText(MainActivity.this,"Height: " + img.cols() + " Width: " + img.rows(), 5000).show();
-				*/
-				DetectDescribe det = new DetectDescribe();
-				
-				(new Thread(det)).start();
-				//ExtendedKalmanFilter EKF = new ExtendedKalmanFilter();
-				
-			}
-		});
-		
-		Button buttonTimeSync = (Button) findViewById(R.id.ButtonTimeSync);
-		buttonTimeSync.setOnClickListener(new OnClickListener() {
-			public void onClick(View v) {
-				
-				if (connected == false) {
-					
-					InetAddress selected_ip;
-					try {
-//						selected_ip = InetAddress.getByName("192.168.1.132");
-						selected_ip = InetAddress.getByName("192.168.0.11");
-						ConnectionIPPort adres = new ConnectionIPPort(selected_ip, 3000);
-						
-						//selected_ip = InetAddress.getByName("192.168.2.222");
-						//IP_PORT adres = new IP_PORT(selected_ip, 27000);
 
-						new connectionTCP().execute(adres);
-						
-						Log.e("TCP activity", "Connecting to : " + selected_ip.toString()
-								+ ":" + 3000);
-					} catch (UnknownHostException e) {
-						// TODO Auto-generated catch block
-						e.printStackTrace();
+		// Init graph
+		graphManager = new GraphManager();
+
+		// Init Sensor Manager
+		sensorManager = (android.hardware.SensorManager) getSystemService(Context.SENSOR_SERVICE);
+		inertialSensors = new org.dg.inertialSensors.InertialSensors(
+				sensorManager);
+
+		// Init WiFi
+		wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+		wifiScanner = new WifiScanner(wifiManager);
+		registerReceiver(wifiScanner, new IntentFilter(
+				WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
+
+		// Add buttons
+		initializeButtons();
+
+		// Initialize update of orient in GUI
+		mHandlerOrient = new Handler();
+		orientAndWiFiScanUpdateTimer.scheduleAtFixedRate(
+				new UpdateOrientAndWiFiScanGUI(), 2000, 200);
+
+		// Initialize update of WiFi recognition in GUI
+		mHandlerWiFiRecognition = new Handler();
+
+	}
+
+	/**
+	 * Method used to create buttons: 1. Take picture 2. Run inertial sensors 3.
+	 * Record inertial sensors 4. Record one WiFi scan 5. Record continuous WiFi
+	 * 6. Add WiFi scan to recognition list 7. About
+	 * 
+	 * Side: 1. Run Stepometer
+	 */
+	private void initializeButtons() {
+
+		// 1. Take picture button
+		initButtonTakePicture(R.id.buttonMainView1);
+
+		// 2. Start presenting the orientation
+		initButtonStartOrientation(R.id.buttonMainView2, R.id.buttonMainView3);
+
+		// 3. Record inertial sensors
+		initButtonRecordInertialSensors(R.id.buttonMainView3,
+				R.id.buttonMainView2);
+
+		// 4. Record one WiFi scan
+		initButtonRecordSingleWiFiScan(R.id.buttonMainView4);
+
+		// 5. Record continuous WiFi scans
+		initButtonRecordContinuousWiFiScans(R.id.buttonMainView5,
+				R.id.buttonMainView4);
+
+		// 6. Add WiFi scan to recognition list
+		initButtonAddWiFiScanToRecognition(R.id.buttonMainView6);
+
+		// 7. Run stepometer
+		initButtonRunStepometer(R.id.buttonMainView7);
+
+		// Side View 1
+		initButtonStartFloorDetection(R.id.buttonSideView1);
+
+		// Side View 2
+		initButtonStartGraphOnline(R.id.buttonSideView2);
+		
+		// Side View 3
+		initButtonStartGraphTestFromFile(R.id.buttonSideView3);
+		
+		// Side View 4 - Add magnetic place to recognition
+		initButtonAddMagneticPlaceToRecognition(R.id.buttonSideView4);
+	}
+
+	
+	/**
+	 * 
+	 */
+	private void initButtonAddMagneticPlaceToRecognition(final int id) {
+		Button buttonAddMagneticPlaceToRecognition = (Button) findViewById(id);
+		buttonAddMagneticPlaceToRecognition .setText("Add magnetic place to recognition");
+		buttonAddMagneticPlaceToRecognition .setOnClickListener(new OnClickListener() {
+			public void onClick(View v) {
+				inertialSensors.addMagneticRecognitionPlace();
+			}
+		});
+	}
+	
+	/**
+	 * 
+	 */
+	private void initButtonStartFloorDetection(final int id) {
+		Button buttonStartFloorDetection = (Button) findViewById(id);
+		buttonStartFloorDetection.setText("Start barometer");
+		buttonStartFloorDetection.setOnClickListener(new OnClickListener() {
+			public void onClick(View v) {
+				Button buttonStartFloorDetection = (Button) findViewById(id);
+				if (inertialSensors.isBarometerProcessingStarted()) {
+					buttonStartFloorDetection.setText("Start barometer");
+					inertialSensors.stopBarometerProcessing();
+					;
+				} else {
+					buttonStartFloorDetection.setText("Stop barometer");
+					inertialSensors.startBarometerProcessing();
+					;
+				}
+
+			}
+		});
+	}
+	
+	/**
+	 * 
+	 */
+	private void initButtonStartGraphTestFromFile(final int id) {
+		Button buttonStartGraphTestFromFile = (Button) findViewById(id);
+		buttonStartGraphTestFromFile.setText("Graph from file");
+		buttonStartGraphTestFromFile.setOnClickListener(new OnClickListener() {
+			public void onClick(View v) {
+				{
+					graphManager.optimizeGraphInFile("graphFile.g2o");
+
+				}
+			}
+		});
+	}
+
+	
+
+	/**
+	 * 
+	 */
+	private void initButtonStartGraphOnline(final int id) {
+		Button buttonStartGraphOnline = (Button) findViewById(id);
+		buttonStartGraphOnline.setText("Start graph");
+		buttonStartGraphOnline.setOnClickListener(new OnClickListener() {
+			public void onClick(View v) {
+				{
+					Button buttonStartGraphOnline = (Button) findViewById(id);
+					if (!graphManager.started()) {
+						graphManager.start();
+						updateGraphTimer.scheduleAtFixedRate(new UpdateGraph(),
+								1000, 200);
+						buttonStartGraphOnline.setText("Optimize graph");
+					} else {
+						graphManager.stop();
+						updateGraphTimer.cancel();
+						graphManager.optimize(100);
+						buttonStartGraphOnline.setText("Start graph");
 					}
-				} 
+
+				}
 			}
 		});
-		
-		Button buttonFivePoint= (Button) findViewById(R.id.buttonFivePoint);
+	}
 
-		buttonFivePoint.setOnClickListener(new OnClickListener() {
+	/**
+	 * 
+	 */
+	private void initButtonRunStepometer(final int id) {
+		Button buttonRunStepometer = (Button) findViewById(id);
+		buttonRunStepometer.setText("Run stepometer");
+		buttonRunStepometer.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
-				
-				VisualOdometry vo = new VisualOdometry();
-				
-				(new Thread(vo)).start();
-				//ExtendedKalmanFilter EKF = new ExtendedKalmanFilter();
-				
+				Button buttonRunStepometer = (Button) findViewById(id);
+				if (inertialSensors.isStepometerStarted()) {
+					buttonRunStepometer.setText("Start stepometer");
+					inertialSensors.stopStepometer();
+				} else {
+					buttonRunStepometer.setText("Stop stepometer");
+					inertialSensors.startStepometer();
+				}
+
 			}
 		});
-		
-		
-		Button buttonStepometer = (Button) findViewById(R.id.buttonStepometer);
+	}
 
-		buttonStepometer.setOnClickListener(new OnClickListener() {
+	/**
+	 * 
+	 */
+	private void initButtonAddWiFiScanToRecognition(int id) {
+		Button buttonAddWiFiScanToRecognition = (Button) findViewById(id);
+		buttonAddWiFiScanToRecognition.setText("Add WiFi to recognition");
+		buttonAddWiFiScanToRecognition
+				.setOnClickListener(new OnClickListener() {
+					public void onClick(View v) {
+						wifiScanner.addLastScanToRecognition();
+
+						if (wiFiRecognitionStarted == false) {
+							wiFiRecognitionTimer
+									.scheduleAtFixedRate(
+											new UpdateWiFiSRecognitionGUI(),
+											1000, 4000);
+							wiFiRecognitionStarted = false;
+						}
+					}
+				});
+	}
+
+	/**
+	 * 
+	 */
+	private void initButtonRecordSingleWiFiScan(int id) {
+		Button buttonRecordSingleWiFiScan = (Button) findViewById(id);
+		buttonRecordSingleWiFiScan.setText("Do a single WiFi scan");
+		buttonRecordSingleWiFiScan.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
-				
-				Stepometer stepometer = new Stepometer();
-				(new Thread(stepometer)).start();
-				
+				if (inertialSensors.getState()) {
+					wifiScanner.startTimestampOfGlobalTime(inertialSensors
+							.getTimestamp());
+				}
+				wifiScanner.singleScan(true).continuousScanning(false);
+				wifiScanner.startScanning();
 			}
 		});
-		
-		
-    }
+	}
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        Log.i(TAG, "called onCreateOptionsMenu");
-        mItemPreviewRGBA = menu.add("Preview RGBA");
-        mItemPreviewGray = menu.add("Preview GRAY");
-        mItemPreviewCanny = menu.add("Canny");
-        mItemPreviewFeatures = menu.add("Find features");
-        return true;
-    }
+	/**
+	 * 
+	 */
+	private void initButtonRecordContinuousWiFiScans(final int id,
+			final int idToBlock) {
+		Button buttonRecordContinuousWiFiScans = (Button) findViewById(id);
+		buttonRecordContinuousWiFiScans.setText("Start WiFi scans");
+		buttonRecordContinuousWiFiScans
+				.setOnClickListener(new OnClickListener() {
+					public void onClick(View v) {
+						Button buttonRecordContinuousWiFiScans = (Button) findViewById(id);
+						Button buttonRecordSingleWiFiScan = (Button) findViewById(idToBlock);
 
-    
-    @Override
+						if (wifiScanner.getRunningState()) {
+							buttonRecordContinuousWiFiScans
+									.setText("Start WiFi scans");
+							buttonRecordSingleWiFiScan.setEnabled(true);
+							wifiScanner.stopScanning();
+						} else {
+							buttonRecordContinuousWiFiScans
+									.setText("Stop WiFi scans");
+							buttonRecordSingleWiFiScan.setEnabled(false);
+							if (inertialSensors.getState()) {
+								wifiScanner
+										.startTimestampOfGlobalTime(inertialSensors
+												.getTimestamp());
+							}
+							wifiScanner.singleScan(false).continuousScanning(
+									true);
+							wifiScanner.startScanning();
+						}
+					}
+				});
+	}
+
+	/**
+	 * 
+	 */
+	private void initButtonRecordInertialSensors(final int id,
+			final int idToBlock) {
+		Button buttonRecordInertialSensors = (Button) findViewById(id);
+		buttonRecordInertialSensors.setText("Record inertial sensors");
+
+		buttonRecordInertialSensors.setOnClickListener(new OnClickListener() {
+			public void onClick(View v) {
+				Button buttonRecordInertialSensors = (Button) findViewById(id);
+				Button buttonStartOrientation = (Button) findViewById(idToBlock);
+				if (inertialSensors.getState() == false) {
+					buttonStartOrientation.setEnabled(false);
+					buttonRecordInertialSensors
+							.setText("Stop record inertial sensors");
+					inertialSensors.save2file(true);
+					inertialSensors.start();
+
+				} else {
+					buttonStartOrientation.setEnabled(true);
+					buttonRecordInertialSensors
+							.setText("Record inertial sensors");
+					inertialSensors.stop();
+				}
+
+			}
+		});
+	}
+
+	/**
+	 * 
+	 */
+	private void initButtonStartOrientation(final int id, final int idToBlock) {
+		Button buttonStartOrientation = (Button) findViewById(id);
+		buttonStartOrientation.setText("Run inertial sensors");
+		buttonStartOrientation.setOnClickListener(new OnClickListener() {
+			public void onClick(View v) {
+				Button buttonRecordInertialSensors = (Button) findViewById(idToBlock);
+				Button buttonStartOrientation = (Button) findViewById(id);
+				if (inertialSensors.getState() == false) {
+					buttonRecordInertialSensors.setEnabled(false);
+					buttonStartOrientation.setText("Stop inertial sensors");
+					inertialSensors.save2file(false);
+					inertialSensors.start();
+				} else {
+					buttonRecordInertialSensors.setEnabled(true);
+					buttonStartOrientation.setText("Run inertial sensors");
+					inertialSensors.stop();
+				}
+
+			}
+		});
+	}
+
+	/**
+	 * 
+	 */
+	private void initButtonTakePicture(int id) {
+		Button buttonTakePicture = (Button) findViewById(id);
+		buttonTakePicture.setText("Take picture");
+		buttonTakePicture.setOnClickListener(new OnClickListener() {
+			public void onClick(View v) {
+				camera.takePicture(null, null, new CameraSaver());
+			}
+		});
+	}
+
+	class UpdateGraph extends TimerTask {
+		public void run() {
+
+			 // get angle
+			 //float [] orient = inertialSensors.getCurrentOrient();
+			 //float yawZ = orient[2];
+			 
+			 float yawZ = inertialSensors.getYawForStepometer();
+			 
+			 Log.d(TAG, "Yaw for stepometer: " + yawZ + " in deg");
+			 
+			 // We need to change yawZ into radians and change direction
+			 yawZ = -yawZ * 3.141592653589793f / 180.0f;
+			
+			 // get distance
+			 double distance = inertialSensors.getGraphStepDistance();
+			
+			 // Adding WiFi measurement
+			 if ( distance > 0.1 )
+				 graphManager.addStepometerMeasurement(distance, yawZ);
+			
+			
+			 // Adding WiFi measurements
+			 List<wiFiMeasurement> wifiList = wifiScanner.getGraphWiFiList();
+			 if ( wifiList != null)
+				 graphManager.addMultipleWiFiMeasurements(wifiList);
+
+		}
+
+	}
+
+	class UpdateWiFiSRecognitionGUI extends TimerTask {
+		public void run() {
+			int recognizedPlaceId = wifiScanner.recognizePlaceBasedOnLastScan();
+			int sizeOfPlaceDatabase = wifiScanner.getSizeOfPlaceDatabase();
+
+			int recognizedMagneticPlaceId = inertialSensors.recognizePlaceBasedOnMagneticScan();
+			int sizeOfMagneticPlaceDatabase = inertialSensors.getSizeOfPlaceDatabase();
+			
+			UpdateWiFiInGUI obj = new UpdateWiFiInGUI(recognizedPlaceId,
+					sizeOfPlaceDatabase, recognizedMagneticPlaceId, sizeOfMagneticPlaceDatabase);
+			mHandlerWiFiRecognition.post(obj);
+		}
+
+	}
+
+	class UpdateWiFiInGUI implements Runnable {
+		int placeId, sizeOfPlaceDatabase;
+		int magneticPlaceId, sizeOfMagneticPlaceDatabase;
+
+		public UpdateWiFiInGUI(int _placeId, int _sizeOfPlaceDatabase, int _magneticPlaceId, int _sizeOfMagneticDatabase) {
+			placeId = _placeId;
+			sizeOfPlaceDatabase = _sizeOfPlaceDatabase;
+			magneticPlaceId = _magneticPlaceId;
+			sizeOfMagneticPlaceDatabase = _sizeOfMagneticDatabase;
+		}
+
+		public void run() {
+			TextView mTextViewRecognizedPlace = (TextView) findViewById(R.id.textViewWiFi3);
+
+			mTextViewRecognizedPlace.setText("Recognized place id: "
+					+ Integer.toString(placeId) + " (out of "
+					+ Integer.toString(sizeOfPlaceDatabase) + " places)");
+			
+			TextView mTextViewMagneticRecognizedPlace = (TextView) findViewById(R.id.textViewMagnetic);
+
+			mTextViewMagneticRecognizedPlace.setText("Recognized mag place id: "
+					+ Integer.toString(magneticPlaceId) + " (out of "
+					+ Integer.toString(sizeOfMagneticPlaceDatabase) + " places)");
+		}
+	}
+
+	class UpdateOrientAndWiFiScanGUI extends TimerTask {
+		public void run() {
+			float[] orient = inertialSensors.getCurrentOrient();
+			String strongestWiFiNetwork = wifiScanner.getStrongestNetwork();
+			int WiFiCount = wifiScanner.getNetworkCount();
+			float foundFreq = inertialSensors.getLastDetectedFrequency();
+			float stepCount = inertialSensors.getDetectedNumberOfSteps();
+			float stepDistance = inertialSensors.getCovertedStepDistance();
+			int currentFloor = inertialSensors.getCurrentFloor();
+			float estimatedHeight = inertialSensors.getEstimatedHeight();
+
+			UpdateMeasurementsInGUI obj = new UpdateMeasurementsInGUI(orient,
+					strongestWiFiNetwork, WiFiCount, foundFreq, stepCount,
+					stepDistance, currentFloor, estimatedHeight);
+			mHandlerOrient.post(obj);
+		}
+
+	}
+
+	class UpdateMeasurementsInGUI implements Runnable {
+		float[] orient;
+		String strongestWiFi;
+		int wiFiCount;
+		float foundFreq;
+		float stepCount, stepDistance;
+		int currentFloor;
+		float estimatedHeight;
+
+		public UpdateMeasurementsInGUI(float[] _orient, String _strongestWiFi,
+				int _wiFiCount, float _foundFreq, float _stepCount,
+				float _stepDistance, int _currentFloor, float _estimatedHeight) {
+			orient = _orient.clone();
+			strongestWiFi = _strongestWiFi;
+			wiFiCount = _wiFiCount;
+			foundFreq = _foundFreq;
+			stepCount = _stepCount;
+			stepDistance = _stepDistance;
+			currentFloor = _currentFloor;
+			estimatedHeight = _estimatedHeight;
+		}
+
+		public void run() {
+			TextView mTextViewRollX = (TextView) findViewById(R.id.textViewOrient1);
+			TextView mTextViewPitchY = (TextView) findViewById(R.id.textViewOrient2);
+			TextView mTextViewYawZ = (TextView) findViewById(R.id.textViewOrient3);
+
+			mTextViewRollX.setText("Roll (X): "
+					+ String.format("%.2f", orient[0]) + '°');
+			mTextViewPitchY.setText("Pitch (Y): "
+					+ String.format("%.2f", orient[1]) + '°');
+			mTextViewYawZ.setText("Yaw (Z): "
+					+ String.format("%.2f", orient[2]) + '°');
+
+			TextView mTextViewNetworkCount = (TextView) findViewById(R.id.textViewWiFi1);
+			TextView mTextViewStrongestWiFi = (TextView) findViewById(R.id.textViewWiFi2);
+
+			mTextViewNetworkCount.setText("Number of found networks: "
+					+ Integer.toString(wiFiCount));
+			mTextViewStrongestWiFi.setText("Strongest WiFi: " + strongestWiFi);
+
+			TextView mTextViewFoundFrequency = (TextView) findViewById(R.id.textViewStepometer1);
+			TextView mTextViewStepCounter = (TextView) findViewById(R.id.textViewStepometer2);
+			TextView mTextViewStepDistance = (TextView) findViewById(R.id.textViewStepometer3);
+
+			mTextViewFoundFrequency.setText("Found freq: "
+					+ String.format("%.2f", foundFreq) + " Hz");
+			mTextViewStepCounter.setText("Step counter: "
+					+ String.format("%.2f", stepCount));
+			mTextViewStepDistance.setText("Distance: "
+					+ String.format("%.2f", stepDistance) + " m");
+
+			TextView mTextViewCurrentFloor = (TextView) findViewById(R.id.textViewBarometer1);
+			TextView mTextViewEstimatedHeight = (TextView) findViewById(R.id.textViewBarometer2);
+
+			mTextViewCurrentFloor.setText("Floor: "
+					+ Integer.toString(currentFloor));
+			mTextViewEstimatedHeight.setText("Height: "
+					+ String.format("%.2f", estimatedHeight) + " m");
+		}
+	}
+
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) {
+		Log.i(TAG, "called onCreateOptionsMenu");
+		mItemPreviewMode = menu.add("Preview");
+		mItemRecordMode = menu.add("Record");
+		mItemRunMode = menu.add("TODO: Run");
+		mItemAbout = menu.add("About");
+		return true;
+	}
+
+	public boolean onOptionsItemSelected(MenuItem item) {
+		Log.i(TAG, "called onOptionsItemSelected; selected item: " + item);
+
+		if (item == mItemPreviewMode) {
+			mViewMode = VIEW_MODE_PREVIEW;
+			camera.startPreview();
+		} else if (item == mItemRecordMode) {
+			mViewMode = VIEW_MODE_RECORD;
+			camera.stopPreview();
+		} else if (item == mItemRunMode) {
+			mViewMode = VIEW_MODE_RUN;
+			camera.stopPreview();
+		} else if (item == mItemAbout) {
+			camera.stopPreview();
+
+			int duration = Toast.LENGTH_LONG;
+			Toast.makeText(
+					getApplicationContext(),
+					"Project developed under the ''Diamond Grant'' program\r\nAuthor: Michal Nowicki\r\nmichal.nowicki@put.poznan.pl",
+					duration).show();
+		}
+
+		return true;
+	}
+
+	@Override
 	protected void onResume() {
 		super.onResume();
-		//OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_2_4_7, this, mLoaderCallback);
-		
-		//camera = Camera.open();
-		//camera.startPreview();
-		//preview.setCamera(camera);
+		OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_2_4_9, this,
+				mLoaderCallback);
+
+		camera = Camera.open();
+		preview.setCamera(camera);
+		camera.startPreview();
+
 	}
 
 	@Override
 	protected void onPause() {
-		if(camera != null) {
-			//camera.stopPreview();
-			//preview.setCamera(null);
-			//camera.release();
+		if (camera != null) {
+			camera.stopPreview();
+			preview.setCamera(null);
+			camera.release();
 			camera = null;
 		}
 		super.onPause();
 	}
 
-	private void resetCam() {
-		//camera.startPreview();
-		//preview.setCamera(camera);
-	}
-
-	ShutterCallback shutterCallback = new ShutterCallback() {
-		public void onShutter() {
-			// Log.d(TAG, "onShutter'd");
-		}
-	};
-
-	PictureCallback rawCallback = new PictureCallback() {
-		public void onPictureTaken(byte[] data, Camera camera) {
-			// Log.d(TAG, "onPictureTaken - raw");
-		}
-	};
-
-	PictureCallback jpegCallback = new PictureCallback() {
-		public void onPictureTaken(byte[] data, Camera camera) {
-			FileOutputStream outStream = null;
-			try {
-				// Write to SD Card
-				fileName = String.format("/sdcard/camtest/%d.bmp", System.currentTimeMillis());
-				outStream = new FileOutputStream(fileName);
-				outStream.write(data);
-				outStream.close();
-				Log.d(TAG, "onPictureTaken - wrote bytes: " + data.length);
-
-				/**FeatureDetector detector = FeatureDetector.create(0);
-				MatOfKeyPoint keypoints = null;
-
-				Mat newImg = new Mat(480, 640, CvType.CV_8UC3);
-				newImg.put(0, 0, data);
-				detector.detect(newImg, keypoints);*/
-				
-				String fileName = String.format("/sdcard/desk/0001.png");
-				
-				Mat img = Highgui.imread(fileName);
-				
-				resetCam();
-
-			} catch (FileNotFoundException e) {
-				e.printStackTrace();
-			} catch (IOException e) {
-				e.printStackTrace();
-			} finally {
-			}
-			Log.d(TAG, "onPictureTaken - jpeg");
-		}
-	};
-    
-
-    public boolean onOptionsItemSelected(MenuItem item) {
-        Log.i(TAG, "called onOptionsItemSelected; selected item: " + item);
-
-        if (item == mItemPreviewRGBA) {
-            mViewMode = VIEW_MODE_RGBA;
-        } else if (item == mItemPreviewGray) {
-            mViewMode = VIEW_MODE_GRAY;
-        } else if (item == mItemPreviewCanny) {
-            mViewMode = VIEW_MODE_CANNY;
-        } else if (item == mItemPreviewFeatures) {
-            mViewMode = VIEW_MODE_FEATURES;
-        }
-
-        return true;
-    }
 }

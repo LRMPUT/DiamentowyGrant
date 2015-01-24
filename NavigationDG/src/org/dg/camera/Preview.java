@@ -26,7 +26,6 @@ public class Preview extends ViewGroup implements SurfaceHolder.Callback {
         super(context);
 
         mSurfaceView = sv;
-//        addView(mSurfaceView);
        
         mHolder = mSurfaceView.getHolder();
         mHolder.addCallback(this);
@@ -49,8 +48,8 @@ public class Preview extends ViewGroup implements SurfaceHolder.Callback {
     			// set Camera parameters
     			mCamera.setParameters(params);
     		}*/
-    		params.setPictureSize(640, 480);
-    		params.setFocusMode(Camera.Parameters.FOCUS_MODE_FIXED);
+    		//params.setPictureSize(640, 480);
+    		//params.setFocusMode(Camera.Parameters.FOCUS_MODE_FIXED);
     		mCamera.setParameters(params);
     	}
     }

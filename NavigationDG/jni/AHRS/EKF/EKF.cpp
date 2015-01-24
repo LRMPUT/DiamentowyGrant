@@ -21,6 +21,8 @@ EKF::EKF(float _Q, float _R, float _dt)
 	this->H.at<float>(1,1) = 1.0;
 	this->H.at<float>(2,2) = 1.0;
 	this->H.at<float>(3,3) = 1.0;
+
+	pthread_mutex_init(&stateMtx, NULL);
 }
 
 cv::Mat EKF::jacobian(long addrW) {
@@ -76,7 +78,7 @@ cv::Mat EKF::jacobian(long addrW) {
 	return F;
 }
 
-cv::Mat EKF::state(long addrW) {
+cv::Mat EKF::Astate(long addrW) {
 	cv::Mat &w = *(cv::Mat *) addrW;
 	cv::Mat F = cv::Mat::zeros(7, 1, CV_32F);
 
@@ -122,10 +124,24 @@ cv::Mat EKF::state(long addrW) {
 	return F;
 }
 
+cv::Mat EKF::getState()
+{
+	 pthread_mutex_lock(&stateMtx);
+	 cv::Mat x;
+	 state.copyTo(x);
+	 pthread_mutex_unlock(&stateMtx);
+	 return x;
+}
+
 
 void EKF::predict(long addrW, float _dt) {
 	this->dt = _dt;
-	this->x_apriori = this->state(addrW);
+	this->x_apriori = this->Astate(addrW);
+
+	pthread_mutex_lock(&stateMtx);
+	this->x_apriori.copyTo(this->state);
+	pthread_mutex_unlock(&stateMtx);
+
 	cv::Mat F = this->jacobian(addrW);
 	this->P_apriori = F * this->P_aposteriori * F.t() + this->Q;
 };
@@ -137,4 +153,9 @@ void EKF::correct(long addrZ) {
 	this->x_aposteriori = this->x_apriori
 			+ this->K * (z - this->H * this->x_apriori);
 	this->P_aposteriori = (this->I - this->K * this->H) * this->P_apriori;
+
+	pthread_mutex_lock(&stateMtx);
+	this->x_aposteriori.copyTo(this->state);
+	pthread_mutex_unlock(&stateMtx);
+
 };
