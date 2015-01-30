@@ -27,8 +27,8 @@ public class Stepometer implements Runnable{
 	float lastReportedCoveredStepDistance = 0.0f;
 	
 	// The walking frequencies borders
-	final float leftWalkingFrequencyBorder = 1.5f;
-	final float rightWalkingFrequencyBorder = 2.4f;
+	final float leftWalkingFrequencyBorder = 1.2f;
+	final float rightWalkingFrequencyBorder = 2.8f;
 	
 	// Accelerometer measurement frequency (in Hz)
 	final float accelerometerMeasurementFrequency = 200.0f;

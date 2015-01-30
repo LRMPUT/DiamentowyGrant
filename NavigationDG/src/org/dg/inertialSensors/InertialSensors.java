@@ -39,7 +39,10 @@ public class InertialSensors {
 
 	// Should we estimate the orientation ?
 	boolean performOrientationEstimation = true;
+	// Last timestamp
+	long lastOrientationEstimationTimestamp;
 	AHRSModule orientationEstimator = null;
+	ComplementaryFilter complementaryFilterEstimation = null;
 
 	// Stepometer
 	private List<Float> accWindow;
@@ -76,6 +79,9 @@ public class InertialSensors {
 		magneticRecognition = new MagneticRecognition();
 		
 		barometer = new BarometerProcessing();
+		
+		// Complementary filter
+		complementaryFilterEstimation = new ComplementaryFilter();
 	}
 
 	public InertialSensors save2file(boolean _save2file) {
@@ -200,7 +206,10 @@ public class InertialSensors {
 
 		// Initialize out orientation estimation
 		if (performOrientationEstimation)
+		{
+			lastOrientationEstimationTimestamp = -1;
 			orientationEstimator = new AHRSModule();
+		}
 
 		isStarted = true;
 		timestampStart = 0;
@@ -365,143 +374,206 @@ public class InertialSensors {
 
 			if (event.sensor.getType() == Sensor.TYPE_ACCELEROMETER) {
 
-				acc[0] = event.values[0];
-				acc[1] = event.values[1];
-				acc[2] = event.values[2];
-
-				float accVal = (float) Math.sqrt(acc[0] * acc[0] + acc[1]
-						* acc[1] + acc[2] * acc[2]);
-				accWindow.add(Float.valueOf(accVal));
-
-				if (save2file)
-					saveToStream(accStream, getTimestamp(), acc);
-				
-				if (stepometerStarted && stepometerRunningCounter > 200)
-				{
-					if ( accWindow.size() > stepometerWindowSize)
-					{
-						 Log.d("Main::Activity", "X");
-						 
-						 // Reduce list size to stepometerWindowSize
-						 accWindow = accWindow.subList(accWindow.size() - stepometerWindowSize, accWindow.size());
-						 
-						 // Copying from list to float array, so we can process in new thread
-						 int accWindowSize = accWindow.size();
-						 float [] accWindowFloat = new float[accWindowSize];
-						 for (int i=0;i<accWindowSize;i++)
-						 {
-							accWindowFloat[i] = accWindow.get(i);
-						 }
-						 stepometer.setAccWindow(accWindowFloat, accWindowSize);
-						
-						 // Run stepometer
-						 new Thread(stepometer).start();
-						 Log.d("Main::Activity", "Y");
-					}
-					stepometerRunningCounter = 0;
-				}
-				stepometerRunningCounter = stepometerRunningCounter + 1;
+				processNewAccelerometerData(event);
 
 			} else if (event.sensor.getType() == Sensor.TYPE_GYROSCOPE) {
-
-				gyro[0] = event.values[0];
-				gyro[1] = event.values[1];
-				gyro[2] = event.values[2];
-				if (performOrientationEstimation) {
-					orientationEstimator.predict(gyro[0], gyro[1], gyro[2]);
-				}
-
-				if (save2file)
-					saveToStream(gyroStream, getTimestamp(), gyro);
+				
+				processNewGyroscopeData(event);
 
 			} else if (event.sensor.getType() == Sensor.TYPE_MAGNETIC_FIELD) {
 
-				mag[0] = event.values[0];
-				mag[1] = event.values[1];
-				mag[2] = event.values[2];
-				
-				float magneticModule = (float) Math.sqrt(Math.pow(mag[0],2) + Math.pow(mag[1],2) + Math.pow(mag[2],2));
-				
-				try {
-					magneticWindowMtx.acquire();
-					magneticWindow.add(magneticModule);
-					
-					if ( magneticRecognitionCounter > 200 && magneticWindow.size() > magneticWindowSize)
-					{
-						// Reduce list size to stepometerWindowSize
-						//Log.d("Main::Activity", "Mag1 : "+ (magneticWindow.size() - magneticWindowSize) +" " + magneticWindow.size());
-						magneticWindow = magneticWindow.subList(magneticWindow.size() - magneticWindowSize, magneticWindow.size());
-						//Log.d("Main::Activity", "Mag2 : " + magneticWindow.size());
-						
-						magneticRecognitionCounter = 0;
-					}
-					
-					magneticWindowMtx.release();
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-				
-				magneticRecognitionCounter++;
-
-				if (save2file)
-					saveToStream(magStream, getTimestamp(), mag);
+				processNewMagneticData(event);
 
 			} else if (event.sensor.getType() == Sensor.TYPE_LINEAR_ACCELERATION) {
+				
 				if (save2file)
 					saveToStream(accwogStream, getTimestamp(), event.values);
 
 			} else if (event.sensor.getType() == Sensor.TYPE_ROTATION_VECTOR) {
 
-				if (save2file)
-					saveToStream(orientStream, getTimestamp(), event.values);
-
-				if (performOrientationEstimation) {
-					float[] quaternion = new float[4];
-					SensorManager.getQuaternionFromVector(quaternion,
-							event.values);
-					orientationEstimator.correct(quaternion[0], quaternion[1],
-							quaternion[2], quaternion[3]);
-
-					float w = quaternion[0];
-					float x = quaternion[1];
-					float y = quaternion[2];
-					float z = quaternion[3];
-
-					if (save2file)
-						saveToStream(myOrientStream, getTimestamp(), quaternion);
-
-					// Should be X Y Z
-					// http://answers.unity3d.com/questions/416169/finding-pitchrollyaw-from-quaternions.html
-					float rollX = (float) (Math.atan2(2 * y * w - 2 * x * z, 1
-							- 2 * y * y - 2 * z * z) * 180.0 / Math.PI);
-					float pitchY = (float) (Math.atan2(2 * x * w - 2 * y * z, 1
-							- 2 * x * x - 2 * z * z) * 180.0 / Math.PI);
-					float yawZ = (float) (Math.asin(2 * x * y + 2 * z * w) * 180.0 / Math.PI);
-
-					try {
-						orientMtx.acquire();
-						orient[0] = rollX;
-						orient[1] = pitchY;
-						orient[2] = yawZ;
-						orientMtx.release();
-					} catch (InterruptedException e) {
-						e.printStackTrace();
-					}
-
-					if (save2file)
-						saveToStream(myOrientEulerStream, getTimestamp(),
-								orient);
-
-				}
+				processNewOrientationData(event);
 
 			} else if (event.sensor.getType() == Sensor.TYPE_PRESSURE) {
-				event.values[2] = SensorManager.getAltitude(SensorManager.PRESSURE_STANDARD_ATMOSPHERE, event.values[0]);
-				lastBarometerValue = event.values[1];
 				
-				if (save2file)
-					saveToStream(pressureStream, getTimestamp(), event.values);
+				processNewPressureData(event);
 		
 			}
+		}
+
+		/**
+		 * @param event
+		 */
+		private void processNewPressureData(SensorEvent event) {
+			event.values[2] = SensorManager.getAltitude(SensorManager.PRESSURE_STANDARD_ATMOSPHERE, event.values[0]);
+			lastBarometerValue = event.values[1];
+			
+			if (save2file)
+				saveToStream(pressureStream, getTimestamp(), event.values);
+		}
+
+		/**
+		 * @param event
+		 */
+		private void processNewOrientationData(SensorEvent event) {
+			if (save2file)
+				saveToStream(orientStream, getTimestamp(), event.values);
+
+			if (performOrientationEstimation) {
+				float[] quaternion = new float[4];
+				SensorManager.getQuaternionFromVector(quaternion,
+						event.values);
+				//
+				orientationEstimator.correct(quaternion[0], quaternion[1],
+						quaternion[2], quaternion[3]);
+				// Complementary filter
+				if (complementaryFilterEstimation.getState()) {
+					complementaryFilterEstimation.magAccUpdate(quaternion);
+				}
+				
+				// Getting the estimate from our AEKF
+				float [] ourEstimate = orientationEstimator.getEstimate();
+				
+				float w = ourEstimate[0];
+				float x = ourEstimate[1];
+				float y = ourEstimate[2];
+				float z = ourEstimate[3];
+
+				if (save2file)
+					saveToStream(myOrientStream, getTimestamp(), quaternion);
+
+				// Should be X Y Z
+				// http://kosukek.bitbucket.org/conversion-from-quaternion-to-euler-anglesxyz.html
+//					float rollX = (float) (Math.atan2(2 * y * w - 2 * x * z, 1
+//							- 2 * y * y - 2 * z * z) * 180.0 / Math.PI);
+//					float pitchY = (float) (Math.atan2(2 * x * w - 2 * y * z, 1
+//							- 2 * x * x - 2 * z * z) * 180.0 / Math.PI);
+//					float yawZ = (float) (Math.asin(2 * x * y + 2 * z * w) * 180.0 / Math.PI);
+				
+				//http://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
+				float rollX = (float) (Math.atan2(2*y*z + 2 * x * w, 1 - 2 * ( x*x + y*y) ) * 180.0 / Math.PI );
+				float pitchY = (float) (Math.asin(2 * (w *y - x*z)) * 180.0 / Math.PI);
+				float yawZ = (float) (Math.atan2(2*(w*z + y*x), 1-2*(y*y + z*z))* 180.0 / Math.PI);
+				
+				try {
+					orientMtx.acquire();
+					orient[0] = rollX;
+					orient[1] = pitchY;
+					orient[2] = yawZ;
+					orientMtx.release();
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+
+				if (save2file)
+					saveToStream(myOrientEulerStream, getTimestamp(),
+							orient);
+
+			}
+		}
+
+		/**
+		 * @param event
+		 */
+		private void processNewMagneticData(SensorEvent event) {
+			mag[0] = event.values[0];
+			mag[1] = event.values[1];
+			mag[2] = event.values[2];
+			
+			float magneticModule = (float) Math.sqrt(Math.pow(mag[0],2) + Math.pow(mag[1],2) + Math.pow(mag[2],2));
+			
+			try {
+				magneticWindowMtx.acquire();
+				magneticWindow.add(magneticModule);
+				
+				if ( magneticRecognitionCounter > 200 && magneticWindow.size() > magneticWindowSize)
+				{
+					// Reduce list size to stepometerWindowSize
+					//Log.d("Main::Activity", "Mag1 : "+ (magneticWindow.size() - magneticWindowSize) +" " + magneticWindow.size());
+					magneticWindow = magneticWindow.subList(magneticWindow.size() - magneticWindowSize, magneticWindow.size());
+					//Log.d("Main::Activity", "Mag2 : " + magneticWindow.size());
+					
+					magneticRecognitionCounter = 0;
+				}
+				
+				magneticWindowMtx.release();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			
+			magneticRecognitionCounter++;
+
+			if (save2file)
+				saveToStream(magStream, getTimestamp(), mag);
+		}
+
+		/**
+		 * @param event
+		 */
+		private void processNewGyroscopeData(SensorEvent event) {
+			gyro[0] = event.values[0];
+			gyro[1] = event.values[1];
+			gyro[2] = event.values[2];
+			
+			if (performOrientationEstimation) {
+			// Time from last update converted from ns to s
+			final float convertNs2s = 1000000000.0f;
+			
+			float dt = 0.0f;
+			if ( lastOrientationEstimationTimestamp >= 0)
+				dt = (event.timestamp - lastOrientationEstimationTimestamp)/convertNs2s; 
+			lastOrientationEstimationTimestamp = event.timestamp;
+							
+				// AEKF
+				orientationEstimator.predict(gyro[0], gyro[1], gyro[2], dt);
+				// Complementary filter
+				if (complementaryFilterEstimation.getState())
+					complementaryFilterEstimation.gyroscopeUpdate(gyro, dt);
+			}
+
+			if (save2file)
+				saveToStream(gyroStream, getTimestamp(), gyro);
+		}
+
+		/**
+		 * @param event
+		 */
+		private void processNewAccelerometerData(SensorEvent event) {
+			acc[0] = event.values[0];
+			acc[1] = event.values[1];
+			acc[2] = event.values[2];
+
+			float accVal = (float) Math.sqrt(acc[0] * acc[0] + acc[1]
+					* acc[1] + acc[2] * acc[2]);
+			accWindow.add(Float.valueOf(accVal));
+
+			if (save2file)
+				saveToStream(accStream, getTimestamp(), acc);
+			
+			if (stepometerStarted && stepometerRunningCounter > 200)
+			{
+				if ( accWindow.size() > stepometerWindowSize)
+				{
+					 Log.d("Main::Activity", "X");
+					 
+					 // Reduce list size to stepometerWindowSize
+					 accWindow = accWindow.subList(accWindow.size() - stepometerWindowSize, accWindow.size());
+					 
+					 // Copying from list to float array, so we can process in new thread
+					 int accWindowSize = accWindow.size();
+					 float [] accWindowFloat = new float[accWindowSize];
+					 for (int i=0;i<accWindowSize;i++)
+					 {
+						accWindowFloat[i] = accWindow.get(i);
+					 }
+					 stepometer.setAccWindow(accWindowFloat, accWindowSize);
+					
+					 // Run stepometer
+					 new Thread(stepometer).start();
+					 Log.d("Main::Activity", "Y");
+				}
+				stepometerRunningCounter = 0;
+			}
+			stepometerRunningCounter = stepometerRunningCounter + 1;
 		}
 
 		/**

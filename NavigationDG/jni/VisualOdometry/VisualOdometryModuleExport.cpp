@@ -15,8 +15,12 @@
 //#include "../FivePoint/FivePointAlgorithm.h"
 #include "FivePointMadeEasy/5point.h"
 #include "DetectDescribe/DetectDescribe.h"
+#include "Triangulate/triangulate.h"
+
+#include "VOsystem/VOsystem.h"
 
 #include "LDB/ldb.h"
+
 
 using namespace std;
 using namespace cv;
@@ -24,13 +28,18 @@ using namespace cv;
 #define DEBUG_TAG "NDK_MainActivity"
 #define DEBUG_TAG_PEMRA "PEMRA"
 #define DEBUG_TAG_DETDES "DetectDescribe"
+#define DEBUG_TAG_MSC "MScThesis"
 
 
-//#define DEBUG_MODE
+#define DEBUG_MODE
 
 extern "C" {
 
 // Export declarations
+
+// MSc thesis
+JNIEXPORT int JNICALL Java_org_dg_camera_VisualOdometry_estimateTrajectory(JNIEnv* env,
+		jobject thisObject, jint numOfThreads, jint detector, jint descriptor, jint size);
 
 // PEMRA
 JNIEXPORT int JNICALL Java_org_dg_camera_VisualOdometry_detectDescript(JNIEnv*,
@@ -59,7 +68,307 @@ JNIEXPORT int JNICALL Java_org_dg_camera_VisualOdometry_RANSACTest(JNIEnv*,
 		jobject, jlong addrPoints1, jlong addrPoints2, jint numOfThreads, jint Npoint);
 
 
+
+
 // Implementation
+
+
+
+/// MSc thesis
+JNIEXPORT int JNICALL Java_org_dg_camera_VisualOdometry_estimateTrajectory(JNIEnv* env,
+		jobject thisObject, jint numOfThreads, jint detectorType, jint descriptorType, jint size)
+{
+	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG_MSC,
+						"Native code started\n");
+
+	// Find the required classes
+	jclass thisclass = env->GetObjectClass(thisObject);
+	jclass matclass = env->FindClass("org/opencv/core/Mat");
+
+	// Get methods and fields
+	jmethodID getPtrMethod = env->GetMethodID(matclass, "getNativeObjAddr",
+				"()J");
+	jfieldID bufimgsfieldid = env->GetFieldID(thisclass, "imagesToProcess",
+				"[Lorg/opencv/core/Mat;");
+	jfieldID motionEstimatefieldid = env->GetFieldID(thisclass, "motionEstimate",
+					"Lorg/opencv/core/Mat;");
+	jfieldID scaleEstimatefieldid = env->GetFieldID(thisclass, "scaleEstimate",
+						"Lorg/opencv/core/Mat;");
+
+	// Let's start: Get the fields
+	jobject javaMotionEst = env->GetObjectField(thisObject, motionEstimatefieldid);
+	jobject javaScaleEst = env->GetObjectField(thisObject, scaleEstimatefieldid);
+	jobjectArray bufimgsArray = (jobjectArray) env->GetObjectField(thisObject,
+				bufimgsfieldid);
+
+
+
+	__android_log_print(ANDROID_LOG_DEBUG,  DEBUG_TAG_MSC,
+							"Converting array\n");
+
+	// Convert the array
+	cv::Mat& motionEstimate = *(cv::Mat*)env->CallLongMethod(javaMotionEst, getPtrMethod);
+	cv::Mat& scaleEstimate = *(cv::Mat*)env->CallLongMethod(javaScaleEst, getPtrMethod);
+
+	cv::Mat imagesToProcess[size];
+	for (int i = 0; i < size; i++)
+	{
+		imagesToProcess[i] = *(cv::Mat*) env->CallLongMethod(
+				env->GetObjectArrayElement(bufimgsArray, i), getPtrMethod);
+	}
+
+
+	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG_MSC,
+			"Successful access to local vars\n");
+
+
+	/// Init variables
+	motionEstimate = cv::Mat(7, size, CV_64FC1);
+	scaleEstimate = cv::Mat(1, size, CV_64FC1);
+
+	std::vector<cv::KeyPoint> v[3];
+	cv::Mat descriptors[3];
+	Mat prevRotation;
+	Mat prevTranslation;
+
+
+	double focal = 525.0;
+	double cx = 319.5, cy = 239.5;
+	double cameraParam[3][3] = {{319.5,0,525.0},{0,239.5, 525.0},{0,0,1}};
+	//double focal = 1414.27;
+	//double cx = 401.394, cy = 308.09;
+	//double cameraParam[3][3] = {{focal,0,cx},{0, focal, cy},{0,0,1}};
+	double cameraDist[5] = { 0.0, 0.0, 0.0, 0.0, 0.0 };
+	//double cameraDist[5] = { -0.07714, 0.454159, 0.0000944, -0.0000424, 0.0};
+	cv::Mat cameraMatrix = cv::Mat(3, 3, CV_64FC1, &cameraParam), distCoeffs = cv::Mat(1, 5, CV_64FC1, &cameraDist);
+
+	const float inlierThreshold = 2.0;
+
+	///
+	/// Started processing !
+	///
+
+	// Two first images are processed differently
+	for (int i=0;i<2;i++)
+	{
+		DetectDescribe::performDetection(imagesToProcess[i],
+								v[i], detectorType);
+		DetectDescribe::performDescription(imagesToProcess[i], v[i], descriptors[i],
+								descriptorType);
+	}
+	std::vector<cv::DMatch> prevMatches;
+    DetectDescribe::performMatching(descriptors[0], descriptors[1], prevMatches, descriptorType);
+
+    // Assuming first scale
+    double scale = 1;
+
+    std::vector<cv::Point2f> vTmp1, vTmp2;
+    for (int i=0;i<prevMatches.size();i++)
+    {
+    	vTmp1.push_back(v[0][prevMatches[i].queryIdx].pt);
+    	vTmp2.push_back(v[1][prevMatches[i].trainIdx].pt);
+    }
+	int Npoint = 5;
+	cv::Mat points1(vTmp1), points2(vTmp2), prevInliers;
+	FP::RotationTranslationFromFivePointAlgorithm(points2, points1, inlierThreshold, numOfThreads, Npoint, prevRotation, prevTranslation, prevInliers, focal, cx, cy);
+
+	Eigen::Matrix4f currentEstimate = VO::getInitialPosition(); // Eigen::Matrix4f::Identity();
+	VO::eigen2matSave(currentEstimate, motionEstimate, 0);
+	scaleEstimate.at<double>(0,0) = scale;
+
+	prevTranslation = prevTranslation * scale;
+
+
+	currentEstimate = currentEstimate * VO::mat2eigen(prevRotation, prevTranslation);
+	VO::eigen2matSave(currentEstimate, motionEstimate, 1);
+	scaleEstimate.at<double>(0,1) = scale;
+
+	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG_MSC,
+						"First estimation - inliers percent : %f\n", VO::countInlierRate(prevInliers));
+
+
+	// 0 - triangle
+	// 1 - triangulacja + PnP
+	// 2 - no scale
+	const int ESTIMATION_TYPE = 1;
+
+	for (int i = 2; i < size; i++)
+	{
+
+		Mat rotation;
+		Mat translation;
+		Mat inliers;
+
+		// Processing 3rd image
+		DetectDescribe::performDetection(imagesToProcess[i], v[2], detectorType);
+		DetectDescribe::performDescription(imagesToProcess[i], v[2], descriptors[2], descriptorType);
+
+		// We match 2nd with 3rd
+		std::vector<cv::DMatch> matches;
+		DetectDescribe::performMatching(descriptors[1], descriptors[2], matches, descriptorType);
+
+		// Extract potential inliers for 5-point algorithm
+		cv::Mat p1, p2;
+		VO::matchedPoints2Mat(matches, v[1], v[2], p1, p2);
+		FP::RotationTranslationFromFivePointAlgorithm(p2, p1,
+				inlierThreshold, numOfThreads, Npoint, rotation, translation, inliers, focal, cx, cy);
+
+		__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG_MSC,
+								"Estimating 2-3: inliers percent: %f\n", VO::countInlierRate(inliers));
+
+		// Triangle
+		if ( ESTIMATION_TYPE == 0)
+		{
+			// Initialize some variables
+			std::vector<cv::DMatch> matches13;
+			Mat inliers13;
+			cv::Mat rotation13, translation13;
+			cv::Mat p13_1, p13_3;
+
+			// Matching13 + essential matrix estimation
+			DetectDescribe::performMatching(descriptors[0], descriptors[2], matches13, descriptorType);
+			VO::matchedPoints2Mat(matches13, v[0], v[2], p13_1, p13_3);
+			FP::RotationTranslationFromFivePointAlgorithm(p13_3, p13_1,
+					inlierThreshold, numOfThreads, Npoint, rotation13, translation13, inliers13, focal, cx, cy);
+
+			__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG_MSC,
+							"1-3 Inliers percent: %f \n", VO::countInlierRate(inliers13));
+
+
+			// Scale estimation
+			translation13 = prevRotation * translation13;
+			scale = estimateScaleTriangle(prevTranslation, translation13, translation);
+			__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG_MSC,
+										"New scale : %f \n", scale);
+
+			// Applying new scale
+			//translation = translation * scale;
+
+			// Saving trajectory and estimates
+			currentEstimate = currentEstimate * VO::mat2eigen(rotation, translation);
+			VO::eigen2matSave(currentEstimate, motionEstimate, i);
+			scaleEstimate.at<double>(0,i) = scale;
+
+			// Copying for next iteration
+			translation.copyTo(prevTranslation);
+			rotation.copyTo(prevRotation);
+		}
+		// From triangulation
+		else if ( ESTIMATION_TYPE == 1)
+		{
+			// Initialize some variables
+			std::vector<cv::DMatch> matches13;
+			Mat inliers13;
+			cv::Mat rotation13, translation13;
+			cv::Mat p13_1, p13_3;
+
+			// Matching13 + essential matrix estimation
+			DetectDescribe::performMatching(descriptors[0], descriptors[2], matches13, descriptorType);
+			VO::matchedPoints2Mat(matches13, v[0], v[2], p13_1, p13_3);
+			FP::RotationTranslationFromFivePointAlgorithm(p13_3, p13_1,
+				inlierThreshold, numOfThreads, Npoint, rotation13, translation13, inliers13, focal, cx, cy);
+
+			__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG_MSC,
+				"1-3 Inliers percent: %f %f %f\n", VO::countInlierRate(prevInliers), VO::countInlierRate(inliers), VO::countInlierRate(inliers13));
+			__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG_MSC,
+							"vector sizes: %d %d %d\n", v[0].size(), v[1].size(), v[2].size());
+
+
+
+			// 3-view inliers
+			cv::Mat projPoints1, projPoints2, projPoints3;
+			VO::matchedPoints3Mat(prevMatches, matches, matches13, v[0], v[1], v[2], prevInliers, inliers, inliers13, projPoints1, projPoints2, projPoints3);
+
+//			cv::Mat projPoints1, projPoints2, projPoints3;
+//			VO::matchedPoints3Mat(prevMatches, matches, v[0], v[1], v[2], prevInliers, inliers, projPoints1, projPoints2, projPoints3);
+
+			__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG_MSC,
+					"3-view projected points sizes : %d %d %d %d %d %d\n",
+					projPoints1.rows, projPoints1.cols, projPoints2.rows,
+					projPoints2.cols, projPoints3.rows, projPoints3.cols);
+
+			double cameraIdentity[3][4] = {{1,0,0,0},{0,1,0,0},{0,0,1,0}};
+			double cameraIdentity2[3][4] = {{1,0,0,0},{0,1,0,0},{0,0,1,0}};
+			cv::Mat cameraPos1 = cv::Mat(3, 4, CV_64FC1, &cameraIdentity),
+					cameraPos2 = cv::Mat(3, 4, CV_64FC1, &cameraIdentity2); // Matrix 3x4
+
+
+			// We have 3 cameras: 0, 1, 2
+			// I think it should be made in coordinate system of camera (1)
+			// Therefore, we express camera 0 in coordinates of camera 1
+			Eigen::Matrix4f prev = VO::mat2eigen(prevRotation, prevTranslation);
+			VO::eigen2cameraPos(prev.inverse(), cameraPos1);
+
+
+
+
+			// Triangulation and scale estimation
+			cv::Mat rotation23, translation23;
+			cameraPos1 = cameraMatrix * cameraPos1;
+			cameraPos2 = cameraMatrix * cameraPos2;
+
+
+
+			estimateScale(projPoints1,projPoints2, projPoints3, cameraPos1, cameraPos2, rotation23, translation23,  cameraMatrix, distCoeffs);
+
+			__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG_MSC, "Det : %f \n",
+					cv::determinant(rotation23));
+			__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG_MSC,
+					"Rot: %f %f %f\n", rotation23.at<double>(0, 0),
+					rotation23.at<double>(1, 0), rotation23.at<double>(2, 0));
+			__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG_MSC,
+					"Rot: %f %f %f\n", rotation23.at<double>(0, 1),
+					rotation23.at<double>(1, 1), rotation23.at<double>(2, 1));
+			__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG_MSC,
+					"Rot: %f %f %f\n", rotation23.at<double>(0, 2),
+					rotation23.at<double>(1, 2), rotation23.at<double>(2, 2));
+			__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG_MSC,
+					"Scale : %f \n", VO::norm(translation23));
+
+			// Saving current estimate
+			Eigen::Matrix4f transformation = VO::mat2eigen(rotation23,
+					translation23);
+			transformation = transformation.inverse();
+//			Eigen::Matrix4f transformation = VO::mat2eigen(rotation, translation);
+
+			currentEstimate = currentEstimate * transformation;
+			VO::eigen2matSave(currentEstimate, motionEstimate, i);
+			scaleEstimate.at<double>(0,i) = VO::norm(translation23);
+
+			// Copying for next iterations
+			VO::eigen2mat(transformation, prevRotation, prevTranslation);
+
+			inliers.copyTo(prevInliers);
+		}
+		// No scale
+		else if ( ESTIMATION_TYPE == 2)
+		{
+
+			// Saving currect estimate
+			Eigen::Matrix4f transformation = VO::mat2eigen(rotation, translation);
+
+			currentEstimate = currentEstimate * transformation;
+			VO::eigen2matSave(currentEstimate, motionEstimate, i);
+			scaleEstimate.at<double>(0,i) = VO::norm(transformation);
+
+			// Copying for next iterations
+			VO::eigen2mat(transformation, prevRotation, prevTranslation);
+		}
+		// Let's copy stuff
+		v[0].swap(v[1]);
+		descriptors[1].copyTo(descriptors[0]);
+		v[1].swap(v[2]);
+		v[2].clear();
+		descriptors[2].copyTo(descriptors[1]);
+		matches.swap(prevMatches);
+		matches.clear();
+	}
+
+
+	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG_MSC,
+				"Leaving native code\n");
+}
+
 
 // PEMRA
 JNIEXPORT void JNICALL Java_org_dg_camera_VisualOdometry_kmeans(JNIEnv* env,
@@ -597,11 +906,30 @@ JNIEXPORT int JNICALL Java_org_dg_camera_VisualOdometry_RANSACTest(JNIEnv* env,
 	Mat& points2 = *(Mat*) addrPoints2;
 	Mat rotation;
 	Mat translation;
+	Mat inliers;
 
 	gettimeofday(&start, NULL);
-		FP::RotationTranslationFromFivePointAlgorithm(points2, points1, 1. / 500., numOfThreads, Npoint, rotation, translation);
+		FP::RotationTranslationFromFivePointAlgorithm(points2, points1, 1. / 500., numOfThreads, Npoint, rotation, translation, inliers, 525.0, 319.5, 235.5);
 		//FP::RotationTranslationFromFivePointAlgorithm(points2, points1, 1. / 500., rotation, translation);
 	gettimeofday(&end, NULL);
+
+
+	__android_log_print(ANDROID_LOG_DEBUG,  DEBUG_TAG_DETDES,
+								"Inliers size : %d %d \n", inliers.cols, inliers.rows);
+		__android_log_print(ANDROID_LOG_DEBUG,  DEBUG_TAG_DETDES,
+									"Inliers : %d %d %d, %f %f %f \n", translation.cols, translation.rows, translation.type(),
+									translation.at<double>(0,0), translation.at<double>(1,0), translation.at<double>(2,0));
+		int ile = 0;
+		for (int i=0;i<inliers.rows;i++)
+		{
+			if ( inliers.at<unsigned char>(i,0) == 1 )
+			{
+				ile ++ ;
+			}
+		}
+		__android_log_print(ANDROID_LOG_DEBUG,  DEBUG_TAG_DETDES,
+							"Inliers : %d %d \n", ile, inliers.rows);
+
 
 	int ret = ((end.tv_sec * 1000000 + end.tv_usec) - (start.tv_sec * 1000000 + start.tv_usec)) / 1000;
 	env->SetIntField(thisObject, RANSACTimeID, ret);
@@ -643,6 +971,11 @@ JNIEXPORT int JNICALL Java_org_dg_camera_VisualOdometry_RANSACTest(JNIEnv* env,
 				translation.at<double>(2));
 	}
 }
+
+
+//
+
+
 
 }
 

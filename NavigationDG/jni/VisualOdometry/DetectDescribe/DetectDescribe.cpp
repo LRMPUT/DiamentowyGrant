@@ -88,6 +88,28 @@ void DetectDescribe::performDescription(const cv::Mat& image,
 	}
 }
 
+
+void DetectDescribe::performMatching(const cv::Mat & descriptors, const cv::Mat & descriptors2, std::vector<cv::DMatch> &matches, int descriptorType)
+{
+	cv::BFMatcher *matcher;
+	switch (descriptorType) {
+	case 0:
+	case 3:
+	case 4:
+	case 5:
+		matcher = new cv::BFMatcher(NORM_HAMMING, true);
+		break;
+	case 1:
+	case 2:
+	case 6:
+	default:
+		matcher = new cv::BFMatcher(NORM_L2, true);
+	}
+
+	matcher->match(descriptors, descriptors2, matches);
+	delete matcher;
+}
+
 int DetectDescribe::performParallelDetection(int _detectorType) {
 	detectorType = _detectorType;
 

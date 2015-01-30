@@ -41,11 +41,13 @@ Modules that was used:
 #include <opencv2/core/core.hpp>
 // MF: for triangulatePoints
 #include <opencv2/calib3d/calib3d.hpp>
+// for undistortPoints
+#include <opencv2/imgproc/imgproc.hpp>
 
 #include <android/log.h>
 
 #include <pthread.h>
-
+#include <android/log.h>
 
 namespace cv
 {
@@ -601,7 +603,7 @@ namespace cv
 					{
 						gettimeofday(&end, NULL);
 						int ret = ((end.tv_sec * 1000000 + end.tv_usec) - (start.tv_sec * 1000000 + start.tv_usec)) / 1000;
-						if ( ret > 5000)
+						if ( ret > 50000)
 						{
 							interrupted = true;
 							break;
@@ -670,8 +672,21 @@ namespace cv
 							}
 						}
 					}
-				//	__android_log_print(ANDROID_LOG_DEBUG, "DetectDescribe", "RANSAC maxGoodCount: %d\n", maxGoodCount);
+					__android_log_print(ANDROID_LOG_DEBUG, "DetectDescribe", "RANSAC maxGoodCount: %d\n", maxGoodCount);
 				}
+
+				int ile = 0;
+				__android_log_print(ANDROID_LOG_DEBUG, "DetectDescribe", "Best mask size: %d %d %d\n", bestMask.rows, bestMask.cols, bestMask.type());
+				for (int i=0;i<bestMask.rows;i++)
+				{
+					if ( bestMask.at<unsigned char>(i,0) == 1 )
+					{
+						ile ++ ;
+					}
+				}
+				__android_log_print(ANDROID_LOG_DEBUG,  "DetectDescribe",
+						"best mask : %d %d \n", ile, bestMask.rows);
+
 					if (maxGoodCount > 0)// && interrupted == false)
 					{
 						if (bestMask.data != bestMask0.data)
@@ -840,18 +855,38 @@ namespace FP
 			points2 = points2.reshape(1, npoints);
 		}
 
-		double ifocal = focal != 0 ? 1. / focal : 1.;
-		for (int i = 0; i < npoints; i++)
-		{
-			points1.at<double>(i, 0) = (points1.at<double>(i, 0) - pp.x)*ifocal;
-			points1.at<double>(i, 1) = (points1.at<double>(i, 1) - pp.y)*ifocal;
-			points2.at<double>(i, 0) = (points2.at<double>(i, 0) - pp.x)*ifocal;
-			points2.at<double>(i, 1) = (points2.at<double>(i, 1) - pp.y)*ifocal;
-		}
-
-		// Reshape data to fit opencv ransac function
 		points1 = points1.reshape(2, npoints);
 		points2 = points2.reshape(2, npoints);
+		double ifocal = focal != 0 ? 1. / focal : 1.;
+
+
+//		double cameraParam[3][3] = {{focal,0,pp.x},{0, focal, pp.y},{0,0,1}};
+//		double cameraDist[5] = { -0.07714, 0.454159, 0.0000944, -0.0000424, 0.0};
+		double cameraParam[3][3] = {{319.5,0,525.0},{0,239.5, 525.0},{0,0,1}};
+		double cameraDist[5] = { 0.0, 0.0, 0.0, 0.0, 0.0 };
+		cv::Mat cameraMatrix = cv::Mat(3, 3, CV_64FC1, &cameraParam), distCoeffs = cv::Mat(1, 5, CV_64FC1, &cameraDist);
+
+
+		__android_log_print(ANDROID_LOG_DEBUG, "MScThesis",
+								"Undistort types : %d %d %d %d %d %d\n", points1.rows, points1.cols, points1.type(), points2.rows, points2.cols, points2.type());
+
+		cv::Mat points1_undist = cv::Mat(points1.rows, points1.cols, points1.type()), points2_undist = cv::Mat(points2.rows, points2.cols, points2.type());
+		cv::undistortPoints(points1, points1_undist, cameraMatrix, distCoeffs);
+		cv::undistortPoints(points2, points2_undist, cameraMatrix, distCoeffs);
+//		for (int i = 0; i < npoints; i++)
+//		{
+//			points1.at<double>(i, 0) = (points1.at<double>(i, 0) - pp.x)*ifocal;
+//			points1.at<double>(i, 1) = (points1.at<double>(i, 1) - pp.y)*ifocal;
+//			points2.at<double>(i, 0) = (points2.at<double>(i, 0) - pp.x)*ifocal;
+//			points2.at<double>(i, 1) = (points2.at<double>(i, 1) - pp.y)*ifocal;
+//		}
+
+		// Reshape data to fit opencv ransac function
+//		points1 = points1.reshape(2, npoints);
+//		points2 = points2.reshape(2, npoints);
+
+		points1 = points1_undist.reshape(2, npoints);
+		points2 = points2_undist.reshape(2, npoints);
 
 		threshold /= focal;
 
@@ -917,6 +952,24 @@ namespace FP
 		points1.convertTo(points1, CV_64F);
 		points2.convertTo(points2, CV_64F);
 
+
+//		double cameraParam[3][3] = {{focal,0,pp.x},{0, focal, pp.y},{0,0,1}};
+//		double cameraDist[5] = { -0.07714, 0.454159, 0.0000944, -0.0000424, 0.0};
+//		cv::Mat cameraMatrix = cv::Mat(3, 3, CV_64FC1, &cameraParam), distCoeffs = cv::Mat(1, 5, CV_64FC1, &cameraDist);
+//
+//
+//		__android_log_print(ANDROID_LOG_DEBUG, "MScThesis",
+//								"Undistort types : %d %d %d %d %d %d\n", points1.rows, points1.cols, points1.type(), points2.rows, points2.cols, points2.type());
+//
+//		points1 = points1.reshape(2, npoints);
+//		points2 = points2.reshape(2, npoints);
+//		cv::Mat points1_undist, points2_undist;
+//		cv::Mat points1_undist = cv::Mat(points1.rows, points1.cols, points1.type()), points2_undist = cv::Mat(points2.rows, points2.cols, points2.type());
+//		cv::undistortPoints(points1, points1_undist, cameraMatrix, distCoeffs);
+//		cv::undistortPoints(points2, points2_undist, cameraMatrix, distCoeffs);
+//
+//		points1 = points1_undist.reshape(1, npoints);
+//		points2 = points2_undist.reshape(1, npoints);
 		points1.col(0) = (points1.col(0) - pp.x) / focal;
 		points2.col(0) = (points2.col(0) - pp.x) / focal;
 		points1.col(1) = (points1.col(1) - pp.y) / focal;
@@ -1013,6 +1066,10 @@ namespace FP
 		int good3 = countNonZero(mask3);
 		int good4 = countNonZero(mask4);
 
+		__android_log_print(ANDROID_LOG_DEBUG, "MScThesis",
+					"Count good: %d %d %d %d\n", good1, good2, good3, good4);
+
+
 		if (good1 >= good2 && good1 >= good3 && good1 >= good4)
 		{
 			R1.copyTo(_R);
@@ -1062,10 +1119,65 @@ namespace FP
 	 - rotation (matrix of size 3x3)
 	 - translation (matrix of size 3x1)
 	*/
-	void RotationTranslationFromFivePointAlgorithm(const cv::Mat& points1, const cv::Mat& points2, double threshold, int numOfThreads, int Npoint, cv::Mat& rotation, cv::Mat& translation)
+	void RotationTranslationFromFivePointAlgorithm(const cv::Mat& points1, const cv::Mat& points2, double threshold,
+			int numOfThreads, int Npoint, cv::Mat& rotation, cv::Mat& translation, cv::Mat &essentialMatrixInliers, double focal, double cx, double cy)
 	{
-		cv::Mat essentialMatrixInliers;
-		cv::Mat essentialMatrix = FP::findEssentialMat(points1, points2, 1.0, cv::Point2d(0, 0), cv::FM_RANSAC, 0.99, threshold, essentialMatrixInliers, Npoint, numOfThreads);
+		cv::Mat essentialMatrix = FP::findEssentialMat(points1, points2, focal, cv::Point2d(cx, cy), cv::FM_RANSAC, 0.99, threshold, essentialMatrixInliers, Npoint, numOfThreads);
+
+		//
+		// cv::correctMatches(InputArray F, InputArray points1, InputArray points2, OutputArray newPoints1, OutputArray newPoints2)
+		//
+
+
+		__android_log_print(ANDROID_LOG_DEBUG, "MScThesis",
+						"npoint types: %d %d | %d %d | %d %d \n", points1.type(), points2.type(), points1.rows, points1.cols, points2.rows, points2.cols);
+
+
+		int ile = 0;
+		for (int i = 0; i < essentialMatrixInliers.rows; i++) {
+			if (essentialMatrixInliers.at<unsigned char>(i, 0) == 1) {
+
+				cv::Mat tmp = cv::Mat(3,1, CV_64F), tmp2 = cv::Mat(3,1,CV_64F);
+				tmp.at<double>(0,0) = (points1.at<cv::Vec2f>(i,0)[0] - cx) / focal;
+				tmp.at<double>(1,0) = (points1.at<cv::Vec2f>(i,0)[1] - cy) / focal;
+				tmp.at<double>(2,0) = 1.0;
+				tmp2.at<double>(0,0) = (points2.at<cv::Vec2f>(i,0)[0] - cx) / focal;
+				tmp2.at<double>(1,0) = (points2.at<cv::Vec2f>(i,0)[1] - cy) / focal;
+				tmp2.at<double>(2,0) = 1.0;
+
+
+				//__android_log_print(ANDROID_LOG_DEBUG, "MScThesis", "Sizes: %d %d %d %d %d %d\n", tmp2.cols , tmp2.rows, essentialMatrix.rows, essentialMatrix.cols, tmp.rows, tmp.cols);
+				cv::Mat val = tmp2.t() * essentialMatrix * tmp;
+				cv::Mat val2 = tmp.t() * essentialMatrix * tmp2;
+				//__android_log_print(ANDROID_LOG_DEBUG, "MScThesis", "Essential matrix inlier error: %f %f\n", val.at<double>(0,0), val2.at<double>(0,0));
+
+				ile++;
+//				if (ile > 10)
+//					break;
+			}
+		}
+
+//		__android_log_print(ANDROID_LOG_DEBUG, "MScThesis", " xxx ");
+//		double cameraParam[3][3] = {{cx,0,focal},{0, cy, focal},{0,0,1}};
+//		cv::Mat cameraMatrix = cv::Mat(3, 3, CV_64FC1, &cameraParam);
+//		cv::Mat newPoints1 = cv::Mat(2, ile, CV_32F), newPoints2(2, ile, ile, CV_32F);
+//		for (int i = 0, counter = 0; i < essentialMatrixInliers.rows; i++) {
+//			if (essentialMatrixInliers.at<unsigned char>(i, 0) == 1) {
+//					newPoints1.at<float>(0,counter) = points1.at<cv::Vec2f>(i,0)[0];
+//					newPoints1.at<float>(1,counter) = points1.at<cv::Vec2f>(i,0)[1];
+//					newPoints2.at<float>(0,counter) = points2.at<cv::Vec2f>(i,0)[0];
+//					newPoints2.at<float>(1,counter) = points2.at<cv::Vec2f>(i,0)[1];
+//					counter++;
+//			}
+//		}
+//		__android_log_print(ANDROID_LOG_DEBUG, "MScThesis", " yyy ");
+//		cv::Mat fundamentalMat = cameraMatrix.t() * essentialMatrix * cameraMatrix;
+//		__android_log_print(ANDROID_LOG_DEBUG, "MScThesis", " yyyzzz : %d %d %d %d", newPoints1.rows, newPoints1.cols, newPoints2.rows, newPoints2.cols);
+//		cv::Mat a,b;
+//		cv::correctMatches(fundamentalMat, newPoints1, newPoints2, a, b);
+//		a.copyTo(points1);
+//		b.copyTo(points2);
+//		__android_log_print(ANDROID_LOG_DEBUG, "MScThesis", " zzz ");
 
 		cv::Mat R, t;
 		FP::recoverPose(essentialMatrix, points1, points2, R, t, 1.0, cv::Point2d(0, 0), essentialMatrixInliers);

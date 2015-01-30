@@ -150,6 +150,8 @@ public:
 			std::vector<cv::KeyPoint> &v, cv::Mat & descriptors,
 			const int _descriptorType);
 
+	static void performMatching(const cv::Mat & descriptors, const cv::Mat & descriptors2, std::vector<cv::DMatch> &matches, int descriptorType);
+
 	int performParallelDetection(int _detectorType);
 	void performParallelDescription(int _descriptorType);
 

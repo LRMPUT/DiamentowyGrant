@@ -1,7 +1,7 @@
 #include <jni.h>
 #include <vector>
 
-#include "EigenUnsupported/FFT"
+#include "../3rdParty/EigenUnsupported/FFT"
 #include "android/log.h"
 //#include "../fftw3/api/fftw3.h"
 

@@ -1,28 +1,47 @@
-#include <opencv2/core/core.hpp>
-#include <android/log.h>
-#include <pthread.h>
+/**
+ * @author Michal Nowicki michal.nowicki@put.poznan.pl
+ *
+ */
+
+#include "../Eigen/Eigen"
 
 class EKF {
+private:
+	// Correct/Predict uncertainty
+	Eigen::Matrix<float, 4, 4> R;
+	Eigen::Matrix<float, 7, 7> Q;
 
-	cv::Mat R, Q;
-	cv::Mat homogra;
-	cv::Mat w;
-	cv::Mat I;
-	cv::Mat K;
-	float dt;
-	cv::Mat x_apriori, x_aposteriori; // 7x1 matrices
-	cv::Mat P_apriori, P_aposteriori; // 7x7 matrices
-	cv::Mat H;
-	cv::Mat state;
+	// State estimates (apriori and posteriori)
+	Eigen::Matrix<float, 7, 1> x_apriori, x_aposteriori;
+
+	// State estimates uncertainties (apriori and posteriori)
+	Eigen::Matrix<float, 7, 7> P_apriori, P_aposteriori;
+	Eigen::Matrix<float, 4, 7> H;
+
+	// Additional values to detect estimation start and distinguish between predict/correct order
+	bool firstMeasurement;
+	bool correctTime;
 
 public:
-	EKF(float _Q, float _R, float dt);
-	void predict(long addrW, float dt);
-	void correct(long addrZ);
-	cv::Mat getState(); // TODO!!!
+	// Constructor:
+	// - Qq, Qw, Rr meaning is the same as in the article published in IEEE Sensors Journal:
+	// J. Goslinski, M. Nowicki, P. Skrzypczynski, "Performance Comparison of EKF-based Algorithms for Orientation Estimation Android Platform"
+	EKF(float Qq, float Qw, float Rr);
+
+	// Prediction step
+	// - takes gyroscope measurements
+	// - returns currentEstimate
+	void predict(float *inputArray, float dt, float *currentEstimate);
+
+	// Correction step
+	// - takes accelerometer and magnetometer coordinate system
+	// - returns currentEstimate
+	void correct(float *measurement, float *currentEstimate);
 
 private:
-	pthread_mutex_t stateMtx;
-	cv::Mat jacobian(long addrW);
-	cv::Mat Astate(long addrW);
+	// Additional methods to compute the jacobian
+	Eigen::Matrix<float, 7, 7> jacobian(float* w, float dt);
+
+	// Predict based on last estimate and gyroscope measurement
+	Eigen::Matrix<float, 7, 1> statePrediction(float* w, float dt);
 };

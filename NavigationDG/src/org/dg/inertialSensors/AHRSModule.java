@@ -1,80 +1,76 @@
 package org.dg.inertialSensors;
 
-
-import org.opencv.core.CvType;
-import org.opencv.core.Mat;
-
 import android.util.Log;
 
 public class AHRSModule {
-	
-	// Calls to the native part of the code
-	public native long EKFcreate(float Q, float R, float dt);
-	public native void EKFpredict(long addrEKF, long addrW, float dt);
-	public native void EKFcorrect(long addrEKF, long addrZ);
-	public native void EKFdestroy(long addrEKF);
-	
-	// Variable holding the address of the EKF initialized in native code
-	private long addrEKF;
-	private boolean predictionStart = false;
-	private long startTime;
-	
 	// It is called on the class initialization
 	static {
 		System.loadLibrary("AHRSModule");
-	}
-	
-	public AHRSModule() {
-		 // We create the EKF
-		 createEKF(0.0001f, 10f, 0.01f);
-	}
-	
-	public AHRSModule(float Q, float R, float dt) {
-		 // We create the EKF
-		createEKF(Q, R, dt);
-	}
-	
-	private void createEKF(double Q, double R, double dt) {
-		addrEKF = EKFcreate((float)Q, (float)R, (float)dt);
-		Log.d("EKF", "EKF created succesfully!\n");
-	}
-	
-	
-	// CvType.CV_32F -> Gyroscope data
-	public void predict(float gyroX, float gyroY, float gyroZ)
-	{
-		//Log.d("EKF", "EKF predict start!\n");
-		
-		Mat gyroMeasurement = Mat.zeros(3,1, CvType.CV_32F);
-		gyroMeasurement.put(0, 0, gyroX);
-		gyroMeasurement.put(1, 0, gyroY);
-		gyroMeasurement.put(2, 0, gyroZ);
-		
-		if(!predictionStart)
-			startTime = System.currentTimeMillis();
-		
-		double timeDifference = (System.currentTimeMillis() - startTime)/1000;
-		
-		EKFpredict(addrEKF, gyroMeasurement.getNativeObjAddr(), (float)timeDifference);
-		startTime = System.currentTimeMillis();
+		Log.d("EKF", "EKF lib loaded!\n");
 	}
 
-	// CvType.CV_32F -> Rotation quaternion
-	public void correct(float quatW, float quatX, float quatY, float quatZ)
-	{
-		//Log.d("EKF", "EKF correct start!\n");		
-	
-		Mat rotationMeasurement = Mat.zeros(4,1, CvType.CV_32F);
-		rotationMeasurement.put(0, 0, quatW);
-		rotationMeasurement.put(1, 0, quatX);
-		rotationMeasurement.put(2, 0, quatY);
-		rotationMeasurement.put(3, 0, quatZ);
-		EKFcorrect(addrEKF, rotationMeasurement.getNativeObjAddr());
+	// Definitions of methods available in NDK
+	public native long EKFcreate(float Qq, float Qw, float Rr);
+
+	public native float[] EKFpredict(long addrEKF, float[] input, float dt);
+
+	public native float[] EKFcorrect(long addrEKF, float[] measurement);
+
+	public native void EKFdestroy(long addrEKF);
+
+	// Address of EKF instance
+	private long addrEKF;
+
+	// Most up-to-date estimate
+	float[] orientationEstimate = { 0.0f, 0.0f, 0.0f, 0.0f };
+
+	public AHRSModule() {
+		final float Qq = (float) (9.342 * Math.pow(10, -7));
+		final float Qw = (float) (8.159 * Math.pow(10, -7));
+		final float Rr = 3.672f;
+		create(Qq, Qw, Rr);
 	}
-	
-	public void destroy()
-	{
+
+	public AHRSModule(float Qq, float Qw, float Rr) {
+		// Experimentally found values
+		// - for slow and steady motions:
+		// Qq = 2.528 * 10^7, Qw = 4.483 * 10^7, Rr = 3.672
+		// - for dynamic motions:
+		// Qq = 9.342 * 10^7, Qw = 8.159 * 10^7, Rr = 3.672
+		create(Qq, Qw, Rr);
+	}
+
+	private void create(float Qq, float Qw, float Rr) {
+		addrEKF = EKFcreate(Qq, Qw, Rr);
+	}
+
+	public void predict(float wx, float wy, float wz, float dt) {
+		// w is 3x1 gyro measurement
+		float[] w = new float[3];
+		w[0] = wx;
+		w[1] = wy;
+		w[2] = wz;
+
+		orientationEstimate = EKFpredict(addrEKF, w, dt);
+	}
+
+	public void correct(float q1, float q2, float q3, float q4) {
+		// z is 4x1 quat orientation
+		float[] z = new float[4];
+		z[0] = (float) q1;
+		z[1] = (float) q2;
+		z[2] = (float) q3;
+		z[3] = (float) q4;
+
+		orientationEstimate = EKFcorrect(addrEKF, z);
+	}
+
+	public float[] getEstimate() {
+		return orientationEstimate;
+	}
+
+	public void destroy() {
 		EKFdestroy(addrEKF);
 	}
-	
+
 }

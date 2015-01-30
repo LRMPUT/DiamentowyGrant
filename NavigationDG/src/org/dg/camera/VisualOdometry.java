@@ -22,21 +22,28 @@ import org.opencv.features2d.FeatureDetector;
 import org.opencv.highgui.Highgui;
 import org.opencv.imgproc.Imgproc;
 
+import android.R.string;
 import android.os.Environment;
 import android.util.Log;
+
+
 
 public class VisualOdometry implements Runnable {
 
 	private Mat kmeansCenters;
 	private Mat[] bufImgs = new Mat[20];
 	private Mat[] words = new Mat[20];
+	
+	public Mat[] imagesToProcess = new Mat[200];
+	private Mat motionEstimate = new Mat();
+	private Mat scaleEstimate = new Mat();
 
 	public int keypointsDetected, descriptionSize, detectionTime,
 			descriptionTime;
 	public int trackingTime,  matchingTime;
 	public int trackingSize, matchingSize1, matchingSize2;
 	public int RANSACTime, RANSACCorrect;
-
+	
 	static {
 		System.loadLibrary("VisualOdometryModule");
 	}
@@ -45,11 +52,31 @@ public class VisualOdometry implements Runnable {
 	
 	}
 
+	void releaseImg(int i)
+	{
+		imagesToProcess[i].release();
+	}
+	
+	Mat getMotionEstimate()
+	{
+		return motionEstimate;
+	}
+	
+	Mat getScaleEstimate()
+	{
+		return scaleEstimate;
+	}
+	
 	// PEMRA
 	@Override
 	public void run() {
-		
-//		testingFivePoint();
+
+	}
+	
+	
+	
+
+	public void PEMRA() {
 		Log.d("PEMRA", "Started");
 
 		File root = Environment.getExternalStorageDirectory();
@@ -283,14 +310,25 @@ public class VisualOdometry implements Runnable {
 		RANSACTest(points1.getNativeObjAddr(), points2.getNativeObjAddr(), numOfThreads, nPoint);
 	}
 	
+	
+	
+	// MSc
+	public void trajectoryTest(int numOfThreads, int detector, int descriptor, int size) 
+	{
+		estimateTrajectory(numOfThreads, detector, descriptor, size);
+	}
+
+	
+	public native void estimateTrajectory(int numOfThreads, int detector, int descriptor, int size);
+	
 	// PEMRA
 	public native int detectDescript(long matAddrImg, long matAddrDescriptors);
 
 	public native void kmeans(int k, int referenceCount);
 
-	// REST
 
 	
+	// REST
 
 	public native void detectDescribeFeatures(long matAddrGr, int param, int param2);
 	

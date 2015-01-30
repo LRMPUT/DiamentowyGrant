@@ -456,23 +456,22 @@ public class MainActivity extends Activity {
 	class UpdateGraph extends TimerTask {
 		public void run() {
 
-			 // get angle
-			 //float [] orient = inertialSensors.getCurrentOrient();
-			 //float yawZ = orient[2];
-			 
-			 float yawZ = inertialSensors.getYawForStepometer();
-			 
-			 Log.d(TAG, "Yaw for stepometer: " + yawZ + " in deg");
-			 
-			 // We need to change yawZ into radians and change direction
-			 yawZ = -yawZ * 3.141592653589793f / 180.0f;
-			
 			 // get distance
 			 double distance = inertialSensors.getGraphStepDistance();
 			
 			 // Adding WiFi measurement
 			 if ( distance > 0.1 )
+			 {
+				 // get angle
+				 float yawZ = inertialSensors.getYawForStepometer();
+				 
+				 Log.d(TAG, "Yaw for stepometer: " + yawZ + " in deg");
+				 
+				 // We need to change yawZ into radians and change direction
+				 yawZ = (float) (-yawZ * Math.PI / 180.0f);
+				 
 				 graphManager.addStepometerMeasurement(distance, yawZ);
+			 }
 			
 			
 			 // Adding WiFi measurements

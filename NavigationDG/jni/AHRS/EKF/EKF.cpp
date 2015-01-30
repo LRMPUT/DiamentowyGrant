@@ -1,161 +1,181 @@
+/**
+ * @author Michal Nowicki michal.nowicki@put.poznan.pl
+ *
+ */
+
 #include "EKF.h"
 
+EKF::EKF(float Qq, float Qw, float Rr) {
 
-EKF::EKF(float _Q, float _R, float _dt)
-{
-	this->Q = cv::Mat::eye(7, 7, CV_32F) * _Q;
-	this->R = cv::Mat::eye(4, 4, CV_32F) * _R;
+	// Updating covariances based on init values
+	this->Q = Eigen::Matrix<float, 7, 7>::Identity();
+	this->Q.block<4,4>(0,0) = Eigen::Matrix<float, 4, 4>::Identity() * Qq;
+	this->Q.block<3,3>(4,4) = Eigen::Matrix<float, 3, 3>::Identity() * Qw;
+	this->R = Eigen::Matrix<float, 4, 4>::Identity() * Rr;
 
-	this->homogra =  cv::Mat::zeros(3, 1, CV_32F);
-	this->w = cv::Mat::zeros(3, 1, CV_32F);
-	this->I = cv::Mat::eye(7, 7, CV_32F);
-	this->K = cv::Mat::zeros(7,4,CV_32F);
-	this->dt = _dt;
-	this->x_apriori = cv::Mat::zeros(7,1,CV_32F);
-	this->x_aposteriori = cv::Mat::zeros(7,1,CV_32F);
-	this->P_apriori = cv::Mat::zeros(7,7,CV_32F);
-	this->P_aposteriori = cv::Mat::zeros(7,7,CV_32F);
+	// Setting initial values
+	this->x_apriori.setZero();
+	this->x_aposteriori.setZero();
+	this->P_apriori = this->Q;
+	this->P_aposteriori = this->Q;
 
-	this->H = cv::Mat::zeros(4, 7, CV_32F);
-	this->H.at<float>(0,0) = 1.0;
-	this->H.at<float>(1,1) = 1.0;
-	this->H.at<float>(2,2) = 1.0;
-	this->H.at<float>(3,3) = 1.0;
+	this->H.setZero();
+	for (int i=0;i<4;i++)
+		this->H(i, i) = 1.0;
 
-	pthread_mutex_init(&stateMtx, NULL);
+	firstMeasurement = true;
+	correctTime = true;
 }
 
-cv::Mat EKF::jacobian(long addrW) {
-	cv::Mat &w = *(cv::Mat *) addrW;
-	cv::Mat F = cv::Mat::zeros(7, 7, CV_32F);
+Eigen::Matrix<float, 7, 7> EKF::jacobian(float *wArray, float dt) {
+	Eigen::Matrix<float, 7, 7> F = Eigen::Matrix<float, 7, 7>::Identity();
+	Eigen::Matrix<float, 3, 1> w;
+	w << wArray[0], wArray[1], wArray[2];
 
 	// 1st row
-	F.at<float>(0, 0) = 1.0;
-	F.at<float>(0, 1) = - 0.5 * (w.at<float>(0) - this->x_apriori.at<float>(4))
-			* this->dt;
-	F.at<float>(0, 2) = - 0.5 * (w.at<float>(1) - this->x_apriori.at<float>(5)) * this->dt;
-	F.at<float>(0, 3) = - 0.5 * (w.at<float>(2) - this->x_apriori.at<float>(6)) * this->dt;
-	F.at<float>(0, 4) = 0.5 * this->dt * this->x_apriori.at<float>(1);
-	F.at<float>(0, 5) = 0.5 * this->dt * this->x_apriori.at<float>(2);
-	F.at<float>(0, 6) = 0.5 * this->dt * this->x_apriori.at<float>(3);
+	F(0, 0) = 1.0;
+	F(0, 1) = -0.5 * (w(0) - this->x_apriori(4)) * dt;
+	F(0, 2) = -0.5 * (w(1) - this->x_apriori(5)) * dt;
+	F(0, 3) = -0.5 * (w(2) - this->x_apriori(6)) * dt;
+	F(0, 4) = 0.5 * dt * this->x_apriori(1);
+	F(0, 5) = 0.5 * dt * this->x_apriori(2);
+	F(0, 6) = 0.5 * dt * this->x_apriori(3);
 
 	// 2nd row
-	F.at<float>(1, 0) = 0.5 * (w.at<float>(0) - this->x_apriori.at<float>(4)) * this->dt;
-	F.at<float>(1, 1) = 1;
-	F.at<float>(1, 2) = 0.5 * (w.at<float>(2) - this->x_apriori.at<float>(6)) * this->dt;
-	F.at<float>(1, 3) = - 0.5 * (w.at<float>(1) - this->x_apriori.at<float>(5)) * this->dt;
-	F.at<float>(1, 4) = - 0.5 * this->dt * this->x_apriori.at<float>(0);
-	F.at<float>(1, 5) =  0.5 * this->dt * this->x_apriori.at<float>(3);
-	F.at<float>(1, 6) = - 0.5 * this->dt * this->x_apriori.at<float>(2);
+	F(1, 0) = 0.5 * (w(0) - this->x_apriori(4)) * dt;
+	F(1, 1) = 1;
+	F(1, 2) = 0.5 * (w(2) - this->x_apriori(6)) * dt;
+	F(1, 3) = -0.5 * (w(1) - this->x_apriori(5)) * dt;
+	F(1, 4) = -0.5 * dt * this->x_apriori(0);
+	F(1, 5) = 0.5 * dt * this->x_apriori(3);
+	F(1, 6) = -0.5 * dt * this->x_apriori(2);
 
 	// 3rd row
-	F.at<float>(2, 0) = 0.5 * (w.at<float>(1) - this->x_apriori.at<float>(5)) * this->dt;
-	F.at<float>(2, 1) = - 0.5 * (w.at<float>(2) - this->x_apriori.at<float>(6)) * this->dt;
-	F.at<float>(2, 2) = 1;
-	F.at<float>(2, 3) = 0.5 * (w.at<float>(0) - this->x_apriori.at<float>(4)) * this->dt;
-	F.at<float>(2, 4) = - 0.5 * this->dt * this->x_apriori.at<float>(3);
-	F.at<float>(2, 5) = - 0.5 * this->dt * this->x_apriori.at<float>(0);
-	F.at<float>(2, 6) = 0.5 * this->dt * this->x_apriori.at<float>(1);
+	F(2, 0) = 0.5 * (w(1) - this->x_apriori(5)) * dt;
+	F(2, 1) = -0.5 * (w(2) - this->x_apriori(6)) * dt;
+	F(2, 2) = 1;
+	F(2, 3) = 0.5 * (w(0) - this->x_apriori(4)) * dt;
+	F(2, 4) = -0.5 * dt * this->x_apriori(3);
+	F(2, 5) = -0.5 * dt * this->x_apriori(0);
+	F(2, 6) = 0.5 * dt * this->x_apriori(1);
 
 	// 4th row
-	F.at<float>(3, 0) = 0.5 * (w.at<float>(2) - this->x_apriori.at<float>(6)) * this->dt;
-	F.at<float>(3, 1) =	0.5 * (w.at<float>(1) - this->x_apriori.at<float>(5)) * this->dt;
-	F.at<float>(3, 2) =	- 0.5 * (w.at<float>(0) - this->x_apriori.at<float>(4)) * this->dt;
-	F.at<float>(3, 3) = 1;
-	F.at<float>(3, 4) = 0.5 * this->dt * this->x_apriori.at<float>(2);
-	F.at<float>(3, 5) = - 0.5 * this->dt * this->x_apriori.at<float>(1);
-	F.at<float>(3, 6) = - 0.5 * this->dt * this->x_apriori.at<float>(0);
+	F(3, 0) = 0.5 * (w(2) - this->x_apriori(6)) * dt;
+	F(3, 1) = 0.5 * (w(1) - this->x_apriori(5)) * dt;
+	F(3, 2) = -0.5 * (w(0) - this->x_apriori(4)) * dt;
+	F(3, 3) = 1;
+	F(3, 4) = 0.5 * dt * this->x_apriori(2);
+	F(3, 5) = -0.5 * dt * this->x_apriori(1);
+	F(3, 6) = -0.5 * dt * this->x_apriori(0);
 
 	// 5th row
-	F.at<float>(4,4) = 1.0;
+	F(4, 4) = 1.0;
 
 	// 6th row
-	F.at<float>(5,5) = 1.0;
+	F(5, 5) = 1.0;
 
 	// 7th row
-	F.at<float>(6,6) = 1.0;
+	F(6, 6) = 1.0;
 
 	return F;
 }
 
-cv::Mat EKF::Astate(long addrW) {
-	cv::Mat &w = *(cv::Mat *) addrW;
-	cv::Mat F = cv::Mat::zeros(7, 1, CV_32F);
+Eigen::Matrix<float, 7, 1> EKF::statePrediction(float* wArray, float dt) {
+	Eigen::Matrix<float, 7, 1> F = Eigen::Matrix<float, 7, 1>::Identity();
+	Eigen::Matrix<float, 3, 1> w;
+	w << wArray[0], wArray[1], wArray[2];
 
-	F.at<float>(4) = this->x_aposteriori.at<float>(4);
-	F.at<float>(5) = this->x_aposteriori.at<float>(5);
-	F.at<float>(6) = this->x_aposteriori.at<float>(6);
+	F(4) = this->x_aposteriori(4);
+	F(5) = this->x_aposteriori(5);
+	F(6) = this->x_aposteriori(6);
 
-	cv::Mat A = cv::Mat::zeros(4, 4, CV_32F);
+	Eigen::Matrix<float, 4, 4> A;
+	A.setZero();
+
 	// A 1st row
-	A.at<float>(0, 0) = 1.0;
-	A.at<float>(0, 1) = -0.5 * (w.at<float>(2) - F.at<float>(6)) * this->dt;
-	A.at<float>(0, 2) = 0.5 * (w.at<float>(1) - F.at<float>(5)) * this->dt;
-	A.at<float>(0, 3) = 0.5 * (w.at<float>(0) - F.at<float>(4)) * this->dt;
+	A(0, 0) = 1.0;
+	A(0, 1) = -0.5 * (w(0) - F(4)) * dt;
+	A(0, 2) = -0.5 * (w(1) - F(5)) * dt;
+	A(0, 3) = -0.5 * (w(2) - F(6)) * dt;
 
 	// A 2nd row
-	A.at<float>(1, 0) = 0.5 * (w.at<float>(2) - F.at<float>(6)) * this->dt;
-	A.at<float>(1, 1) = 1;
-	A.at<float>(1, 2) = -0.5 * (w.at<float>(0) - F.at<float>(4)) * this->dt;
-	A.at<float>(1, 3) = 0.5 * (w.at<float>(1) - F.at<float>(5)) * this->dt;
+	A(1, 0) = 0.5 * (w(0) - F(4)) * dt;
+	A(1, 1) = 1;
+	A(1, 2) = 0.5 * (w(2) - F(6)) * dt;
+	A(1, 3) = -0.5 * (w(1) - F(5)) * dt;
 
 	// A 3rd row
-	A.at<float>(2, 0) = -0.5 * (w.at<float>(1) - F.at<float>(5)) * this->dt;
-	A.at<float>(2, 1) = 0.5 * (w.at<float>(0) - F.at<float>(4)) * this->dt;
-	A.at<float>(2, 2) = 1;
-	A.at<float>(2, 3) = 0.5 * (w.at<float>(2) - F.at<float>(6)) * this->dt;
+	A(2, 0) = 0.5 * (w(1) - F(5)) * dt;
+	A(2, 1) = -0.5 * (w(2) - F(6)) * dt;
+	A(2, 2) = 1;
+	A(2, 3) = 0.5 * (w(0) - F(4)) * dt;
 
 	// A 4th row
-	A.at<float>(3, 0) = -0.5 * (w.at<float>(0) - F.at<float>(4)) * this->dt;
-	A.at<float>(3, 1) = -0.5 * (w.at<float>(1) - F.at<float>(5)) * this->dt;
-	A.at<float>(3, 2) = -0.5 * (w.at<float>(2) - F.at<float>(6)) * this->dt;
-	A.at<float>(3, 3) = 1;
-
+	A(3, 0) = 0.5 * (w(2) - F(6)) * dt;
+	A(3, 1) = 0.5 * (w(1) - F(5)) * dt;
+	A(3, 2) = -0.5 * (w(0) - F(4)) * dt;
+	A(3, 3) = 1;
 
 	// Only (1:4)
-	cv::Mat x(this->x_aposteriori, cv::Rect(0,0,1,4));
-	x = A * x;
+	Eigen::Matrix<float, 4, 1> x = A * (this->x_aposteriori).block<4, 1>(0, 0);
 
-	F.at<float>(0) = x.at<float>(0);
-	F.at<float>(1) = x.at<float>(1);
-	F.at<float>(2) = x.at<float>(2);
-	F.at<float>(3) = x.at<float>(3);
-
+	for (int i=0;i<4;i++)
+		F(i) = x(i);
 	return F;
 }
 
-cv::Mat EKF::getState()
-{
-	 pthread_mutex_lock(&stateMtx);
-	 cv::Mat x;
-	 state.copyTo(x);
-	 pthread_mutex_unlock(&stateMtx);
-	 return x;
+void EKF::predict(float* inputArray, float _dt, float *currentEstimate) {
+
+	// We should do predict or correct?
+	if (!correctTime)
+	{
+		this->x_apriori = this->statePrediction(inputArray, _dt);
+		Eigen::Matrix<float, 7, 7> F = this->jacobian(inputArray, _dt);
+		this->P_apriori = F * this->P_aposteriori * F.transpose() + this->Q;
+		correctTime = true;
+	}
+	// Update current estimate
+	for (int i=0;i<4;i++)
+		currentEstimate[i] = this->x_aposteriori(i);
 }
 
+void EKF::correct(float* measurement, float* currentEstimate) {
 
-void EKF::predict(long addrW, float _dt) {
-	this->dt = _dt;
-	this->x_apriori = this->Astate(addrW);
+	// First measurement -> we start estimation from acc/mag position
+	if(firstMeasurement)
+	{
+		firstMeasurement = false;
+		correctTime = false;
+		for (int i=0;i<4;i++)
+			this->x_aposteriori(i) = measurement[i];
+		// Lets init it with some other uncertainty
+		// this->P_aposteriori = ??? ;
+	}
+	// We should do predict or correct?
+	else if (correctTime)
+	{
+		correctTime = false;
 
-	pthread_mutex_lock(&stateMtx);
-	this->x_apriori.copyTo(this->state);
-	pthread_mutex_unlock(&stateMtx);
+		// Converting measurements
+		Eigen::Matrix<float, 4, 1> z;
+		z << measurement[0], measurement[1], measurement[2], measurement[3];
 
-	cv::Mat F = this->jacobian(addrW);
-	this->P_apriori = F * this->P_aposteriori * F.t() + this->Q;
-};
+		// Some additional variables
+		Eigen::Matrix<float, 7, 7> I = Eigen::Matrix<float, 7, 7>::Identity();
+		Eigen::Matrix<float, 7, 4> K = Eigen::Matrix<float, 7, 4>::Zero();
 
-void EKF::correct(long addrZ) {
-	cv::Mat &z = *(cv::Mat *)addrZ;
-	this->K = (this->P_apriori * this->H.t())
-			* (this->H * this->P_apriori * this->H.t() + this->R).inv();
-	this->x_aposteriori = this->x_apriori
-			+ this->K * (z - this->H * this->x_apriori);
-	this->P_aposteriori = (this->I - this->K * this->H) * this->P_apriori;
+		// EKF equations
+		K =
+				(this->P_apriori * this->H.transpose())
+						* (this->H * this->P_apriori * this->H.transpose()
+								+ this->R).inverse();
+		this->x_aposteriori = this->x_apriori
+			+ K * (z - this->H * this->x_apriori);
+		this->P_aposteriori = (I - K * this->H) * this->P_apriori;
 
-	pthread_mutex_lock(&stateMtx);
-	this->x_aposteriori.copyTo(this->state);
-	pthread_mutex_unlock(&stateMtx);
+	}
 
-};
+	// Update current estimate
+	for (int i=0;i<4;i++)
+		currentEstimate[i] = this->x_aposteriori(i);
+}
