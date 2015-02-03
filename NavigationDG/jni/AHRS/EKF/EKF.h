@@ -4,12 +4,13 @@
  */
 
 #include "../Eigen/Eigen"
+#include <deque>
 
 class EKF {
 private:
 	// Correct/Predict uncertainty
 	Eigen::Matrix<float, 4, 4> R;
-	Eigen::Matrix<float, 7, 7> Q;
+	Eigen::Matrix<float, 7, 7> Q, Qmin, Qmax, Qdiff;
 
 	// State estimates (apriori and posteriori)
 	Eigen::Matrix<float, 7, 1> x_apriori, x_aposteriori;
@@ -22,11 +23,15 @@ private:
 	bool firstMeasurement;
 	bool correctTime;
 
+	// Measurement window used in AEKF
+	std::deque<float> measurementWindow;
+	static const int measurementWindowSize = 10;
+
 public:
 	// Constructor:
 	// - Qq, Qw, Rr meaning is the same as in the article published in IEEE Sensors Journal:
 	// J. Goslinski, M. Nowicki, P. Skrzypczynski, "Performance Comparison of EKF-based Algorithms for Orientation Estimation Android Platform"
-	EKF(float Qq, float Qw, float Rr);
+	EKF(float Qqmin, float Qwmin, float Qqmax, float Qwmax, float Rr);
 
 	// Prediction step
 	// - takes gyroscope measurements

@@ -5,12 +5,29 @@
 
 #include "EKF.h"
 
-EKF::EKF(float Qq, float Qw, float Rr) {
+EKF::EKF(float Qqmin, float Qwmin, float Qqmax, float Qwmax, float Rr) {
 
+	//
 	// Updating covariances based on init values
-	this->Q = Eigen::Matrix<float, 7, 7>::Identity();
-	this->Q.block<4,4>(0,0) = Eigen::Matrix<float, 4, 4>::Identity() * Qq;
-	this->Q.block<3,3>(4,4) = Eigen::Matrix<float, 3, 3>::Identity() * Qw;
+	//
+
+	// Minimal
+	this->Qmin = Eigen::Matrix<float, 7, 7>::Identity();
+	this->Qmin.block<4,4>(0,0) = Eigen::Matrix<float, 4, 4>::Identity() * Qqmin;
+	this->Qmin.block<3,3>(4,4) = Eigen::Matrix<float, 3, 3>::Identity() * Qwmin;
+
+	// Maximal
+	this->Qmax = Eigen::Matrix<float, 7, 7>::Identity();
+	this->Qmax.block<4,4>(0,0) = Eigen::Matrix<float, 4, 4>::Identity() * Qqmax;
+	this->Qmax.block<3,3>(4,4) = Eigen::Matrix<float, 3, 3>::Identity() * Qwmax;
+
+	// Compute diff
+	this->Qdiff = this->Qmax - this->Qmin;
+
+	// Start with minimal
+	this->Q = this->Qmin;
+
+	// Covariance of predict
 	this->R = Eigen::Matrix<float, 4, 4>::Identity() * Rr;
 
 	// Setting initial values
@@ -173,6 +190,40 @@ void EKF::correct(float* measurement, float* currentEstimate) {
 			+ K * (z - this->H * this->x_apriori);
 		this->P_aposteriori = (I - K * this->H) * this->P_apriori;
 
+		//
+		// AEKF
+		//
+		measurementWindow.push_back(measurement[0]);
+		while (measurementWindow.size() > measurementWindowSize)
+			measurementWindow.pop_front();
+
+		if ( measurementWindow.size() == measurementWindowSize)
+		{
+			// Mean of elements
+			float sum = 0.0f;
+			for (int i=0;i<measurementWindowSize;i++)
+				sum += measurementWindow[i];
+			sum /= measurementWindowSize;
+
+			// Variance
+			float var = 0.0f;
+			for (int i=0;i<measurementWindowSize;i++)
+				var += pow(measurementWindow[i] - sum,2);
+			var /= measurementWindowSize;
+
+			// AEKF covariance steering
+			if ( var < 0.000005 )
+				this->Q += this->Qdiff * 0.000005;
+			else
+				this->Q -= this->Qdiff * 0.00001;
+
+			// Check the borders of the covariance
+			if ( this->Q(0,0) < this->Qmin(0,0) )
+				this->Q = this->Qmin;
+			else if ( this->Q(0,0) > this->Qmax(0,0) )
+				this->Q = this->Qmax;
+
+		}
 	}
 
 	// Update current estimate

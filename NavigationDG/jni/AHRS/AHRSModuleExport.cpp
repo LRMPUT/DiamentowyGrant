@@ -12,26 +12,26 @@ using namespace std;
 extern "C" {
 
 // Export declarations
-JNIEXPORT jlong JNICALL Java_org_dg_inertialSensors_AHRSModule_EKFcreate(
-		JNIEnv*, jobject, jfloat Qq, jfloat Qw, jfloat Rr);
-JNIEXPORT jfloatArray JNICALL Java_org_dg_inertialSensors_AHRSModule_EKFpredict(
+JNIEXPORT jlong JNICALL Java_org_put_dg_inertialSensors_AHRSModule_EKFcreate(
+		JNIEnv*, jobject, jfloat Qqmin, jfloat Qwmin, jfloat Qqmax, jfloat Qwmax, jfloat Rr);
+JNIEXPORT jfloatArray JNICALL Java_org_put_dg_inertialSensors_AHRSModule_EKFpredict(
 		JNIEnv* env, jobject obj, jlong addrEKF, jfloatArray x, jfloat dt);
-JNIEXPORT jfloatArray JNICALL Java_org_dg_inertialSensors_AHRSModule_EKFcorrect(
+JNIEXPORT jfloatArray JNICALL Java_org_put_dg_inertialSensors_AHRSModule_EKFcorrect(
 		JNIEnv* env, jobject, jlong addrEKF, jfloatArray measurement);
-JNIEXPORT void JNICALL Java_org_dg_inertialSensors_AHRSModule_EKFdestroy(
+JNIEXPORT void JNICALL Java_org_put_dg_inertialSensors_AHRSModule_EKFdestroy(
 		JNIEnv*, jobject, jlong addrEKF);
 //
 // Implementation of export methods
 //
 
-JNIEXPORT jlong JNICALL Java_org_dg_inertialSensors_AHRSModule_EKFcreate(
-		JNIEnv*, jobject, jfloat Qq, jfloat Qw, jfloat Rr) {
+JNIEXPORT jlong JNICALL Java_org_put_dg_inertialSensors_AHRSModule_EKFcreate(
+		JNIEnv*, jobject, jfloat Qqmin, jfloat Qwmin, jfloat Qqmax, jfloat Qwmax, jfloat Rr) {
 
 	// Create new object and return the pointer to it's instance
-	return (long) (new EKF(Qq, Qw, Rr));
+	return (long) (new EKF(Qqmin, Qwmin, Qqmax, Qwmax, Rr));
 }
 
-JNIEXPORT jfloatArray JNICALL Java_org_dg_inertialSensors_AHRSModule_EKFpredict(
+JNIEXPORT jfloatArray JNICALL Java_org_put_dg_inertialSensors_AHRSModule_EKFpredict(
 		JNIEnv* env, jobject obj, jlong addrEKF, jfloatArray x, jfloat dt) {
 
 	// Extracting array initialized in Java
@@ -52,7 +52,7 @@ JNIEXPORT jfloatArray JNICALL Java_org_dg_inertialSensors_AHRSModule_EKFpredict(
 	return state;
 }
 
-JNIEXPORT jfloatArray JNICALL Java_org_dg_inertialSensors_AHRSModule_EKFcorrect(
+JNIEXPORT jfloatArray JNICALL Java_org_put_dg_inertialSensors_AHRSModule_EKFcorrect(
 		JNIEnv* env, jobject, jlong addrEKF, jfloatArray measurement) {
 
 	// Extracting array initialized in Java
@@ -73,7 +73,7 @@ JNIEXPORT jfloatArray JNICALL Java_org_dg_inertialSensors_AHRSModule_EKFcorrect(
 	return state;
 }
 
-JNIEXPORT void JNICALL Java_org_dg_inertialSensors_AHRSModule_EKFdestroy(
+JNIEXPORT void JNICALL Java_org_put_dg_inertialSensors_AHRSModule_EKFdestroy(
 		JNIEnv* env, jobject, jlong addrEKF) {
 
 	// Destroy object

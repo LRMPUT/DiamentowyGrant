@@ -1,7 +1,6 @@
 package org.dg.main;
 
 import java.util.List;
-import java.util.Locale;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -12,17 +11,18 @@ import org.dg.camera.CameraSaver;
 import org.dg.camera.Preview;
 import org.dg.graphManager.GraphManager;
 import org.dg.graphManager.wiFiMeasurement;
-import org.dg.inertialSensors.Stepometer;
+import org.dg.inertialSensors.InertialSensors;
 import org.dg.main.R;
+import org.dg.openAIL.OpenAndroidIndoorLocalization;
 import org.dg.wifi.WifiScanner;
 
 import android.app.Activity;
 import android.content.Context;
 import android.content.IntentFilter;
 import android.hardware.Camera;
+import android.hardware.SensorManager;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.Handler;
 import android.util.Log;
 import android.view.Menu;
@@ -37,7 +37,6 @@ import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 import android.widget.Toast;
-import android.app.ActionBar;
 
 public class MainActivity extends Activity {
 	// public class MainActivity extends ActionBarActivity {
@@ -66,16 +65,15 @@ public class MainActivity extends Activity {
 	private Timer updateGraphTimer = new Timer();
 	public Handler mHandlerOrient, mHandlerWiFiRecognition;
 
-	// Inertial sensors
-	android.hardware.SensorManager sensorManager;
-	org.dg.inertialSensors.InertialSensors inertialSensors;
+	// Class implementing the localization 
+	OpenAndroidIndoorLocalization openAIL;
+	
+	
+	
 
-	// WiFi
-	WifiManager wifiManager;
-	org.dg.wifi.WifiScanner wifiScanner;
 
-	// Graph
-	GraphManager graphManager;
+
+	
 
 	// Methods
 	private BaseLoaderCallback mLoaderCallback = new BaseLoaderCallback(this) {
@@ -134,19 +132,23 @@ public class MainActivity extends Activity {
 				LayoutParams.FILL_PARENT));
 		((FrameLayout) findViewById(R.id.preview)).addView(preview);
 		preview.setKeepScreenOn(true);
+		
+		// Init library
+		openAIL = new OpenAndroidIndoorLocalization();
 
 		// Init graph
-		graphManager = new GraphManager();
+		openAIL.graphManager = new GraphManager();
 
-		// Init Sensor Manager
+		// Init Sensor Managers
+		SensorManager sensorManager;
 		sensorManager = (android.hardware.SensorManager) getSystemService(Context.SENSOR_SERVICE);
-		inertialSensors = new org.dg.inertialSensors.InertialSensors(
-				sensorManager);
+		openAIL.inertialSensors = new InertialSensors(sensorManager);
 
 		// Init WiFi
+		WifiManager wifiManager;
 		wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
-		wifiScanner = new WifiScanner(wifiManager);
-		registerReceiver(wifiScanner, new IntentFilter(
+		openAIL.wifiScanner = new WifiScanner(wifiManager);
+		registerReceiver(openAIL.wifiScanner, new IntentFilter(
 				WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
 
 		// Add buttons
@@ -178,7 +180,7 @@ public class MainActivity extends Activity {
 		initButtonStartOrientation(R.id.buttonMainView2, R.id.buttonMainView3);
 
 		// 3. Record inertial sensors
-		initButtonRecordInertialSensors(R.id.buttonMainView3,
+		initButtonRecordinertialSensors(R.id.buttonMainView3,
 				R.id.buttonMainView2);
 
 		// 4. Record one WiFi scan
@@ -216,7 +218,7 @@ public class MainActivity extends Activity {
 		buttonAddMagneticPlaceToRecognition .setText("Add magnetic place to recognition");
 		buttonAddMagneticPlaceToRecognition .setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
-				inertialSensors.addMagneticRecognitionPlace();
+				openAIL.inertialSensors.addMagneticRecognitionPlace();
 			}
 		});
 	}
@@ -230,13 +232,13 @@ public class MainActivity extends Activity {
 		buttonStartFloorDetection.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
 				Button buttonStartFloorDetection = (Button) findViewById(id);
-				if (inertialSensors.isBarometerProcessingStarted()) {
+				if (openAIL.inertialSensors.isBarometerProcessingStarted()) {
 					buttonStartFloorDetection.setText("Start barometer");
-					inertialSensors.stopBarometerProcessing();
+					openAIL.inertialSensors.stopBarometerProcessing();
 					;
 				} else {
 					buttonStartFloorDetection.setText("Stop barometer");
-					inertialSensors.startBarometerProcessing();
+					openAIL.inertialSensors.startBarometerProcessing();
 					;
 				}
 
@@ -253,7 +255,7 @@ public class MainActivity extends Activity {
 		buttonStartGraphTestFromFile.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
 				{
-					graphManager.optimizeGraphInFile("graphFile.g2o");
+					openAIL.graphManager.optimizeGraphInFile("graphFile.g2o");
 
 				}
 			}
@@ -272,15 +274,15 @@ public class MainActivity extends Activity {
 			public void onClick(View v) {
 				{
 					Button buttonStartGraphOnline = (Button) findViewById(id);
-					if (!graphManager.started()) {
-						graphManager.start();
+					if (!openAIL.graphManager.started()) {
+						openAIL.graphManager.start();
 						updateGraphTimer.scheduleAtFixedRate(new UpdateGraph(),
 								1000, 200);
 						buttonStartGraphOnline.setText("Optimize graph");
 					} else {
-						graphManager.stop();
+						openAIL.graphManager.stop();
 						updateGraphTimer.cancel();
-						graphManager.optimize(100);
+						openAIL.graphManager.optimize(100);
 						buttonStartGraphOnline.setText("Start graph");
 					}
 
@@ -298,12 +300,12 @@ public class MainActivity extends Activity {
 		buttonRunStepometer.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
 				Button buttonRunStepometer = (Button) findViewById(id);
-				if (inertialSensors.isStepometerStarted()) {
+				if (openAIL.inertialSensors.isStepometerStarted()) {
 					buttonRunStepometer.setText("Start stepometer");
-					inertialSensors.stopStepometer();
+					openAIL.inertialSensors.stopStepometer();
 				} else {
 					buttonRunStepometer.setText("Stop stepometer");
-					inertialSensors.startStepometer();
+					openAIL.inertialSensors.startStepometer();
 				}
 
 			}
@@ -319,7 +321,7 @@ public class MainActivity extends Activity {
 		buttonAddWiFiScanToRecognition
 				.setOnClickListener(new OnClickListener() {
 					public void onClick(View v) {
-						wifiScanner.addLastScanToRecognition();
+						openAIL.wifiScanner.addLastScanToRecognition();
 
 						if (wiFiRecognitionStarted == false) {
 							wiFiRecognitionTimer
@@ -340,12 +342,12 @@ public class MainActivity extends Activity {
 		buttonRecordSingleWiFiScan.setText("Do a single WiFi scan");
 		buttonRecordSingleWiFiScan.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
-				if (inertialSensors.getState()) {
-					wifiScanner.startTimestampOfGlobalTime(inertialSensors
+				if (openAIL.inertialSensors.getState()) {
+					openAIL.wifiScanner.startTimestampOfGlobalTime(openAIL.inertialSensors
 							.getTimestamp());
 				}
-				wifiScanner.singleScan(true).continuousScanning(false);
-				wifiScanner.startScanning();
+				openAIL.wifiScanner.singleScan(true).continuousScanning(false);
+				openAIL.wifiScanner.startScanning();
 			}
 		});
 	}
@@ -363,23 +365,23 @@ public class MainActivity extends Activity {
 						Button buttonRecordContinuousWiFiScans = (Button) findViewById(id);
 						Button buttonRecordSingleWiFiScan = (Button) findViewById(idToBlock);
 
-						if (wifiScanner.getRunningState()) {
+						if (openAIL.wifiScanner.getRunningState()) {
 							buttonRecordContinuousWiFiScans
 									.setText("Start WiFi scans");
 							buttonRecordSingleWiFiScan.setEnabled(true);
-							wifiScanner.stopScanning();
+							openAIL.wifiScanner.stopScanning();
 						} else {
 							buttonRecordContinuousWiFiScans
 									.setText("Stop WiFi scans");
 							buttonRecordSingleWiFiScan.setEnabled(false);
-							if (inertialSensors.getState()) {
-								wifiScanner
-										.startTimestampOfGlobalTime(inertialSensors
+							if (openAIL.inertialSensors.getState()) {
+								openAIL.wifiScanner
+										.startTimestampOfGlobalTime(openAIL.inertialSensors
 												.getTimestamp());
 							}
-							wifiScanner.singleScan(false).continuousScanning(
+							openAIL.wifiScanner.singleScan(false).continuousScanning(
 									true);
-							wifiScanner.startScanning();
+							openAIL.wifiScanner.startScanning();
 						}
 					}
 				});
@@ -388,27 +390,27 @@ public class MainActivity extends Activity {
 	/**
 	 * 
 	 */
-	private void initButtonRecordInertialSensors(final int id,
+	private void initButtonRecordinertialSensors(final int id,
 			final int idToBlock) {
-		Button buttonRecordInertialSensors = (Button) findViewById(id);
-		buttonRecordInertialSensors.setText("Record inertial sensors");
+		Button buttonRecordinertialSensors = (Button) findViewById(id);
+		buttonRecordinertialSensors.setText("Record inertial sensors");
 
-		buttonRecordInertialSensors.setOnClickListener(new OnClickListener() {
+		buttonRecordinertialSensors.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
-				Button buttonRecordInertialSensors = (Button) findViewById(id);
+				Button buttonRecordinertialSensors = (Button) findViewById(id);
 				Button buttonStartOrientation = (Button) findViewById(idToBlock);
-				if (inertialSensors.getState() == false) {
+				if (openAIL.inertialSensors.getState() == false) {
 					buttonStartOrientation.setEnabled(false);
-					buttonRecordInertialSensors
+					buttonRecordinertialSensors
 							.setText("Stop record inertial sensors");
-					inertialSensors.save2file(true);
-					inertialSensors.start();
+					openAIL.inertialSensors.save2file(true);
+					openAIL.inertialSensors.start();
 
 				} else {
 					buttonStartOrientation.setEnabled(true);
-					buttonRecordInertialSensors
+					buttonRecordinertialSensors
 							.setText("Record inertial sensors");
-					inertialSensors.stop();
+					openAIL.inertialSensors.stop();
 				}
 
 			}
@@ -423,17 +425,17 @@ public class MainActivity extends Activity {
 		buttonStartOrientation.setText("Run inertial sensors");
 		buttonStartOrientation.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
-				Button buttonRecordInertialSensors = (Button) findViewById(idToBlock);
+				Button inertialSensors = (Button) findViewById(idToBlock);
 				Button buttonStartOrientation = (Button) findViewById(id);
-				if (inertialSensors.getState() == false) {
-					buttonRecordInertialSensors.setEnabled(false);
+				if (openAIL.inertialSensors.getState() == false) {
+					inertialSensors.setEnabled(false);
 					buttonStartOrientation.setText("Stop inertial sensors");
-					inertialSensors.save2file(false);
-					inertialSensors.start();
+					openAIL.inertialSensors.save2file(false);
+					openAIL.inertialSensors.start();
 				} else {
-					buttonRecordInertialSensors.setEnabled(true);
+					inertialSensors.setEnabled(true);
 					buttonStartOrientation.setText("Run inertial sensors");
-					inertialSensors.stop();
+					openAIL.inertialSensors.stop();
 				}
 
 			}
@@ -457,27 +459,27 @@ public class MainActivity extends Activity {
 		public void run() {
 
 			 // get distance
-			 double distance = inertialSensors.getGraphStepDistance();
+			 double distance = openAIL.inertialSensors.getGraphStepDistance();
 			
 			 // Adding WiFi measurement
 			 if ( distance > 0.1 )
 			 {
 				 // get angle
-				 float yawZ = inertialSensors.getYawForStepometer();
+				 float yawZ = openAIL.inertialSensors.getYawForStepometer();
 				 
 				 Log.d(TAG, "Yaw for stepometer: " + yawZ + " in deg");
 				 
 				 // We need to change yawZ into radians and change direction
 				 yawZ = (float) (-yawZ * Math.PI / 180.0f);
 				 
-				 graphManager.addStepometerMeasurement(distance, yawZ);
+				 openAIL.graphManager.addStepometerMeasurement(distance, yawZ);
 			 }
 			
 			
 			 // Adding WiFi measurements
-			 List<wiFiMeasurement> wifiList = wifiScanner.getGraphWiFiList();
+			 List<wiFiMeasurement> wifiList = openAIL.wifiScanner.getGraphWiFiList();
 			 if ( wifiList != null)
-				 graphManager.addMultipleWiFiMeasurements(wifiList);
+				 openAIL.graphManager.addMultipleWiFiMeasurements(wifiList);
 
 		}
 
@@ -485,11 +487,11 @@ public class MainActivity extends Activity {
 
 	class UpdateWiFiSRecognitionGUI extends TimerTask {
 		public void run() {
-			int recognizedPlaceId = wifiScanner.recognizePlaceBasedOnLastScan();
-			int sizeOfPlaceDatabase = wifiScanner.getSizeOfPlaceDatabase();
+			int recognizedPlaceId = openAIL.wifiScanner.recognizePlaceBasedOnLastScan();
+			int sizeOfPlaceDatabase = openAIL.wifiScanner.getSizeOfPlaceDatabase();
 
-			int recognizedMagneticPlaceId = inertialSensors.recognizePlaceBasedOnMagneticScan();
-			int sizeOfMagneticPlaceDatabase = inertialSensors.getSizeOfPlaceDatabase();
+			int recognizedMagneticPlaceId = openAIL.inertialSensors.recognizePlaceBasedOnMagneticScan();
+			int sizeOfMagneticPlaceDatabase = openAIL.inertialSensors.getSizeOfPlaceDatabase();
 			
 			UpdateWiFiInGUI obj = new UpdateWiFiInGUI(recognizedPlaceId,
 					sizeOfPlaceDatabase, recognizedMagneticPlaceId, sizeOfMagneticPlaceDatabase);
@@ -526,14 +528,14 @@ public class MainActivity extends Activity {
 
 	class UpdateOrientAndWiFiScanGUI extends TimerTask {
 		public void run() {
-			float[] orient = inertialSensors.getCurrentOrient();
-			String strongestWiFiNetwork = wifiScanner.getStrongestNetwork();
-			int WiFiCount = wifiScanner.getNetworkCount();
-			float foundFreq = inertialSensors.getLastDetectedFrequency();
-			float stepCount = inertialSensors.getDetectedNumberOfSteps();
-			float stepDistance = inertialSensors.getCovertedStepDistance();
-			int currentFloor = inertialSensors.getCurrentFloor();
-			float estimatedHeight = inertialSensors.getEstimatedHeight();
+			float[] orient = openAIL.inertialSensors.getCurrentOrient();
+			String strongestWiFiNetwork = openAIL.wifiScanner.getStrongestNetwork();
+			int WiFiCount = openAIL.wifiScanner.getNetworkCount();
+			float foundFreq = openAIL.inertialSensors.getLastDetectedFrequency();
+			float stepCount = openAIL.inertialSensors.getDetectedNumberOfSteps();
+			float stepDistance = openAIL.inertialSensors.getCovertedStepDistance();
+			int currentFloor = openAIL.inertialSensors.getCurrentFloor();
+			float estimatedHeight = openAIL.inertialSensors.getEstimatedHeight();
 
 			UpdateMeasurementsInGUI obj = new UpdateMeasurementsInGUI(orient,
 					strongestWiFiNetwork, WiFiCount, foundFreq, stepCount,

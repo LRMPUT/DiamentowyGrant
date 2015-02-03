@@ -10,7 +10,8 @@ public class AHRSModule {
 	}
 
 	// Definitions of methods available in NDK
-	public native long EKFcreate(float Qq, float Qw, float Rr);
+	public native long EKFcreate(float Qqmin, float Qwmin, float Qqmax,
+			float Qwmax, float Rr);
 
 	public native float[] EKFpredict(long addrEKF, float[] input, float dt);
 
@@ -25,23 +26,27 @@ public class AHRSModule {
 	float[] orientationEstimate = { 0.0f, 0.0f, 0.0f, 0.0f };
 
 	public AHRSModule() {
-		final float Qq = (float) (9.342 * Math.pow(10, -7));
-		final float Qw = (float) (8.159 * Math.pow(10, -7));
+		final float Qqmin = (float) (2.528 * Math.pow(10, -7));
+		final float Qwmin = (float) (4.483 * Math.pow(10, -7));
+		final float Qqmax = (float) (9.342 * Math.pow(10, -7));
+		final float Qwmax = (float) (8.159 * Math.pow(10, -7));
 		final float Rr = 3.672f;
-		create(Qq, Qw, Rr);
+		create(Qqmin, Qwmin, Qqmax, Qwmax, Rr);
 	}
 
-	public AHRSModule(float Qq, float Qw, float Rr) {
+	public AHRSModule(float Qqmin, float Qwmin, float Qqmax, float Qwmax,
+			float Rr) {
 		// Experimentally found values
 		// - for slow and steady motions:
 		// Qq = 2.528 * 10^7, Qw = 4.483 * 10^7, Rr = 3.672
 		// - for dynamic motions:
 		// Qq = 9.342 * 10^7, Qw = 8.159 * 10^7, Rr = 3.672
-		create(Qq, Qw, Rr);
+		create(Qqmin, Qwmin, Qqmax, Qwmax, Rr);
 	}
 
-	private void create(float Qq, float Qw, float Rr) {
-		addrEKF = EKFcreate(Qq, Qw, Rr);
+	private void create(float Qqmin, float Qwmin, float Qqmax, float Qwmax,
+			float Rr) {
+		addrEKF = EKFcreate(Qqmin, Qwmin, Qqmax, Qwmax, Rr);
 	}
 
 	public void predict(float wx, float wy, float wz, float dt) {
