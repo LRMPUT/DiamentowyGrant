@@ -17,31 +17,42 @@ import android.os.Environment;
 import android.util.Log;
 
 public class InertialSensors {
+	// Parameters
+	static final int verboseLevel = 0;
 
 	// Main Android handler
 	SensorManager sensorManager;
 
 	// Streams to save data
+	public enum activeStream {
+		ACCELEROMETER, GYROSCOPE, MAGNETOMETER, ACCELEROMETER_WITHOUT_GRAVITY, ORIENTATION_ANDROID, ORIENTATION_ANDROID_EULER, ORIENTATION_AEKF,
+		ORIENTATION_AEKF_EULER, ORIENTATION_COMPLEMENTARY, ORIENTATION_COMPLEMENTARY_EULER, PRESSURE;
+	}
 	boolean save2file = false;
-	PrintStream accStream, gyroStream, magStream, accwogStream, orientStream,
-			myOrientStream, myOrientEulerStream, pressureStream;
+	boolean activeStreams[];
+	PrintStream accStream, gyroStream, magStream, accwogStream, orientAndroidStream, orientAndroidEulerStream,
+			myOrientAEKFStream, myOrientAEKFEulerStream, myOrientComplementaryStream, myOrientComplementaryEulerStream, pressureStream;
 
 	// Starting timestamp and current timestamp
 	long timestampStart, currentTimestamp;
 
 	// Last estimates
 	private final Semaphore orientMtx = new Semaphore(1, true);
+	private final Semaphore orientCompMtx = new Semaphore(1, true);
+	private final Semaphore orientAndroidMtx = new Semaphore(1, true);
 	int id = 0;
-	float acc[], mag[], accwog[], gyro[], orient[];
+	float acc[], mag[], accwog[], gyro[], orient[], orientComp[], orientAndroid[], lastAndroidQuat[];
 
 	// isRunning
 	boolean isStarted;
 
-	// Should we estimate the orientation ?
+	// AEKF
 	boolean performOrientationEstimation = true;
-	// Last timestamp
 	long lastOrientationEstimationTimestamp;
 	AHRSModule orientationEstimator = null;
+	
+	// Complementary filter
+	boolean runComplementaryFilter = false;
 	ComplementaryFilter complementaryFilterEstimation = null;
 
 	// Stepometer
@@ -71,6 +82,9 @@ public class InertialSensors {
 		accwog = new float[3];
 		gyro = new float[3];
 		orient = new float[3];
+		orientComp = new float[3];
+		orientAndroid = new float[3];
+		lastAndroidQuat = new float[4];
 		performOrientationEstimation = true;
 		accWindow = new ArrayList<Float>();
 		stepometer = new Stepometer();
@@ -81,7 +95,16 @@ public class InertialSensors {
 		barometer = new BarometerProcessing();
 		
 		// Complementary filter
-		complementaryFilterEstimation = new ComplementaryFilter();
+		complementaryFilterEstimation = new ComplementaryFilter(0.999325f);
+		
+		// Choose which filters to save
+		activeStreams = new boolean[11];
+		activeStreams[activeStream.ORIENTATION_AEKF.ordinal()] = true;
+		activeStreams[activeStream.ORIENTATION_AEKF_EULER.ordinal()] = true;
+		activeStreams[activeStream.ORIENTATION_ANDROID.ordinal()] = true;
+		activeStreams[activeStream.ORIENTATION_ANDROID_EULER.ordinal()] = true;
+		activeStreams[activeStream.GYROSCOPE.ordinal()] = true;
+		
 	}
 
 	public InertialSensors save2file(boolean _save2file) {
@@ -135,7 +158,7 @@ public class InertialSensors {
 	}
 	
 	public float getYawForStepometer() {
-		float yawZ = orient[2];
+		float yawZ = orientAndroid[2];
 		float deltaYaw = yawZ - lastYawZ;
 		lastYawZ = yawZ;
 		return deltaYaw;
@@ -144,16 +167,19 @@ public class InertialSensors {
 	// Magnetic recognition
 	public int recognizePlaceBasedOnMagneticScan()
 	{
-		try {
-			magneticWindowMtx.acquire();
-			List<Float> copy = new ArrayList<Float>(magneticWindow.subList(0, 512));
-			magneticWindowMtx.release();
-			
-			return magneticRecognition.recognizePlace(copy);
-		} catch (InterruptedException e) {
-			e.printStackTrace();
-			return -1;
-		}
+		// TODO!
+		return -1;
+		
+//		try {
+//			magneticWindowMtx.acquire();
+//			List<Float> copy = new ArrayList<Float>(magneticWindow.subList(0, 512));
+//			magneticWindowMtx.release();
+//			
+//			return magneticRecognition.recognizePlace(copy);
+//		} catch (InterruptedException e) {
+//			e.printStackTrace();
+//			return -1;
+//		}
 	}
 	
 	public void addMagneticRecognitionPlace()
@@ -204,11 +230,16 @@ public class InertialSensors {
 	// Start
 	public void start() {
 
+		lastOrientationEstimationTimestamp = -1;
+		
 		// Initialize out orientation estimation
 		if (performOrientationEstimation)
 		{
-			lastOrientationEstimationTimestamp = -1;
 			orientationEstimator = new AHRSModule();
+		}
+		
+		if (runComplementaryFilter) {
+			complementaryFilterEstimation.start();
 		}
 
 		isStarted = true;
@@ -260,6 +291,8 @@ public class InertialSensors {
 		if (performOrientationEstimation) {
 			orientationEstimator.destroy();
 			orientationEstimator = null;
+			
+			complementaryFilterEstimation.stop();
 		}
 
 		if (save2file)
@@ -275,7 +308,7 @@ public class InertialSensors {
 		return acc;
 	}
 
-	public float[] getCurrentOrient() {
+	public float[] getCurrentAEKFOrient() {
 		float[] orientToReturn = null;
 		try {
 			orientMtx.acquire();
@@ -287,12 +320,51 @@ public class InertialSensors {
 
 		return orientToReturn;
 	}
+	
+	public float[] getCurrentComplementaryOrient() {
+		float[] orientToReturn = null;
+		try {
+			orientCompMtx.acquire();
+			orientToReturn = orientComp.clone();
+			orientCompMtx.release();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+
+		return orientToReturn;
+	}
+	
+	public float[] getCurrentAndroidOrient() {
+		float[] orientToReturn = null;
+		try {
+			orientAndroidMtx.acquire();
+			orientToReturn = orientAndroid.clone();
+			orientAndroidMtx.release();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+
+		return orientToReturn;
+	}
+
 
 	public long getTimestamp() {
 		return (currentTimestamp - timestampStart);
 	}
 
 	private void openStreamsToFiles(int id) throws FileNotFoundException {
+
+		accStream = null;
+		gyroStream = null;
+		magStream = null;
+		accwogStream = null;
+		orientAndroidStream = null;
+		orientAndroidEulerStream = null;
+		myOrientAEKFStream = null;
+		myOrientAEKFEulerStream = null;
+		myOrientComplementaryStream = null;
+		myOrientComplementaryEulerStream = null;
+		pressureStream = null;
 
 		File folder = new File(Environment.getExternalStorageDirectory()
 				+ "/DG");
@@ -302,61 +374,115 @@ public class InertialSensors {
 		}
 
 		File dir = new File(String.format(
-				Environment.getExternalStorageDirectory() + "/DG/%d", id));
+				Environment.getExternalStorageDirectory() + "/DG/inertial"));
 		if (!dir.exists()) {
 			dir.mkdirs();
 		}
 
-		String fileName = dir.toString() + "/acc.log";
-		FileOutputStream faccStream = new FileOutputStream(fileName);
-		accStream = new PrintStream(faccStream);
+		if ( activeStreams[activeStream.ACCELEROMETER.ordinal()] ) {
+			String fileName = dir.toString() + "/acc.log";
+			FileOutputStream faccStream = new FileOutputStream(fileName);
+			accStream = new PrintStream(faccStream);
+		}
 
-		fileName = dir.toString() + "/gyro.log";
-		FileOutputStream fgyroStream = new FileOutputStream(fileName);
-		gyroStream = new PrintStream(fgyroStream);
+		if ( activeStreams[activeStream.GYROSCOPE.ordinal()] ) {
+			String fileName = dir.toString() + "/gyro.log";
+			FileOutputStream fgyroStream = new FileOutputStream(fileName);
+			gyroStream = new PrintStream(fgyroStream);
+		}
 
-		fileName = dir.toString() + "/mag.log";
-		FileOutputStream fmagStream = new FileOutputStream(fileName);
-		magStream = new PrintStream(fmagStream);
+		if ( activeStreams[activeStream.MAGNETOMETER.ordinal()] ) {
+			String fileName = dir.toString() + "/mag.log";
+			FileOutputStream fmagStream = new FileOutputStream(fileName);
+			magStream = new PrintStream(fmagStream);
+		}
 
-		fileName = dir.toString() + "/accwog.log";
-		FileOutputStream faccwogStream = new FileOutputStream(fileName);
-		accwogStream = new PrintStream(faccwogStream);
+		if ( activeStreams[activeStream.ACCELEROMETER_WITHOUT_GRAVITY.ordinal()] ) {
+			String fileName = dir.toString() + "/accwog.log";
+			FileOutputStream faccwogStream = new FileOutputStream(fileName);
+			accwogStream = new PrintStream(faccwogStream);
+		}
 
-		fileName = dir.toString() + "/orient.log";
-		FileOutputStream forientStream = new FileOutputStream(fileName);
-		orientStream = new PrintStream(forientStream);
-
-		if (performOrientationEstimation) {
-			fileName = dir.toString() + "/myOrient.log";
-			FileOutputStream fmyOrientStream = new FileOutputStream(fileName);
-			myOrientStream = new PrintStream(fmyOrientStream);
-
-			fileName = dir.toString() + "/myOrientEuler.log";
-			FileOutputStream fmyOrientEulerStream = new FileOutputStream(
-					fileName);
-			myOrientEulerStream = new PrintStream(fmyOrientEulerStream);
+		if ( activeStreams[activeStream.ORIENTATION_ANDROID.ordinal()] ) {
+			String fileName = dir.toString() + "/orientAndroid.log";
+			FileOutputStream forientAndroidStream = new FileOutputStream(fileName);
+			orientAndroidStream = new PrintStream(forientAndroidStream);
 		}
 		
-		fileName = dir.toString() + "/pressure.log";
-		FileOutputStream fpressureStream = new FileOutputStream(fileName);
-		pressureStream = new PrintStream(fpressureStream);
+		if ( activeStreams[activeStream.ORIENTATION_ANDROID_EULER.ordinal()] ) {
+			String fileName = dir.toString() + "/orientAndroidEuler.log";
+			FileOutputStream forientAndroidEulerStream = new FileOutputStream(fileName);
+			orientAndroidEulerStream = new PrintStream(forientAndroidEulerStream);
+		}
+
+		if (performOrientationEstimation) {
+			if ( activeStreams[activeStream.ORIENTATION_AEKF.ordinal()] ) {
+				String fileName = dir.toString() + "/myOrientAEKF.log";
+				FileOutputStream fmyOrientStream = new FileOutputStream(fileName);
+				myOrientAEKFStream = new PrintStream(fmyOrientStream);
+			}
+
+			if (activeStreams[activeStream.ORIENTATION_AEKF_EULER.ordinal()]) {
+				String fileName = dir.toString() + "/myOrientAEKFEuler.log";
+				FileOutputStream fmyOrientEulerStream = new FileOutputStream(
+						fileName);
+				myOrientAEKFEulerStream = new PrintStream(fmyOrientEulerStream);
+			}
+			
+			if ( activeStreams[activeStream.ORIENTATION_COMPLEMENTARY.ordinal()] ) {
+				String fileName = dir.toString() + "/myOrientComplementary.log";
+				FileOutputStream fmyOrientComplementaryStream = new FileOutputStream(fileName);
+				myOrientComplementaryStream = new PrintStream(fmyOrientComplementaryStream);
+			}
+
+			if ( activeStreams[activeStream.ORIENTATION_COMPLEMENTARY_EULER.ordinal()] ) {
+				String fileName = dir.toString() + "/myOrientComplementaryEuler.log";
+				FileOutputStream fmyOrientComplementaryEulerStream = new FileOutputStream(
+						fileName);
+				myOrientComplementaryEulerStream = new PrintStream(fmyOrientComplementaryEulerStream);
+			}
+	
+		}
+		
+		if ( activeStreams[activeStream.PRESSURE.ordinal()] ) {
+			String fileName = dir.toString() + "/pressure.log";
+			FileOutputStream fpressureStream = new FileOutputStream(fileName);
+			pressureStream = new PrintStream(fpressureStream);
+		}
 
 	}
 
 	// Closing the data streams
 	private void closeStreams() {
-		accStream.close();
-		gyroStream.close();
-		magStream.close();
-		accwogStream.close();
-		orientStream.close();
+		if (accStream != null)
+			accStream.close();
+		if (gyroStream != null)
+			gyroStream.close();
+		if (magStream != null)
+			magStream.close();
+		if (accwogStream != null)
+			accwogStream.close();
+		if (orientAndroidStream != null)
+			orientAndroidStream.close();
+		if (orientAndroidEulerStream != null)
+			orientAndroidEulerStream.close();
+
 		if (performOrientationEstimation) {
-			myOrientStream.close();
-			myOrientEulerStream.close();
+			if (myOrientAEKFStream != null)
+				myOrientAEKFStream.close();
+			if (myOrientAEKFEulerStream != null)
+				myOrientAEKFEulerStream.close();
+
+			if (myOrientComplementaryStream != null)
+				myOrientComplementaryStream.close();
+			if (myOrientComplementaryEulerStream != null)
+				myOrientComplementaryEulerStream.close();
 		}
-		pressureStream.close();
+		
+		if (pressureStream != null)
+			pressureStream.close();
 	}
+
 
 	// Listener pushing the data into the files
 	private SensorEventListener sensorEventListener = new SensorEventListener() {
@@ -366,6 +492,7 @@ public class InertialSensors {
 		}
 
 		public void onSensorChanged(SensorEvent event) {
+
 
 			currentTimestamp = event.timestamp;
 			if (timestampStart == 0) {
@@ -386,7 +513,7 @@ public class InertialSensors {
 
 			} else if (event.sensor.getType() == Sensor.TYPE_LINEAR_ACCELERATION) {
 				
-				if (save2file)
+				if (save2file && activeStreams[activeStream.ACCELEROMETER_WITHOUT_GRAVITY.ordinal()])
 					saveToStream(accwogStream, getTimestamp(), event.values);
 
 			} else if (event.sensor.getType() == Sensor.TYPE_ROTATION_VECTOR) {
@@ -407,7 +534,7 @@ public class InertialSensors {
 			event.values[2] = SensorManager.getAltitude(SensorManager.PRESSURE_STANDARD_ATMOSPHERE, event.values[0]);
 			lastBarometerValue = event.values[1];
 			
-			if (save2file)
+			if (save2file && activeStreams[activeStream.PRESSURE.ordinal()] )
 				saveToStream(pressureStream, getTimestamp(), event.values);
 		}
 
@@ -415,60 +542,119 @@ public class InertialSensors {
 		 * @param event
 		 */
 		private void processNewOrientationData(SensorEvent event) {
-			if (save2file)
-				saveToStream(orientStream, getTimestamp(), event.values);
+			float[] quaternion = new float[4];
+			SensorManager.getQuaternionFromVector(quaternion,
+					event.values);
+			
+			// Check if need to change sign
+			float noChangeSign = RMSE(quaternion, lastAndroidQuat);
+			float changeSign = RMSE(quaternion, minus(lastAndroidQuat));
+			if (noChangeSign>changeSign) {
+				quaternion = minus(quaternion);
+			}
+			lastAndroidQuat = quaternion;
+			
+			try {
+				orientAndroidMtx.acquire();
+				orientAndroid[0] = computeEulerRollX(quaternion);
+				orientAndroid[1] = computeEulerPitchY(quaternion);
+				orientAndroid[2] = computeEulerYawZ(quaternion);
+				orientAndroidMtx.release();
+			} catch (InterruptedException e) {
+				e.printStackTrace();
+			}
+			
+			if (save2file && activeStreams[activeStream.ORIENTATION_ANDROID.ordinal()])
+				saveToStream(orientAndroidStream, getTimestamp(), quaternion);
+			if (save2file && activeStreams[activeStream.ORIENTATION_ANDROID_EULER.ordinal()])
+				saveToStream(orientAndroidEulerStream, getTimestamp(), orientAndroid);
 
 			if (performOrientationEstimation) {
-				float[] quaternion = new float[4];
-				SensorManager.getQuaternionFromVector(quaternion,
-						event.values);
-				//
-				orientationEstimator.correct(quaternion[0], quaternion[1],
-						quaternion[2], quaternion[3]);
+				
 				// Complementary filter
 				if (complementaryFilterEstimation.getState()) {
+					
+					
 					complementaryFilterEstimation.magAccUpdate(quaternion);
+					
+					float [] orientCompQuat = complementaryFilterEstimation.getEstimate();
+						
+					try {
+						orientCompMtx.acquire();
+						orientComp[0] = computeEulerRollX(orientCompQuat);
+						orientComp[1] = computeEulerPitchY(orientCompQuat);
+						orientComp[2] = computeEulerYawZ(orientCompQuat);
+						orientCompMtx.release();
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+					
+					if (save2file && activeStreams[activeStream.ORIENTATION_COMPLEMENTARY.ordinal()])
+						saveToStream(myOrientComplementaryStream, getTimestamp(), orientCompQuat);
+					if (save2file && activeStreams[activeStream.ORIENTATION_COMPLEMENTARY_EULER.ordinal()])
+						saveToStream(myOrientComplementaryEulerStream, getTimestamp(), orientComp);
+					
+
 				}
 				
+		
+				orientationEstimator.correct(quaternion[0], quaternion[1],
+						quaternion[2], quaternion[3]);
+				
+				
 				// Getting the estimate from our AEKF
-				float [] ourEstimate = orientationEstimator.getEstimate();
-				
-				float w = ourEstimate[0];
-				float x = ourEstimate[1];
-				float y = ourEstimate[2];
-				float z = ourEstimate[3];
-
-				if (save2file)
-					saveToStream(myOrientStream, getTimestamp(), quaternion);
-
-				// Should be X Y Z
-				// http://kosukek.bitbucket.org/conversion-from-quaternion-to-euler-anglesxyz.html
-//					float rollX = (float) (Math.atan2(2 * y * w - 2 * x * z, 1
-//							- 2 * y * y - 2 * z * z) * 180.0 / Math.PI);
-//					float pitchY = (float) (Math.atan2(2 * x * w - 2 * y * z, 1
-//							- 2 * x * x - 2 * z * z) * 180.0 / Math.PI);
-//					float yawZ = (float) (Math.asin(2 * x * y + 2 * z * w) * 180.0 / Math.PI);
-				
-				//http://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
-				float rollX = (float) (Math.atan2(2*y*z + 2 * x * w, 1 - 2 * ( x*x + y*y) ) * 180.0 / Math.PI );
-				float pitchY = (float) (Math.asin(2 * (w *y - x*z)) * 180.0 / Math.PI);
-				float yawZ = (float) (Math.atan2(2*(w*z + y*x), 1-2*(y*y + z*z))* 180.0 / Math.PI);
+				float [] orientAEKFQuat = orientationEstimator.getEstimate();
 				
 				try {
 					orientMtx.acquire();
-					orient[0] = rollX;
-					orient[1] = pitchY;
-					orient[2] = yawZ;
+					orient[0] = computeEulerRollX(orientAEKFQuat);
+					orient[1] = computeEulerPitchY(orientAEKFQuat);
+					orient[2] = computeEulerYawZ(orientAEKFQuat);
 					orientMtx.release();
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}
 
-				if (save2file)
-					saveToStream(myOrientEulerStream, getTimestamp(),
+				if (save2file && activeStreams[activeStream.ORIENTATION_AEKF.ordinal()])
+					saveToStream(myOrientAEKFStream, getTimestamp(), orientAEKFQuat);
+				if (save2file && activeStreams[activeStream.ORIENTATION_AEKF_EULER.ordinal()])
+					saveToStream(myOrientAEKFEulerStream, getTimestamp(),
 							orient);
-
+			
 			}
+		}
+
+		/**
+		 * //http://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
+		 */
+		private float computeEulerYawZ(float w, float x, float y, float z) {
+			return (float) (Math.atan2(2*(w*z + y*x), 1-2*(y*y + z*z))* 180.0 / Math.PI);
+		}
+		
+		private float computeEulerYawZ(float [] orientQuat) {
+			return computeEulerYawZ(orientQuat[0], orientQuat[1], orientQuat[2], orientQuat[3]);
+		}
+
+		/**
+		 */
+		private float computeEulerPitchY(float w, float x, float y, float z) {
+			return (float) (Math.asin(2 * (w *y - x*z)) * 180.0 / Math.PI);
+		}
+		
+		private float computeEulerPitchY(float [] orientQuat) {
+			return computeEulerPitchY(orientQuat[0], orientQuat[1], orientQuat[2], orientQuat[3]);
+		}
+		
+		
+
+		/**
+		 */
+		private float computeEulerRollX(float w, float x, float y, float z) {
+			return (float) (Math.atan2(2*y*z + 2 * x * w, 1 - 2 * ( x*x + y*y) ) * 180.0 / Math.PI );
+		}
+		
+		private float computeEulerRollX(float [] orientQuat) {
+			return computeEulerRollX(orientQuat[0], orientQuat[1], orientQuat[2], orientQuat[3]);
 		}
 
 		/**
@@ -502,7 +688,7 @@ public class InertialSensors {
 			
 			magneticRecognitionCounter++;
 
-			if (save2file)
+			if (save2file && activeStreams[activeStream.MAGNETOMETER.ordinal()])
 				saveToStream(magStream, getTimestamp(), mag);
 		}
 
@@ -530,7 +716,7 @@ public class InertialSensors {
 					complementaryFilterEstimation.gyroscopeUpdate(gyro, dt);
 			}
 
-			if (save2file)
+			if (save2file && activeStreams[activeStream.GYROSCOPE.ordinal()])
 				saveToStream(gyroStream, getTimestamp(), gyro);
 		}
 
@@ -546,15 +732,13 @@ public class InertialSensors {
 					* acc[1] + acc[2] * acc[2]);
 			accWindow.add(Float.valueOf(accVal));
 
-			if (save2file)
+			if (save2file && activeStreams[activeStream.ACCELEROMETER.ordinal()])
 				saveToStream(accStream, getTimestamp(), acc);
 			
 			if (stepometerStarted && stepometerRunningCounter > 200)
 			{
 				if ( accWindow.size() > stepometerWindowSize)
 				{
-					 Log.d("Main::Activity", "X");
-					 
 					 // Reduce list size to stepometerWindowSize
 					 accWindow = accWindow.subList(accWindow.size() - stepometerWindowSize, accWindow.size());
 					 
@@ -569,7 +753,6 @@ public class InertialSensors {
 					
 					 // Run stepometer
 					 new Thread(stepometer).start();
-					 Log.d("Main::Activity", "Y");
 				}
 				stepometerRunningCounter = 0;
 			}
@@ -588,5 +771,24 @@ public class InertialSensors {
 			stream.print(System.getProperty("line.separator"));
 		}
 	};
+	
+	
+	private float RMSE(float[] x, float [] y) {
+		if (x.length != y.length) {
+			return 99999.0f;
+		}
+		float val = 0.0f;
+		for (int i=0;i<4;i++) {
+			val += ((x[i] - y[i])*(x[i] - y[i]));
+		}
+		return (float) Math.sqrt(val);
+	}
+	
+	private float [] minus(float [] x) {
+		for (int i=0;i<x.length;i++)
+			x[i] = -x[i];
+		return x;
+	}
+	
 
 }

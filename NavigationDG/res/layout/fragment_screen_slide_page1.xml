@@ -1,7 +1,8 @@
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/content"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:keepScreenOn="true" >
 
     <!-- Dummy content. -->
     <LinearLayout android:layout_width="match_parent"
@@ -15,41 +16,11 @@
             android:layout_weight="0.06"
             android:orientation="vertical" >
 
-            <TextView
-                android:id="@+id/textViewStepometer1"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Found freq: " />
-
-            <TextView
-                android:id="@+id/textViewStepometer2"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Step counter: " />
-
-            <TextView
-                android:id="@+id/textViewStepometer3"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Distance: " />
-
             <Button
                 android:id="@+id/buttonSideView1"
                 android:layout_width="120dp"
                 android:layout_height="60dp"
                 android:text="Nothing" />
-
-            <TextView
-                android:id="@+id/textViewBarometer1"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Floor: " />
-
-            <TextView
-                android:id="@+id/textViewBarometer2"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Height: " />
 
             <Button
                 android:id="@+id/buttonSideView2"
@@ -68,6 +39,25 @@
                 android:layout_width="120dp"
                 android:layout_height="60dp"
                 android:text="Nothing" />
+
+            <Button
+                android:id="@+id/buttonSideView5"
+                android:layout_width="120dp"
+                android:layout_height="60dp"
+                android:text="Nothing" />
+            
+            <Button
+                android:id="@+id/buttonSideView6"
+                android:layout_width="120dp"
+                android:layout_height="60dp"
+                android:text="Nothing" />
+            
+            <Button
+                android:id="@+id/buttonSideView7"
+                android:layout_width="120dp"
+                android:layout_height="60dp"
+                android:text="Nothing" />
+
         </LinearLayout>
 
         <LinearLayout

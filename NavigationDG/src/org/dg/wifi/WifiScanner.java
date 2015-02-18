@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Locale;
 
 import org.dg.graphManager.wiFiMeasurement;
+import org.dg.wifi.WiFiPlaceRecognition.IdPair;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -26,7 +27,9 @@ public class WifiScanner extends BroadcastReceiver {
 	boolean continuousScanning = false, singleScan = true;
 	boolean waitingForScan = false;
 	long startTimestampOfWiFiScanning, startTimestampOfCurrentScan, startTimestampOfGlobalTime;
-	private int id;
+	
+	// Scan id and graphId
+	private int id, graphPoseId;
 	
 	WiFiPlaceRecognition placeRecognition = new WiFiPlaceRecognition();
 	
@@ -41,17 +44,21 @@ public class WifiScanner extends BroadcastReceiver {
 	// Position index
 	int posIndex = 10000;
 	
+	// Variable indicating new measurement
+	boolean newMeasurement = false;
+	
 	// List of already found networks
 	List<String> bssid2name = new ArrayList<String>();
 	
 	// File to save data
-	PrintStream outStreamG2oTest = null;
+	PrintStream outStreamRawData = null;
 
 	public WifiScanner(WifiManager _wifiManager) {
 		wifiManager = _wifiManager;
 		continuousScanning = false;
 		singleScan = true;
 		id = 0;
+		graphPoseId = 0;
 		startTimestampOfGlobalTime = 0;
 
 		File folder = new File(Environment.getExternalStorageDirectory()
@@ -61,26 +68,21 @@ public class WifiScanner extends BroadcastReceiver {
 			folder.mkdir();
 		}
 		
-		// G2O
+		// File to save results
 		String fileName = "";
-		fileName = String.format(Locale.getDefault(), Environment
-				.getExternalStorageDirectory().toString()
-				+ "/DG"
-				+ "/wifi.g2o");
-		id++;
+		fileName = String.format(Locale.getDefault(),
+				Environment.getExternalStorageDirectory().toString() + "/DG"
+						+ "/raw.wifi", id);
 		
-		// Create stream to save those scans
-		FileOutputStream foutStream = null;
+		// RawMeasurements
+		FileOutputStream foutStream;
 		try {
 			foutStream = new FileOutputStream(fileName);
-			outStreamG2oTest = new PrintStream(foutStream);
-//			outStreamG2oTest.print("FIX 0\n");
-		} catch (FileNotFoundException e) {
+			outStreamRawData = new PrintStream(foutStream);
+		} catch (FileNotFoundException e1) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
+			e1.printStackTrace();
 		}
-		
-
 	}
 
 	public WifiScanner singleScan(boolean _singleScan) {
@@ -97,6 +99,18 @@ public class WifiScanner extends BroadcastReceiver {
 	{
 		this.startTimestampOfGlobalTime = _startTimestampOfGlobalTime/1000000;
 		return this;
+	}
+	
+	public void startNewPlaceRecognitionThread() {
+		placeRecognition.startRecognition();
+	}
+	
+	public void stopNewPlaceRecognitionThread() {
+		placeRecognition.stopRecognition();
+	}
+	
+	public void setGraphPoseId(int _id) {
+		graphPoseId = _id;
 	}
 	
 	public boolean getRunningState() {
@@ -118,9 +132,14 @@ public class WifiScanner extends BroadcastReceiver {
 
 	public void stopScanning() {
 		continuousScanning = false;
-		if (outStreamG2oTest != null)
+		
+		placeRecognition.closeStream();
+		
+		// Close cleanly
+		if (outStreamRawData != null)
 		{
-			outStreamG2oTest.close();
+			outStreamRawData.close();
+			outStreamRawData = null;
 		}
 	}
 	
@@ -146,15 +165,36 @@ public class WifiScanner extends BroadcastReceiver {
 	}
 	
 	
-	public void addLastScanToRecognition()
+//	public void addLastScanToRecognition()
+//	{
+//		if ( previousWiFiList.size() > 0)
+//			placeRecognition.addPlace(previousWiFiList);
+//	}
+	
+	public void addLastScanToRecognition(int id)
 	{
-		if ( previousWiFiList.size() > 0)
-			placeRecognition.addPlace(previousWiFiList);
+		if ( previousWiFiList.size() > 0 )
+			placeRecognition.addPlace(previousWiFiList, id);
 	}
 	
 	public int recognizePlaceBasedOnLastScan()
 	{
 		return placeRecognition.recognizePlace(previousWiFiList);
+	}
+	
+	public List<Integer> returnAllMatchingPlacesToLastScan()
+	{
+		return placeRecognition.returnAllMatchingPlaces(previousWiFiList, graphPoseId);
+	}
+	
+	public List<IdPair<Integer, Integer>> getRecognizedPlacesList() 
+	{
+		return  placeRecognition.getRecognizedPlacesList();
+	}
+	
+	public List<Integer> returnAllMatchingPlaces(List<ScanResult> wiFiList)
+	{
+		return placeRecognition.returnAllMatchingPlaces(wiFiList, graphPoseId);
 	}
 	
 	public int getSizeOfPlaceDatabase()
@@ -170,6 +210,14 @@ public class WifiScanner extends BroadcastReceiver {
 		}
 		return null;
 	}
+	
+	public boolean isNewMeasurement() {
+		return newMeasurement;
+	}
+	
+	public void newMeasurement(boolean value) {
+		newMeasurement = value;
+	}
 
 	// Convert measurement from dBm to meters
 	private double convertLevelToMeters(double level) {
@@ -182,45 +230,28 @@ public class WifiScanner extends BroadcastReceiver {
 	public void onReceive(Context arg0, Intent arg1) {
 		Log.d("WiFi", "Scan finished\n");
 		try {
-			Log.d("WiFi",
-					"Timestamps: " + Long.toString(startTimestampOfCurrentScan)
-							+ " " + Long.toString(startTimestampOfWiFiScanning)
-							+ " " + Long.toString( startTimestampOfGlobalTime)
-							+ " " + System.currentTimeMillis() + "\n");
-			Log.d("WiFi",
-					"Timestamps diff: "
-							+ Long.toString(startTimestampOfCurrentScan
-									- startTimestampOfWiFiScanning
-									+ startTimestampOfGlobalTime)
-							+ " "
-							+ Long.toString(System.currentTimeMillis()
-									- startTimestampOfCurrentScan) + "\n");
-
-			// File to save results
-			String fileName = "";
-			fileName = String.format(Locale.getDefault(), Environment
-					.getExternalStorageDirectory().toString()
-					+ "/DG"
-					+ "/%04d.wifi", id);
-			id++;
-			
-			// Create stream to save those scans
-			FileOutputStream foutStream = new FileOutputStream(fileName);
-			PrintStream outStream = new PrintStream(foutStream);
-
+		
 			// Save the timestamp of start + length of the scan
-			outStream.print(Long.toString(startTimestampOfCurrentScan - startTimestampOfWiFiScanning + startTimestampOfGlobalTime) + "\t"
-					+ Long.toString(System.currentTimeMillis() - startTimestampOfCurrentScan)
-					+ "\n");
+			outStreamRawData.print(Integer.toString(graphPoseId)
+					+ "\t"
+					+ Integer.toString(id)
+					+ "\t"
+					+ Long.toString(startTimestampOfCurrentScan
+							- startTimestampOfWiFiScanning
+							+ startTimestampOfGlobalTime)
+					+ "\t"
+					+ Long.toString(System.currentTimeMillis()
+							- startTimestampOfCurrentScan) + "\t");
 
 			// Process list of detected WiFis
 			List<ScanResult> wifiList = wifiManager.getScanResults();
 			Log.d("WiFi", "Found " + wifiList.size() + " wifis \n");
+			outStreamRawData.print( wifiList.size() + "\n");
 			
 			// Save BSSID, SSID, lvl and frequency
 			for (int i = 0; i < wifiList.size(); i++) {
 				ScanResult scanResult = wifiList.get(i);
-				outStream.print(scanResult.BSSID + "\t" + scanResult.SSID
+				outStreamRawData.print(scanResult.BSSID + "\t" + convertLevelToMeters(scanResult.level) + "\t" + scanResult.SSID
 						+ "\t" + scanResult.level + "\t" + scanResult.frequency
 						+ "\n");
 			}
@@ -243,13 +274,10 @@ public class WifiScanner extends BroadcastReceiver {
 			}
 			graphWiFiListReady = true;
 
-			
-			// Close cleanly
-			outStream.close();
-			
 			// Save measurement
 			previousWiFiList = wifiList;
-						
+					
+			newMeasurement = true;
 		} catch (Exception e) {
 			Log.d("WiFi", "Scanning failed\n");
 		}
@@ -267,6 +295,8 @@ public class WifiScanner extends BroadcastReceiver {
 			wifiManager.startScan();
 			waitingForScan = true;
 		}
+		id++;
+		
 	}
 
 }

@@ -20,7 +20,7 @@ public class Preview extends ViewGroup implements SurfaceHolder.Callback {
     SurfaceHolder mHolder;
     Size mPreviewSize;
     List<Size> mSupportedPreviewSizes;
-    Camera mCamera;
+    Camera mCamera; 
 
     public Preview(Context context, SurfaceView sv) {
         super(context);

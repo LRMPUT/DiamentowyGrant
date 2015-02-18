@@ -26,6 +26,7 @@
 // Custom edges
 #include "edge_se2_pointXY_distance.h"
 #include "edge_se2_distanceOrientation.h"
+#include "edge_se2_placeVicinity.h"
 
 
 using namespace std;
@@ -62,6 +63,9 @@ private:
 
 	// WiFi Edge
 	int addEdgeWiFi(stringstream &data);
+
+	// WiFi Fingerprint edge
+	int addEdgeWiFiFingerprint(stringstream &data);
 
 	// Stepometer
 	int addEdgeStepometer(stringstream &data);

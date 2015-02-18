@@ -7,24 +7,25 @@
 #include <deque>
 
 class EKF {
+
 private:
 	// Correct/Predict uncertainty
-	Eigen::Matrix<float, 4, 4> R;
-	Eigen::Matrix<float, 7, 7> Q, Qmin, Qmax, Qdiff;
+	Eigen::Matrix<double, 4, 4> R;
+	Eigen::Matrix<double, 7, 7> Q, Qmin, Qmax, Qdiff;
 
 	// State estimates (apriori and posteriori)
-	Eigen::Matrix<float, 7, 1> x_apriori, x_aposteriori;
+	Eigen::Matrix<double, 7, 1> x_apriori, x_aposteriori;
 
 	// State estimates uncertainties (apriori and posteriori)
-	Eigen::Matrix<float, 7, 7> P_apriori, P_aposteriori;
-	Eigen::Matrix<float, 4, 7> H;
+	Eigen::Matrix<double, 7, 7> P_apriori, P_aposteriori;
+	Eigen::Matrix<double, 4, 7> H;
 
 	// Additional values to detect estimation start and distinguish between predict/correct order
 	bool firstMeasurement;
 	bool correctTime;
 
 	// Measurement window used in AEKF
-	std::deque<float> measurementWindow;
+	std::deque<double> measurementWindow;
 	static const int measurementWindowSize = 10;
 
 public:
@@ -45,8 +46,8 @@ public:
 
 private:
 	// Additional methods to compute the jacobian
-	Eigen::Matrix<float, 7, 7> jacobian(float* w, float dt);
+	Eigen::Matrix<double, 7, 7> jacobian(float* w, float dt);
 
 	// Predict based on last estimate and gyroscope measurement
-	Eigen::Matrix<float, 7, 1> statePrediction(float* w, float dt);
+	Eigen::Matrix<double, 7, 1> statePrediction(float* w, float dt);
 };

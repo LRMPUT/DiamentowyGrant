@@ -10,6 +10,9 @@ public class Stepometer implements Runnable{
 	//		dominantFrequency = indexOfMaxValueInFrequencyDomain * accelerometerMeasurementFrequency / windowSize;
 	public native float fftFindDominantFrequency(float [] accWindow, float accelerometerMeasurementFrequency);
 	
+	// Parameters
+	final int verboseLevel = 0;
+	
 	// Loading the NDK library
 	public Stepometer() {
 		System.loadLibrary("StepometerModule");
@@ -19,7 +22,7 @@ public class Stepometer implements Runnable{
 	float lastDetectedFrequency = 0.0f;
 	
 	// Step size in meters - 0.7 m as default
-	final float personalStepSize = 0.7f;
+	final float personalStepSize = 0.65f;
 	
 	// Total number of steps and total number of distance covered
 	float detectedNumberOfSteps = 0;
@@ -27,8 +30,8 @@ public class Stepometer implements Runnable{
 	float lastReportedCoveredStepDistance = 0.0f;
 	
 	// The walking frequencies borders
-	final float leftWalkingFrequencyBorder = 1.2f;
-	final float rightWalkingFrequencyBorder = 2.8f;
+	final float leftWalkingFrequencyBorder = 1.3f;
+	final float rightWalkingFrequencyBorder = 2.1f;
 	
 	// Accelerometer measurement frequency (in Hz)
 	final float accelerometerMeasurementFrequency = 200.0f;
@@ -46,7 +49,8 @@ public class Stepometer implements Runnable{
 	@Override
 	public void run() {
 		
-		Log.d("Stepometer", "Starting fft test, size of window : " + Integer.toString(accWindowSize));
+		if (verboseLevel > 0)
+			Log.d("Stepometer", "Starting fft test, size of window : " + Integer.toString(accWindowSize));
 		
 		// We need to copy the data into the float array to pass into NDK
 		float sum = 0.0f;
@@ -64,7 +68,9 @@ public class Stepometer implements Runnable{
 		
 		// Perform frequency detection
 		lastDetectedFrequency = fftFindDominantFrequency(accWindow, accelerometerMeasurementFrequency);
-		Log.d("Stepometer", "Found frequency: " + lastDetectedFrequency + " Hz");
+		
+		if (verboseLevel > 0)
+			Log.d("Stepometer", "Found frequency: " + lastDetectedFrequency + " Hz");
 		
 		// If the detected frequency is inside walking frequencies
 		if (leftWalkingFrequencyBorder <= lastDetectedFrequency

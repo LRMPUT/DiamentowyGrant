@@ -5,12 +5,9 @@
 #include <opencv2/video/tracking.hpp>
 
 
-#include "NonFree/nonfree/features2d.hpp"
-#include "NonFree/nonfree/nonfree.hpp"
+#include "NonFree/features2d.hpp"
+#include "NonFree/nonfree.hpp"
 
-
-#include "NonFree/nonfree/features2d.hpp"
-#include "NonFree/nonfree/nonfree.hpp"
 #include "LDB/ldb.h"
 
 

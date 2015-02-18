@@ -9,6 +9,8 @@ import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.util.List;
 
+import org.dg.wifi.WiFiPlaceRecognition.IdPair;
+
 import android.os.Environment;
 import android.util.Log;
 
@@ -69,7 +71,7 @@ public class GraphManager {
 		} catch (FileNotFoundException e) {
 			graphStream = null;
 			e.printStackTrace();
-		}	
+		}
 	}
 	
 	public void stop() {
@@ -133,6 +135,31 @@ public class GraphManager {
 	}
 	
 	
+//	public void addMultipleWiFiFingerprints(List<Integer> placesId) {
+//		String g2oString = "";
+//		for (Integer placeId : placesId)
+//		{
+//			String edgeWiFiFingerprint = createWiFiFingerprintEdgeString(currentPoseId, placeId);
+//			g2oString = g2oString + edgeWiFiFingerprint;
+//		}
+//		save2file(g2oString);
+//		
+//		NDKGraphAddVertexEdge(addrGraph, g2oString);
+//	}
+	
+	public void addMultipleWiFiFingerprints(List<IdPair<Integer, Integer>> foundWiFiFingerprintLinks) {
+		String g2oString = "";
+		for (IdPair<Integer, Integer> placeIds : foundWiFiFingerprintLinks)
+		{
+			String edgeWiFiFingerprint = createWiFiFingerprintEdgeString(placeIds.getFirst(), placeIds.getSecond());
+			g2oString = g2oString + edgeWiFiFingerprint;
+		}
+		save2file(g2oString);
+		
+		NDKGraphAddVertexEdge(addrGraph, g2oString);
+	}
+	
+	
 	public void addMultipleWiFiMeasurements(List<wiFiMeasurement> wifiList) {
 		checkGraphExistance();
 		
@@ -146,7 +173,7 @@ public class GraphManager {
 		
 		
 		save2file(g2oString);
-		NDKGraphAddVertexEdge(addrGraph, g2oString);
+		//NDKGraphAddVertexEdge(addrGraph, g2oString);
 	}
 		
 	public void addWiFiMeasurement(int id, double distance) {	
@@ -157,13 +184,18 @@ public class GraphManager {
 		NDKGraphAddVertexEdge(addrGraph, edgeWiFi);
 	}
 	
+	public int getCurrentPoseId()
+	{
+		return currentPoseId;
+	}
+	
 	
 	public void addStepometerMeasurement(double distance, double theta) {
 		checkGraphExistance();
 		
 		currentPoseId++;
 		//String informatiomMatrixOfStep = 0.2*distance + " 0.0 " + 20.0/180.0*Math.PI;
-		String informatiomMatrixOfStep = "1.0 0.0 1.0";
+		String informatiomMatrixOfStep = "1.0 0.0 0.1";
 		String edgeStep ="EDGE_SE2:STEP " + (currentPoseId-1) + " " + currentPoseId + " " + distance + " " + theta + " " + informatiomMatrixOfStep + "\n";
 		
 		save2file(edgeStep);
@@ -199,4 +231,12 @@ public class GraphManager {
 		String edgeWiFi ="EDGE_SE2:WIFI " + currentPoseId + " " + id + " " + distance + " " + informatiomMatrixOfWifi + "\n";
 		return edgeWiFi;
 	}
+	
+	private String createWiFiFingerprintEdgeString(int id, int id2) {
+		final float deadBandRadius = 6;
+		final float informationMatrixOfWiFiFingerprint = 1.0f;
+		String edgeWiFi ="EDGE_SE2:WIFI_FINGERPRINT " + id2 + " " + id + " " + deadBandRadius +  " " + informationMatrixOfWiFiFingerprint + "\n";
+		return edgeWiFi;
+	}
+	
 }

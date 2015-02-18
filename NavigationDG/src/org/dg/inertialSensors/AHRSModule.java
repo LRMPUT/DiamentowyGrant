@@ -32,6 +32,7 @@ public class AHRSModule {
 		final float Qwmax = (float) (8.159 * Math.pow(10, -7));
 		final float Rr = 3.672f;
 		create(Qqmin, Qwmin, Qqmax, Qwmax, Rr);
+		//create(Qqmax, Qwmax, Qqmax, Qwmax, Rr);
 	}
 
 	public AHRSModule(float Qqmin, float Qwmin, float Qqmax, float Qwmax,

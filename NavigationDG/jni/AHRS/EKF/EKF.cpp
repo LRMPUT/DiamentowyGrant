@@ -4,6 +4,7 @@
  */
 
 #include "EKF.h"
+#include <android/log.h>
 
 EKF::EKF(float Qqmin, float Qwmin, float Qqmax, float Qwmax, float Rr) {
 
@@ -12,29 +13,29 @@ EKF::EKF(float Qqmin, float Qwmin, float Qqmax, float Qwmax, float Rr) {
 	//
 
 	// Minimal
-	this->Qmin = Eigen::Matrix<float, 7, 7>::Identity();
-	this->Qmin.block<4,4>(0,0) = Eigen::Matrix<float, 4, 4>::Identity() * Qqmin;
-	this->Qmin.block<3,3>(4,4) = Eigen::Matrix<float, 3, 3>::Identity() * Qwmin;
+	this->Qmin = Eigen::Matrix<double, 7, 7>::Identity();
+	this->Qmin.block<4,4>(0,0) = Eigen::Matrix<double, 4, 4>::Identity() * Qqmin;
+	this->Qmin.block<3,3>(4,4) = Eigen::Matrix<double, 3, 3>::Identity() * Qwmin;
 
 	// Maximal
-	this->Qmax = Eigen::Matrix<float, 7, 7>::Identity();
-	this->Qmax.block<4,4>(0,0) = Eigen::Matrix<float, 4, 4>::Identity() * Qqmax;
-	this->Qmax.block<3,3>(4,4) = Eigen::Matrix<float, 3, 3>::Identity() * Qwmax;
+	this->Qmax = Eigen::Matrix<double, 7, 7>::Identity();
+	this->Qmax.block<4,4>(0,0) = Eigen::Matrix<double, 4, 4>::Identity() * Qqmax;
+	this->Qmax.block<3,3>(4,4) = Eigen::Matrix<double, 3, 3>::Identity() * Qwmax;
 
 	// Compute diff
 	this->Qdiff = this->Qmax - this->Qmin;
 
 	// Start with minimal
-	this->Q = this->Qmin;
+	this->Q = this->Qmax;
 
 	// Covariance of predict
-	this->R = Eigen::Matrix<float, 4, 4>::Identity() * Rr;
+	this->R = Eigen::Matrix<double, 4, 4>::Identity() * Rr;
 
 	// Setting initial values
 	this->x_apriori.setZero();
 	this->x_aposteriori.setZero();
-	this->P_apriori = this->Q;
-	this->P_aposteriori = this->Q;
+	this->P_apriori = this->Q * 10000000000000.0;
+	this->P_aposteriori = this->Q * 10000000000000.0;
 
 	this->H.setZero();
 	for (int i=0;i<4;i++)
@@ -44,9 +45,9 @@ EKF::EKF(float Qqmin, float Qwmin, float Qqmax, float Qwmax, float Rr) {
 	correctTime = true;
 }
 
-Eigen::Matrix<float, 7, 7> EKF::jacobian(float *wArray, float dt) {
-	Eigen::Matrix<float, 7, 7> F = Eigen::Matrix<float, 7, 7>::Identity();
-	Eigen::Matrix<float, 3, 1> w;
+Eigen::Matrix<double, 7, 7> EKF::jacobian(float *wArray, float dt) {
+	Eigen::Matrix<double, 7, 7> F = Eigen::Matrix<double, 7, 7>::Identity();
+	Eigen::Matrix<double, 3, 1> w;
 	w << wArray[0], wArray[1], wArray[2];
 
 	// 1st row
@@ -97,16 +98,16 @@ Eigen::Matrix<float, 7, 7> EKF::jacobian(float *wArray, float dt) {
 	return F;
 }
 
-Eigen::Matrix<float, 7, 1> EKF::statePrediction(float* wArray, float dt) {
-	Eigen::Matrix<float, 7, 1> F = Eigen::Matrix<float, 7, 1>::Identity();
-	Eigen::Matrix<float, 3, 1> w;
+Eigen::Matrix<double, 7, 1> EKF::statePrediction(float* wArray, float dt) {
+	Eigen::Matrix<double, 7, 1> F = Eigen::Matrix<double, 7, 1>::Identity();
+	Eigen::Matrix<double, 3, 1> w;
 	w << wArray[0], wArray[1], wArray[2];
 
 	F(4) = this->x_aposteriori(4);
 	F(5) = this->x_aposteriori(5);
 	F(6) = this->x_aposteriori(6);
 
-	Eigen::Matrix<float, 4, 4> A;
+	Eigen::Matrix<double, 4, 4> A;
 	A.setZero();
 
 	// A 1st row
@@ -134,7 +135,7 @@ Eigen::Matrix<float, 7, 1> EKF::statePrediction(float* wArray, float dt) {
 	A(3, 3) = 1;
 
 	// Only (1:4)
-	Eigen::Matrix<float, 4, 1> x = A * (this->x_aposteriori).block<4, 1>(0, 0);
+	Eigen::Matrix<double, 4, 1> x = A * (this->x_aposteriori).block<4, 1>(0, 0);
 
 	for (int i=0;i<4;i++)
 		F(i) = x(i);
@@ -143,20 +144,35 @@ Eigen::Matrix<float, 7, 1> EKF::statePrediction(float* wArray, float dt) {
 
 void EKF::predict(float* inputArray, float _dt, float *currentEstimate) {
 
+//	__android_log_print(ANDROID_LOG_VERBOSE, "AEKF",
+//					"Gyro predict: %.3f %.3f %.3f | %.3f", inputArray[0], inputArray[1], inputArray[2], _dt);
+
 	// We should do predict or correct?
-	if (!correctTime)
-	{
+//	if (!correctTime)
+//	{
 		this->x_apriori = this->statePrediction(inputArray, _dt);
-		Eigen::Matrix<float, 7, 7> F = this->jacobian(inputArray, _dt);
+		Eigen::Matrix<double, 7, 7> F = this->jacobian(inputArray, _dt);
 		this->P_apriori = F * this->P_aposteriori * F.transpose() + this->Q;
 		correctTime = true;
-	}
+//	}
+
+	// Normalize
+	double norm = this->x_apriori.block<4, 1>(0, 0).norm();
+	this->x_apriori.block<4, 1>(0, 0) = this->x_apriori.block<4, 1>(0, 0) / norm;
+
 	// Update current estimate
 	for (int i=0;i<4;i++)
-		currentEstimate[i] = this->x_aposteriori(i);
+		currentEstimate[i] = this->x_apriori(i);
+
+//	__android_log_print(ANDROID_LOG_VERBOSE, "AEKF",
+//			"Estimate predict: %.3f %.3f %.3f %.3f", currentEstimate[0],
+//			currentEstimate[1], currentEstimate[2], currentEstimate[3]);
 }
 
 void EKF::correct(float* measurement, float* currentEstimate) {
+
+//	__android_log_print(ANDROID_LOG_VERBOSE, "AEKF",
+//				"Measurement correct: %.3f %.3f %.3f %.3f", measurement[0], measurement[1], measurement[2], measurement[3]);
 
 	// First measurement -> we start estimation from acc/mag position
 	if(firstMeasurement)
@@ -165,27 +181,44 @@ void EKF::correct(float* measurement, float* currentEstimate) {
 		correctTime = false;
 		for (int i=0;i<4;i++)
 			this->x_aposteriori(i) = measurement[i];
-		// Lets init it with some other uncertainty
-		// this->P_aposteriori = ??? ;
+
+		this->x_aposteriori(0) = 0.7256;
+		this->x_aposteriori(1) = 0.1506;
+		this->x_aposteriori(2) = -0.1165;
+		this->x_aposteriori(3) = -0.6612;
+		this->P_aposteriori = this->P_aposteriori * 0.0;
 	}
 	// We should do predict or correct?
-	else if (correctTime)
+	else //if (correctTime)
 	{
 		correctTime = false;
 
 		// Converting measurements
-		Eigen::Matrix<float, 4, 1> z;
+		Eigen::Matrix<double, 4, 1> z;
 		z << measurement[0], measurement[1], measurement[2], measurement[3];
 
 		// Some additional variables
-		Eigen::Matrix<float, 7, 7> I = Eigen::Matrix<float, 7, 7>::Identity();
-		Eigen::Matrix<float, 7, 4> K = Eigen::Matrix<float, 7, 4>::Zero();
+		Eigen::Matrix<double, 7, 7> I = Eigen::Matrix<double, 7, 7>::Identity();
+		Eigen::Matrix<double, 7, 4> K = Eigen::Matrix<double, 7, 4>::Zero();
+
+
+//		for (int i = 0; i<7;i++)
+//			__android_log_print(ANDROID_LOG_VERBOSE, "AEKF",
+//					"P_ap: %.3f %.3f %.3f %.3f %.3f %.3f %.3f", this->P_apriori(i, 0),
+//					this->P_apriori(i, 1), this->P_apriori(i, 2),
+//					this->P_apriori(i, 3), this->P_apriori(i, 4),
+//					this->P_apriori(i, 5), this->P_apriori(i, 6));
 
 		// EKF equations
 		K =
 				(this->P_apriori * this->H.transpose())
 						* (this->H * this->P_apriori * this->H.transpose()
 								+ this->R).inverse();
+
+//		for (int i = 0; i<7;i++)
+//			__android_log_print(ANDROID_LOG_VERBOSE, "AEKF",
+//						"K: %.3f %.3f %.3f %.3f", K(i,0), K(i,1), K(i,2), K(i,3));
+
 		this->x_aposteriori = this->x_apriori
 			+ K * (z - this->H * this->x_apriori);
 		this->P_aposteriori = (I - K * this->H) * this->P_apriori;
@@ -212,10 +245,10 @@ void EKF::correct(float* measurement, float* currentEstimate) {
 			var /= measurementWindowSize;
 
 			// AEKF covariance steering
-			if ( var < 0.000005 )
-				this->Q += this->Qdiff * 0.000005;
+			if (var < 0.000005)
+				this->Q += (this->Qdiff * 0.000005);
 			else
-				this->Q -= this->Qdiff * 0.00001;
+				this->Q -= (this->Qdiff * 0.00001);
 
 			// Check the borders of the covariance
 			if ( this->Q(0,0) < this->Qmin(0,0) )
@@ -223,10 +256,26 @@ void EKF::correct(float* measurement, float* currentEstimate) {
 			else if ( this->Q(0,0) > this->Qmax(0,0) )
 				this->Q = this->Qmax;
 
+			//__android_log_print(ANDROID_LOG_VERBOSE, "AEKF", "AEKF val: %f | var: %f", this->Q(0,0)*10000000, var*1000000);
 		}
 	}
+
+	// Check quat norm
+	double norm = this->x_aposteriori.block<4, 1>(0, 0).norm();
+	this->x_aposteriori.block<4, 1>(0, 0) = this->x_aposteriori.block<4, 1>(0, 0) / norm;
+
+
 
 	// Update current estimate
 	for (int i=0;i<4;i++)
 		currentEstimate[i] = this->x_aposteriori(i);
+
+	__android_log_print(ANDROID_LOG_VERBOSE, "AEKF",
+			"Estimate correct: %.3f %.3f %.3f %.3f", currentEstimate[0],
+			currentEstimate[1], currentEstimate[2], currentEstimate[3]);
+
+//	float test = sqrt ( currentEstimate[1]*currentEstimate[1] + currentEstimate[2]*currentEstimate[2] + currentEstimate[3]*currentEstimate[3] );
+//	__android_log_print(ANDROID_LOG_VERBOSE, "AEKF", "Quaternion length: %.3f", test );
+
+
 }

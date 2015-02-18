@@ -3,28 +3,95 @@
     android:id="@+id/layout"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
-    android:orientation="vertical" >
+    android:orientation="vertical" 
+    android:keepScreenOn="true" >
 
     <LinearLayout
-        android:layout_width="wrap_content"
-        android:layout_height="match_parent"
-        android:layout_weight="0.79"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_weight="0.20"
         android:orientation="vertical" >
 
-        <SurfaceView
-            android:id="@+id/SurfaceView01"
-            android:layout_width="306dp"
-            android:layout_height="163dp" />
+        <TextView
+            android:id="@+id/textViewBarometer1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.79"
+            android:text="Floor: " />
+
+        <TextView
+            android:id="@+id/textViewBarometer2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.79"
+            android:text="Height: " />
+
+        <TextView
+            android:id="@+id/textViewStepometer1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.79"
+            android:text="Found freq: " />
+
+        <TextView
+            android:id="@+id/textViewStepometer2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.79"
+            android:text="Step counter: " />
+
+        <TextView
+            android:id="@+id/textViewStepometer3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.79"
+            android:text="Distance: " />
+
+        <TextView
+            android:id="@+id/textViewWiFi1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.79"
+            android:text="Number of found networks: " />
+
+        <TextView
+            android:id="@+id/textViewWiFi2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.79"
+            android:text="Strongest WiFi: " />
+
+        <TextView
+            android:id="@+id/textViewWiFi3"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.79"
+            android:text="Recognized place id: " />
+
+        <TextView
+            android:id="@+id/textViewMagnetic"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.79"
+            android:text="Recognized mag place id: " />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="0.79" >
+            android:layout_weight="3.23" >
 
             <LinearLayout
-                android:layout_width="120dp"
-                android:layout_height="wrap_content"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_weight="0.48"
                 android:orientation="vertical" >
+
+                <TextView
+                    android:id="@+id/textViewOrient3"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="0.79"
+                    android:text="Yaw (Z):" />
 
                 <TextView
                     android:id="@+id/textViewOrient1"
@@ -39,46 +106,36 @@
                     android:layout_height="wrap_content"
                     android:layout_weight="0.79"
                     android:text="Pitch (Y):" />
-
-                <TextView
-                    android:id="@+id/textViewOrient3"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_weight="0.79"
-                    android:text="Yaw (Z):" />
             </LinearLayout>
 
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
-                android:layout_weight="0.25"
+                android:layout_weight="0.48"
                 android:orientation="vertical" >
-
+                
                 <TextView
-                    android:id="@+id/textViewWiFi1"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Number of found networks: " />
-
-                <TextView
-                    android:id="@+id/textViewWiFi2"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Strongest WiFi: " />
-
-                <TextView
-                    android:id="@+id/textViewWiFi3"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Recognized place id: " />
-
-                <TextView
-                    android:id="@+id/textViewMagnetic"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="Recognized mag place id: " />
+			            android:id="@+id/textViewOrientComp3"
+			            android:layout_width="wrap_content"
+			            android:layout_height="wrap_content"
+			            android:layout_weight="0.79"
+			            android:text="Comp Yaw (Z):" />
+				<TextView
+			            android:id="@+id/textViewOrientComp1"
+			            android:layout_width="wrap_content"
+			            android:layout_height="wrap_content"
+			            android:layout_weight="0.79"
+			            android:text="Comp Roll (X):" />
+				<TextView
+			            android:id="@+id/textViewOrientComp2"
+			            android:layout_width="wrap_content"
+			            android:layout_height="wrap_content"
+			            android:layout_weight="0.79"
+			            android:text="Comp Pitch (Y):" />
             </LinearLayout>
+
         </LinearLayout>
+
     </LinearLayout>
 
 </LinearLayout>

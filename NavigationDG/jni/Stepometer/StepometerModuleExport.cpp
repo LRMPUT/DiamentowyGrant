@@ -24,10 +24,6 @@ JNIEXPORT float JNICALL Java_org_dg_inertialSensors_Stepometer_fftFindDominantFr
 	float * accWindow  = new float[processingWindowSize];
 	env->GetFloatArrayRegion(processingWindowArray,0,processingWindowSize,accWindow);
 
-	// We just log the window size to make sure that everything is ok
-	__android_log_print(ANDROID_LOG_DEBUG, "Stepometer",
-									"Window size: %d\n", processingWindowSize);
-
 	// We need to convert float* to vector<float> -> do it smartly with c++11
 	std::vector<float> accWindowVec{accWindow, accWindow + processingWindowSize};
 
@@ -56,15 +52,10 @@ JNIEXPORT float JNICALL Java_org_dg_inertialSensors_Stepometer_fftFindDominantFr
 	// Compute dominant frequency
 	float foundFreq = indMax * accelerometerMeasurementFrequency / processingWindowSize;
 
-	// Some debug information
-	__android_log_print(ANDROID_LOG_DEBUG, "Stepometer", "NDK fft:  max index : %d, max value: %f \n", indMax, greatestVal);
-	__android_log_print(ANDROID_LOG_DEBUG, "Stepometer", "NDK fft:  found frequency: %f \n", foundFreq);
-
 	// Clean after yourself
 	delete[] accWindow;
 
 	// Return frequency
-
 	return foundFreq;
 }
 

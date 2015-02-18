@@ -133,24 +133,30 @@ public class MainActivity extends Activity {
 		((FrameLayout) findViewById(R.id.preview)).addView(preview);
 		preview.setKeepScreenOn(true);
 		
-		// Init library
-		openAIL = new OpenAndroidIndoorLocalization();
-
-		// Init graph
-		openAIL.graphManager = new GraphManager();
-
+		
 		// Init Sensor Managers
 		SensorManager sensorManager;
 		sensorManager = (android.hardware.SensorManager) getSystemService(Context.SENSOR_SERVICE);
-		openAIL.inertialSensors = new InertialSensors(sensorManager);
-
+		
 		// Init WiFi
-		WifiManager wifiManager;
-		wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
-		openAIL.wifiScanner = new WifiScanner(wifiManager);
+				WifiManager wifiManager;
+				wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
+				
+				
+		
+		// Init library
+		openAIL = new OpenAndroidIndoorLocalization(sensorManager, wifiManager);
+
+		// Register 
 		registerReceiver(openAIL.wifiScanner, new IntentFilter(
 				WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
 
+		
+		// Init graph
+//		openAIL.graphManager = new GraphManager();
+//		openAIL.inertialSensors = new InertialSensors(sensorManager);
+//		openAIL.wifiScanner = new WifiScanner(wifiManager);
+		
 		// Add buttons
 		initializeButtons();
 
@@ -174,39 +180,39 @@ public class MainActivity extends Activity {
 	private void initializeButtons() {
 
 		// 1. Take picture button
-		initButtonTakePicture(R.id.buttonMainView1);
+//		initButtonTakePicture(R.id.buttonMainView1);
 
 		// 2. Start presenting the orientation
-		initButtonStartOrientation(R.id.buttonMainView2, R.id.buttonMainView3);
+		//initButtonStartOrientation(R.id.buttonMainView2, R.id.buttonMainView3);
 
 		// 3. Record inertial sensors
-		initButtonRecordinertialSensors(R.id.buttonMainView3,
-				R.id.buttonMainView2);
+//		initButtonRecordinertialSensors(R.id.buttonMainView3,
+//				R.id.buttonMainView2);
 
 		// 4. Record one WiFi scan
-		initButtonRecordSingleWiFiScan(R.id.buttonMainView4);
+//		initButtonRecordSingleWiFiScan(R.id.buttonMainView4);
 
 		// 5. Record continuous WiFi scans
-		initButtonRecordContinuousWiFiScans(R.id.buttonMainView5,
-				R.id.buttonMainView4);
+		//initButtonRecordContinuousWiFiScans(R.id.buttonMainView5,
+		//		R.id.buttonMainView4);
 
-		// 6. Add WiFi scan to recognition list
-		initButtonAddWiFiScanToRecognition(R.id.buttonMainView6);
+//		// 6. Add WiFi scan to recognition list
+//		initButtonAddWiFiScanToRecognition(R.id.buttonMainView6);
+//
+//		// 7. Run stepometer
+//		initButtonRunStepometer(R.id.buttonMainView7);
 
-		// 7. Run stepometer
-		initButtonRunStepometer(R.id.buttonMainView7);
-
-		// Side View 1
-		initButtonStartFloorDetection(R.id.buttonSideView1);
-
-		// Side View 2
-		initButtonStartGraphOnline(R.id.buttonSideView2);
-		
-		// Side View 3
-		initButtonStartGraphTestFromFile(R.id.buttonSideView3);
-		
-		// Side View 4 - Add magnetic place to recognition
-		initButtonAddMagneticPlaceToRecognition(R.id.buttonSideView4);
+//		// Side View 1
+//		initButtonStartFloorDetection(R.id.buttonSideView1);
+//
+//		// Side View 2
+//		initButtonStartGraphOnline(R.id.buttonSideView2);
+//		
+//		// Side View 3
+//		initButtonStartGraphTestFromFile(R.id.buttonSideView3);
+//		
+//		// Side View 4 - Add magnetic place to recognition
+//		initButtonAddMagneticPlaceToRecognition(R.id.buttonSideView4);
 	}
 
 	
@@ -321,7 +327,9 @@ public class MainActivity extends Activity {
 		buttonAddWiFiScanToRecognition
 				.setOnClickListener(new OnClickListener() {
 					public void onClick(View v) {
-						openAIL.wifiScanner.addLastScanToRecognition();
+						
+						// TODO !!!
+						// openAIL.wifiScanner.addLastScanToRecognition();
 
 						if (wiFiRecognitionStarted == false) {
 							wiFiRecognitionTimer
@@ -528,7 +536,7 @@ public class MainActivity extends Activity {
 
 	class UpdateOrientAndWiFiScanGUI extends TimerTask {
 		public void run() {
-			float[] orient = openAIL.inertialSensors.getCurrentOrient();
+			float[] orient = openAIL.inertialSensors.getCurrentAEKFOrient();
 			String strongestWiFiNetwork = openAIL.wifiScanner.getStrongestNetwork();
 			int WiFiCount = openAIL.wifiScanner.getNetworkCount();
 			float foundFreq = openAIL.inertialSensors.getLastDetectedFrequency();
