@@ -244,6 +244,7 @@ public class MainScreenSlideActivity extends Activity implements
 						dir.mkdirs();
 					}
 			        ProcessRecorded.process(dir, 0.999325f);
+			       
 			    }
 			};
 			thread.start();

@@ -1,9 +1,11 @@
 package org.dg.wifi;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -13,7 +15,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.PriorityQueue;
+import java.util.Scanner;
 import java.util.concurrent.Semaphore;
+
+import org.dg.wifi.MyScanResult;
 
 import android.net.wifi.ScanResult;
 import android.os.Environment;
@@ -31,14 +36,14 @@ public class WiFiPlaceRecognition implements Runnable {
 
 	// The database of places
 	final int maxPlaceDatabaseSize = 500;
-	List<List<ScanResult>> placeDatabase = new ArrayList<List<ScanResult>>();
+	List<List<MyScanResult>> placeDatabase = new ArrayList<List<MyScanResult>>();
 	List<Integer> placeIds = new ArrayList<Integer>();
 
 	// File to save data
 	PrintStream outStreamPlaceRecognitionData = null;
 
 	// Queue Mutex
-	final int WiFiPlaceRecognitionSize = 50;
+	final int WiFiPlaceRecognitionSize = 150;
 	PriorityQueue<WiFiPlaceLink> queue;
 	private final Semaphore queueMtx = new Semaphore(1, true);
 	
@@ -65,6 +70,7 @@ public class WiFiPlaceRecognition implements Runnable {
 		if (!folder.exists()) {
 			folder.mkdir();
 		}
+		
 
 		// File to save results
 		String fileName = "";
@@ -84,7 +90,7 @@ public class WiFiPlaceRecognition implements Runnable {
 		}
 	}
 
-	public void addPlace(List<ScanResult> wiFiList, int id) {
+	public void addPlace(List<MyScanResult> wiFiList, int id, boolean newThread) {
 
 		Log.d(moduleLogName,
 				"Added new place - now recognition thread needs to process the data");
@@ -94,69 +100,73 @@ public class WiFiPlaceRecognition implements Runnable {
 		placeDatabase.add(wiFiList);
 		placeIds.add(id);
 		
-		
 		newPlaceToProcess = true;
+		
+		if ( !newThread ) {
+			addNewPlaceInRecognitionThread();
+		}
 	}
 
 	public int recognizePlace(List<ScanResult> wiFiList) {
-		sortListByMAC(wiFiList);
-
-		int bestIndex = 0, index = 0;
-		float bestValue = 0.0f;
-
-		// Check all places in database
-		for (List<ScanResult> place : placeDatabase) {
-			// Computing similarity measure
-			float value = computeBSSIDSimilarity(place, wiFiList);
-
-			// Finding the most probable place
-			if (value > bestValue) {
-				bestValue = value;
-				bestIndex = index;
-			}
-			index = index + 1;
-		}
-
-		// Sanity check - if the best place does not have 75% of the check place
-		// wifis
-		if (bestValue < wiFiSanityPercent * wiFiList.size())
-			return -1;
-
-		return placeIds.get(bestIndex);
+//		sortListByMAC(wiFiList);
+//
+//		int bestIndex = 0, index = 0;
+//		float bestValue = 0.0f;
+//
+//		// Check all places in database
+//		for (List<ScanResult> place : placeDatabase) {
+//			// Computing similarity measure
+//			float value = computeBSSIDSimilarity(place, wiFiList);
+//
+//			// Finding the most probable place
+//			if (value > bestValue) {
+//				bestValue = value;
+//				bestIndex = index;
+//			}
+//			index = index + 1;
+//		}
+//
+//		// Sanity check - if the best place does not have 75% of the check place
+//		// wifis
+//		if (bestValue < wiFiSanityPercent * wiFiList.size())
+//			return -1;
+//
+//		return placeIds.get(bestIndex);
+		return -404;
 	}
 
 	public List<Integer> returnAllMatchingPlaces(List<ScanResult> wiFiList,
 			int currentPoseId) {
 		List<Integer> result = new ArrayList<Integer>();
-
-		sortListByMAC(wiFiList);
-
-		// Check all places in database
-		int index = 0;
-		for (List<ScanResult> place : placeDatabase) {
-			// Computing similarity measure
-			float value = computeBSSIDSimilarity(place, wiFiList);
-
-			// Compute average error
-			float avgError = computeAverageMeanSquaredBSSIDError(place,
-					wiFiList);
-
-			// Finding the most probable place
-			if (currentPoseId != placeIds.get(index)) {
-				outStreamPlaceRecognitionData.print(placeIds.get(index) + " "
-						+ currentPoseId + " " + value + " " + wiFiSanityPercent
-						+ " " + wiFiList.size() + " " + avgError + " "
-						+ wiFiAvgErrorThreshold + "\n");
-
-				if (value > wiFiSanityPercent * wiFiList.size()
-						&& avgError < wiFiAvgErrorThreshold) {
-
-					result.add(placeIds.get(index));
-				}
-			}
-			index = index + 1;
-		}
-
+//
+//		sortListByMAC(wiFiList);
+//
+//		// Check all places in database
+//		int index = 0;
+//		for (List<ScanResult> place : placeDatabase) {
+//			// Computing similarity measure
+//			float value = computeBSSIDSimilarity(place, wiFiList);
+//
+//			// Compute average error
+//			float avgError = computeAverageMeanSquaredBSSIDError(place,
+//					wiFiList);
+//
+//			// Finding the most probable place
+//			if (currentPoseId != placeIds.get(index)) {
+//				outStreamPlaceRecognitionData.print(placeIds.get(index) + " "
+//						+ currentPoseId + " " + value + " " + wiFiSanityPercent
+//						+ " " + wiFiList.size() + " " + avgError + " "
+//						+ wiFiAvgErrorThreshold + "\n");
+//
+//				if (value > wiFiSanityPercent * wiFiList.size()
+//						&& avgError < wiFiAvgErrorThreshold) {
+//
+//					result.add(placeIds.get(index));
+//				}
+//			}
+//			index = index + 1;
+//		}
+//
 		return result;
 	}
 
@@ -171,10 +181,10 @@ public class WiFiPlaceRecognition implements Runnable {
 		}
 	}
 
-	private void sortListByMAC(List<ScanResult> wiFiList) {
-		Comparator<ScanResult> comparator = new Comparator<ScanResult>() {
+	private void sortListByMAC(List<MyScanResult> wiFiList) {
+		Comparator<MyScanResult> comparator = new Comparator<MyScanResult>() {
 			@Override
-			public int compare(ScanResult lhs, ScanResult rhs) {
+			public int compare(MyScanResult lhs, MyScanResult rhs) {
 				return lhs.BSSID.compareTo(rhs.BSSID);
 			}
 		};
@@ -182,11 +192,11 @@ public class WiFiPlaceRecognition implements Runnable {
 	}
 
 	// Compute similarity as the number of shared WiFi networks
-	private int computeBSSIDSimilarity(List<ScanResult> listA,
-			List<ScanResult> listB) {
+	private int computeBSSIDSimilarity(List<MyScanResult> listA,
+			List<MyScanResult> listB) {
 		int result = 0;
-		for (ScanResult scanA : listA) {
-			for (ScanResult scanB : listB) {
+		for (MyScanResult scanA : listA) {
+			for (MyScanResult scanB : listB) {
 				if (scanA.BSSID.compareTo(scanB.BSSID) == 0) {
 					result++;
 					break;
@@ -197,12 +207,12 @@ public class WiFiPlaceRecognition implements Runnable {
 	}
 
 	// Compute average error over shared networks
-	private float computeAverageMeanSquaredBSSIDError(List<ScanResult> listA,
-			List<ScanResult> listB) {
+	private float computeAverageMeanSquaredBSSIDError(List<MyScanResult> listA,
+			List<MyScanResult> listB) {
 		float result = 0.0f;
 		int count = 0;
-		for (ScanResult scanA : listA) {
-			for (ScanResult scanB : listB) {
+		for (MyScanResult scanA : listA) {
+			for (MyScanResult scanB : listB) {
 				if (scanA.BSSID.compareTo(scanB.BSSID) == 0) {
 					result += Math.pow(scanA.level - scanB.level, 2);
 					count += 1;
@@ -231,38 +241,37 @@ public class WiFiPlaceRecognition implements Runnable {
 	}
 
 	public void addToQueue(WiFiPlaceLink linkToTest) {
-		
+
 		// We wont compare wifi links connected to the same node in graph
-		if ( linkToTest.indexA != linkToTest.indexB)
-		{
-			try {
-				queueMtx.acquire();
-				
-				if (queue.size() == WiFiPlaceRecognitionSize)
-				{
-					Log.d(moduleLogName, "There is a need to clear queue, size : "
-							+ queue.size());
-					
-					Comparator<WiFiPlaceLink> wiFiPlaceComparator = new WiFiPlaceComparator();
-					PriorityQueue<WiFiPlaceLink> newQueue = new PriorityQueue<WiFiPlaceLink>(
-							WiFiPlaceRecognitionSize, wiFiPlaceComparator);
-					for (int i = 0; i < WiFiPlaceRecognitionSize / 2; i++) {
-						newQueue.add(queue.poll());
-					}
-					queue = newQueue;
-					Log.d(moduleLogName, "Reduced queue size: " + queue.size());
+
+		try {
+			queueMtx.acquire();
+
+			if (queue.size() == WiFiPlaceRecognitionSize) {
+				Log.d(moduleLogName, "There is a need to clear queue, size : "
+						+ queue.size());
+
+				Comparator<WiFiPlaceLink> wiFiPlaceComparator = new WiFiPlaceComparator();
+				PriorityQueue<WiFiPlaceLink> newQueue = new PriorityQueue<WiFiPlaceLink>(
+						WiFiPlaceRecognitionSize, wiFiPlaceComparator);
+				for (int i = 0; i < WiFiPlaceRecognitionSize / 2; i++) {
+					newQueue.add(queue.poll());
 				}
-				
-				queue.add(linkToTest);
-				
-				queueMtx.release();
-			} catch (InterruptedException e) {
-				Log.d(moduleLogName, "Failed to access queue mutex");
+				queue = newQueue;
+				Log.d(moduleLogName, "Reduced queue size: " + queue.size());
 			}
+
+			queue.add(linkToTest);
+
+			queueMtx.release();
+		} catch (InterruptedException e) {
+			Log.d(moduleLogName, "Failed to access queue mutex");
 		}
+
 	}
 	
 	void startRecognition() {
+		
 		performRecognition = true;
 		recognizePlacesThread = new Thread(this, "Recognition thread");
 		recognizePlacesThread.start();
@@ -290,13 +299,13 @@ public class WiFiPlaceRecognition implements Runnable {
 	}
 
 	class WiFiPlaceLink {
-		List<ScanResult> listA;
-		List<ScanResult> listB;
+		List<MyScanResult> listA;
+		List<MyScanResult> listB;
 		int indexA, indexB;
 		float positionDifferance;
 
-		public WiFiPlaceLink(List<ScanResult> _listA, int _indexA, 
-				List<ScanResult> _listB, int _indexB, float _positionDifferance) {
+		public WiFiPlaceLink(List<MyScanResult> _listA, int _indexA, 
+				List<MyScanResult> _listB, int _indexB, float _positionDifferance) {
 			listA = _listA;
 			listB = _listB;
 			indexA = _indexA;
@@ -334,6 +343,13 @@ public class WiFiPlaceRecognition implements Runnable {
 
 	@Override
 	public void run() {
+		// We start with some delay
+		try {
+			Thread.sleep(500);
+		} catch (InterruptedException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
 		while (performRecognition) {
 			 
 			try {
@@ -373,6 +389,7 @@ public class WiFiPlaceRecognition implements Runnable {
 					addNewPlaceInRecognitionThread();
 				}
 				
+				Log.d(moduleLogName, "Queue size : " + queue.size());
 				
 				queueMtx.acquire();
 				WiFiPlaceLink linkToTest = queue.poll();
@@ -412,16 +429,19 @@ public class WiFiPlaceRecognition implements Runnable {
 	 * 
 	 */
 	private void addNewPlaceInRecognitionThread() {
-		List<ScanResult> wiFiList = placeDatabase.get(indexOfNewPlaceToProcess);
+		List<MyScanResult> wiFiList = placeDatabase.get(indexOfNewPlaceToProcess);
 		int indexA = placeIds.get(indexOfNewPlaceToProcess);
 		
 		int index = 0;
-		for (List<ScanResult> list : placeDatabase)	
+		for (List<MyScanResult> list : placeDatabase)	
 		{
 			int indexB = placeIds.get(index);
 			
-			WiFiPlaceLink linkToTest = new WiFiPlaceLink(wiFiList, indexA, list, indexB, 0.0f);
-			addToQueue(linkToTest);	
+			if ( indexA != indexB) {
+				WiFiPlaceLink linkToTest = new WiFiPlaceLink(wiFiList, indexA, list, indexB, 0.0f);
+				addToQueue(linkToTest);
+			}
+				
 			index++;
 		}
 		newPlaceToProcess = false;

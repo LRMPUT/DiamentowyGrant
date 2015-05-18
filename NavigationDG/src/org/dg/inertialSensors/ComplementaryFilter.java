@@ -219,7 +219,6 @@ public class ComplementaryFilter {
 		// JW: if you need to start the complementary filter -> change to true
 		// Then after starting application you need to start the Inertial
 		// sensors by "Start inertial sensors"
-		start();
 	}
 
 	// Start complementary filter estimation
@@ -227,6 +226,14 @@ public class ComplementaryFilter {
 		init = true;
 		started = true;
 		Log.d(TAG, String.format("complementary filter started"));
+	}
+	
+	public void start(float [] quat) {
+		Log.d(TAG, String.format("WTF %f %f %f %f", quat[0], quat[1], quat[2], quat[3]));
+		
+		float[] xxx = new float[9];
+		SensorManager.getRotationMatrixFromVector(xxx, quat2rotVec(quat));
+		start();
 	}
 
 	// Stop complementary filter estimation

@@ -17,7 +17,16 @@ GraphManager::GraphManager() {
 
 int GraphManager::optimize(int iterationCount) {
 	int res = optimizer.initializeOptimization();
-	res = optimizer.optimize(iterationCount);
+	//optimizer.computeInitialGuess();
+
+	for (int i=0;i<2;i++)
+	{
+		res = optimizer.optimize(iterationCount);
+
+		__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK: Chi2 [%f]",
+						optimizer.chi2());
+	}
+
 	return res;
 }
 
@@ -46,6 +55,8 @@ void GraphManager::addToGraph(string dataToProcess) {
 			addEdgeWiFi(data);
 		else if (type == "EDGE_SE2:STEP")
 			addEdgeStepometer(data);
+		else if (type == "EDGE_SE2")
+			addEdgeSE2(data);
 		else if (type == "EDGE_SE2:WIFI_FINGERPRINT")
 			addEdgeWiFiFingerprint(data);
 		else if (type == "VERTEX_SE2")
@@ -67,7 +78,7 @@ int GraphManager::addVertex(stringstream &data, int type) {
 
 	int id;
 	data >> id;
-	if (id == 0) {
+	if (id == 0 || (id >= 5000 && id < 10000)) {
 		__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG,
 				"NDK: setFixed(TRUE)!");
 		v->setFixed(true);
@@ -187,6 +198,59 @@ int GraphManager::addEdgeStepometer(stringstream &data) {
 		if (!optimizer.addEdge(e)) {
 			__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK:LC: [%s]",
 					"Unable to add edge stepometer");
+			delete e;
+			return -1;
+		}
+	}
+	return 0;
+}
+
+
+int GraphManager::addEdgeSE2(stringstream &data) {
+	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK:LC: [%s]",
+					"Adding SE2 edge");
+
+	int id1, id2;
+	EdgeSE2* e = new EdgeSE2();
+	data >> id1 >> id2;
+	OptimizableGraph::Vertex* from = optimizer.vertex(id1);
+	OptimizableGraph::Vertex* to = optimizer.vertex(id2);
+	if (!from) {
+		__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK:LC: [%s]",
+				"Adding initial vertex");
+		stringstream tmp;
+		tmp << id1 << " 0.0 0.0 0.0\n";
+		addVertex(tmp, 0);
+		from = optimizer.vertex(id1);
+	}
+
+	if (!to) {
+		__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK:LC: [%s]",
+				"Adding new vertex");
+		stringstream tmpStream(data.str());
+		double distX, distY, theta;
+		string xxx;
+		tmpStream >> xxx >> id1 >> id2 >> distX >> distY >> theta;
+
+		prevUserPositionX = prevUserPositionX + cos(prevUserPositionTheta) * distX - sin(prevUserPositionTheta) * distY;
+		prevUserPositionY = prevUserPositionY + sin(prevUserPositionTheta) * distX + cos(prevUserPositionTheta) * distY;
+
+		prevUserPositionTheta = prevUserPositionTheta + theta;
+
+		stringstream tmp;
+		tmp << id2 << " " << prevUserPositionX << " " << prevUserPositionY
+				<< " " << prevUserPositionTheta << " \n";
+		addVertex(tmp, 0);
+		to = optimizer.vertex(id2);
+	}
+
+	if (from && to) {
+		e->setVertex(0, from);
+		e->setVertex(1, to);
+		e->read(data);
+		if (!optimizer.addEdge(e)) {
+			__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK:LC: [%s]",
+					"Unable to add edge SE2");
 			delete e;
 			return -1;
 		}

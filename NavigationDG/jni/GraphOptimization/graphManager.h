@@ -69,4 +69,7 @@ private:
 
 	// Stepometer
 	int addEdgeStepometer(stringstream &data);
+
+	// Typical odometry SE2 edge
+	int addEdgeSE2(stringstream &data);
 };

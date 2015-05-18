@@ -177,16 +177,19 @@ void EKF::correct(float* measurement, float* currentEstimate) {
 	// First measurement -> we start estimation from acc/mag position
 	if(firstMeasurement)
 	{
+		__android_log_print(ANDROID_LOG_VERBOSE, "AEKF", "Lets see if it works !");
+
 		firstMeasurement = false;
 		correctTime = false;
 		for (int i=0;i<4;i++)
-			this->x_aposteriori(i) = measurement[i];
+			this->x_apriori(i) =this->x_aposteriori(i) = measurement[i];
 
-		this->x_aposteriori(0) = 0.7256;
-		this->x_aposteriori(1) = 0.1506;
-		this->x_aposteriori(2) = -0.1165;
-		this->x_aposteriori(3) = -0.6612;
+//		this->x_apriori(0) = this->x_aposteriori(0) = 0.7256;
+//		this->x_apriori(1) = this->x_aposteriori(1) = 0.1506;
+//		this->x_apriori(2) = this->x_aposteriori(2) = -0.1165;
+//		this->x_apriori(3) = this->x_aposteriori(3) = -0.6612;
 		this->P_aposteriori = this->P_aposteriori * 0.0;
+		this->P_apriori = this->P_apriori * 0.0;
 	}
 	// We should do predict or correct?
 	else //if (correctTime)
@@ -270,9 +273,9 @@ void EKF::correct(float* measurement, float* currentEstimate) {
 	for (int i=0;i<4;i++)
 		currentEstimate[i] = this->x_aposteriori(i);
 
-	__android_log_print(ANDROID_LOG_VERBOSE, "AEKF",
-			"Estimate correct: %.3f %.3f %.3f %.3f", currentEstimate[0],
-			currentEstimate[1], currentEstimate[2], currentEstimate[3]);
+//	__android_log_print(ANDROID_LOG_VERBOSE, "AEKF",
+//			"Estimate correct: %.3f %.3f %.3f %.3f", currentEstimate[0],
+//			currentEstimate[1], currentEstimate[2], currentEstimate[3]);
 
 //	float test = sqrt ( currentEstimate[1]*currentEstimate[1] + currentEstimate[2]*currentEstimate[2] + currentEstimate[3]*currentEstimate[3] );
 //	__android_log_print(ANDROID_LOG_VERBOSE, "AEKF", "Quaternion length: %.3f", test );

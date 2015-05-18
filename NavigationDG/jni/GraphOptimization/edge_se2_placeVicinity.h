@@ -75,7 +75,7 @@ public:
 		_error[0] = sqrt(delta[0] * delta[0] + delta[1] * delta[1]);
 		if ( _error[0] < _measurement )
 			_error[0] = 0.0f;
-		else if ( _error[0] > 100)
+		else if ( _error[0] - _measurement > 100)
 			_error[0] = 100;
 		else
 			_error[0] -= _measurement;
