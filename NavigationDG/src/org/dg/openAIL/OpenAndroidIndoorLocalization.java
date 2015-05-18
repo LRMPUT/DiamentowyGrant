@@ -3,8 +3,7 @@ package org.dg.openAIL;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -18,15 +17,20 @@ import org.dg.inertialSensors.InertialSensors;
 import org.dg.wifi.WiFiPlaceRecognition.IdPair;
 import org.dg.wifi.MyScanResult;
 import org.dg.wifi.WifiScanner;
+import org.xmlpull.v1.XmlPullParserException;
 
 import android.hardware.SensorManager;
-import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.os.Environment;
 import android.util.Log;
 
 // This is a class that is supposed to provide the interface for all available solutions
 public class OpenAndroidIndoorLocalization {
+	
+	
+	
+	ConfigurationReader.Parameters parameters;
+	
 
 	private static final String moduleLogName = "OpenAIL";
 
@@ -50,6 +54,28 @@ public class OpenAndroidIndoorLocalization {
 	public OpenAndroidIndoorLocalization(SensorManager sensorManager,
 			WifiManager wifiManager) {
 
+//		Log.d(moduleLogName, "XxX");
+//		
+//		String configFileName = String.format(Locale.getDefault(), Environment
+//				.getExternalStorageDirectory().toString()
+//				+ "/OpenAIL"
+//				+ "/settings.xml");
+//		
+//		Log.d(moduleLogName, "XxX2");
+//		ConfigurationReader configReader = new ConfigurationReader();
+//		
+//		Log.d(moduleLogName, "XxX3");
+//		try {
+//			parameters = configReader.readParameters(configFileName);
+//		} catch (XmlPullParserException e) {
+//			Log.e(moduleLogName, "Failed to parse the config file");
+//		} catch (IOException e) {
+//			Log.e(moduleLogName, "Missing config file");
+//		}
+//		Log.d(moduleLogName, "XxX4");
+//		
+//		Log.d(moduleLogName, "TEST: " + parameters.stepometer);
+		
 		// Init graph
 		graphManager = new GraphManager();
 

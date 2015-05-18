@@ -1,7 +1,7 @@
 LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 
-# Visual Odometry library
+# Visual Place Recognition library
 include C:/DiamentowyGrant/OpenCV-2.4.10-android-sdk/sdk/native/jni/OpenCV.mk
 
 # DetectDescriebe contains:
@@ -10,14 +10,13 @@ include C:/DiamentowyGrant/OpenCV-2.4.10-android-sdk/sdk/native/jni/OpenCV.mk
 #	- detection and description of features
 include $(LOCAL_PATH)/DetectDescribe/Android.mk
 
+# FABMAP library containing appearance-based loop closure
+sources:= BOWMSCTrainer.cpp ChowLiuTree.cpp FabMap.cpp openFABMAPcli.cpp
+#LOCAL_SRC_FILES += $(addprefix openFABMAP/, $(sources))
+LOCAL_SRC_FILES += $(sources)
 
-LOCAL_MODULE    := VisualOdometryModule
-#LOCAL_SRC_FILES += FivePoint/FivePointAlgorithm.cpp VisualOdometryModuleExport.cpp
-
-
-#LOCAL_C_INCLUDES := Eigen
-#LOCAL_SRC_FILES += FivePointMadeEasy/Rpoly.cpp FivePointMadeEasy/5point.cpp FivePointMadeEasy/main.cpp
-
+# Module name
+LOCAL_MODULE    := VisualPlaceRecognitionModule
 
 #LOCAL_CFLAGS += -fopenmp -O3
 LOCAL_LDLIBS +=  -llog -ldl -O3 -DNDEBUG
@@ -25,4 +24,3 @@ LOCAL_LDFLAGS +=  -pthread
 LOCAL_CFLAGS += -DNDEBUG 
 
 include $(BUILD_SHARED_LIBRARY)
-

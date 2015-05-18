@@ -31,7 +31,7 @@
 #include "openfabmap.hpp"
 #include <fstream>
 
-#include "../DetectDescribe/NonFree/nonfree.hpp"
+#include "DetectDescribe/NonFree/nonfree.hpp"
 
 /*
 openFABMAP procedural functions

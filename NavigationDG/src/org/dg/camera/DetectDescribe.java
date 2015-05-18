@@ -18,6 +18,7 @@ import org.opencv.core.Mat;
 import org.opencv.features2d.DescriptorExtractor;
 import org.opencv.features2d.FeatureDetector;
 import org.opencv.highgui.Highgui;
+//import org.opencv.imgcodecs.*;
 
 import android.os.Environment;
 import android.util.Log;
@@ -131,6 +132,7 @@ public class DetectDescribe implements Runnable {
 			{
 				Log.d(MScLog, "img: " + file1.toString());
 				// Read image
+				// Opencv 3.0.0: Mat img = Imgcodecs.imread(file1.getAbsolutePath());
 				Mat img = Highgui.imread(file1.getAbsolutePath());
 				vo.imagesToProcess[imgCounter] = img.clone();
 				img.release();
@@ -228,7 +230,9 @@ public class DetectDescribe implements Runnable {
 				for (File file1 : inFiles) {
 
 					// Read image
+					// Opencv 3.0.0: Mat img = Imgcodecs.imread(file1.getAbsolutePath());
 					Mat img = Highgui.imread(file1.getAbsolutePath());
+					
 					if (lastImage == null) {
 						lastImage = img.clone();
 					}
@@ -350,6 +354,8 @@ public class DetectDescribe implements Runnable {
 					for (File file1 : inFiles) {
 
 						// Read image
+						// Opencv 3.0.0: Mat img = Imgcodecs.imread(file1
+						//		.getAbsolutePath());
 						Mat img = Highgui.imread(file1
 								.getAbsolutePath());
 						if (lastImage == null) {
