@@ -10,10 +10,13 @@ import android.app.Fragment;
 import android.os.Bundle;
 import android.os.Handler;
 import android.view.LayoutInflater;
+import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.View.OnClickListener;
+import android.view.ViewGroup.LayoutParams;
 import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.TextView;
 
 /**
@@ -77,17 +80,15 @@ public class ScreenSlidePageFragment extends Fragment {
 		if (mPageNumber == 0) {
 			rootView = (ViewGroup) inflater.inflate(
 					R.layout.fragment_screen_slide_page0, container, false);
-
-			// preview = new Preview(this,
-			// (SurfaceView) rootView.findViewById(R.id.surfaceView));
-			//
-			// preview.setLayoutParams(new
-			// LayoutParams(LayoutParams.FILL_PARENT,
-			// LayoutParams.FILL_PARENT));
-			//
-			// ((FrameLayout)
-			// rootView.findViewById(R.id.preview)).addView(preview);
-			// preview.setKeepScreenOn(true);
+			
+			// Camera preview stuff
+//			preview = new Preview((SurfaceView) rootView.findViewById(R.id.SurfaceView01));
+//
+//			preview.setLayoutParams(new LayoutParams(LayoutParams.FILL_PARENT,
+//					LayoutParams.FILL_PARENT));
+//
+//			((FrameLayout) rootView.findViewById(R.id.preview)).addView(preview);
+//			preview.setKeepScreenOn(true);
 
 		} else if (mPageNumber == 1) {
 			rootView = (ViewGroup) inflater.inflate(
@@ -136,6 +137,9 @@ public class ScreenSlidePageFragment extends Fragment {
 			
 			// Side View 6 - Process orientation estimation data from file
 			initButtonStartOrientationEstimationFromFile(rootView, R.id.buttonSideView6);
+			
+			// Side View 7 - Process Visual Place Recognition
+			initButtonVisualPlaceRecognition(rootView, R.id.buttonSideView7);
 			
 
 		} else if (mPageNumber == 2 || true) {
@@ -421,6 +425,21 @@ public class ScreenSlidePageFragment extends Fragment {
 		buttonStartOrientFromFile.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
 				onSomeClick(v, "Orient file test");
+			}
+		});
+	}
+	
+	/**
+	 * 
+	 */
+	// Side View 7 - Process Visual Place Recognition
+	private void initButtonVisualPlaceRecognition(
+			final ViewGroup rootView, int id) {
+		Button buttonStartOrientFromFile = (Button) rootView.findViewById(id);
+		buttonStartOrientFromFile.setText("Visual Place Recognition");
+		buttonStartOrientFromFile.setOnClickListener(new OnClickListener() {
+			public void onClick(View v) {
+				onSomeClick(v, "Visual Place Recognition");
 			}
 		});
 	}

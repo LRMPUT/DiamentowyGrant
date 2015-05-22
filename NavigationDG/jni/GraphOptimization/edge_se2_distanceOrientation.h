@@ -53,6 +53,7 @@
 #include "g2o/types/slam2d/vertex_point_xy.h"
 #include "g2o/core/base_binary_edge.h"
 #include "g2o/types/slam2d/g2o_types_slam2d_api.h"
+#include <android/log.h>
 
 #include <math.h>
 using namespace std;
@@ -69,14 +70,39 @@ public:
 		const VertexSE2* v1 = static_cast<const VertexSE2*>(_vertices[0]);
 		const VertexSE2* l2 = static_cast<const VertexSE2*>(_vertices[1]);
 		Vector3d delta = (v1->estimate().inverse() * l2->estimate()).toVector();
-		_error[0] = _measurement[0]
-				- sqrt(delta[0] * delta[0] + delta[1] * delta[1]);
-		_error[1] = _measurement[1] - delta[2];
 
-		while ( _error[1] > M_PI )
-			_error[1] -= M_PI;
-		while ( _error[1] < -M_PI )
-				_error[1] += M_PI;
+		//		_error[0] = _measurement[0] - sqrt(delta[0] * delta[0] + delta[1] * delta[1]);
+//		_error[1] = _measurement[1] - delta[2];
+
+		//		float xError = delta[0] - _measurement[0] * cos(_measurement[1]);
+		//		float yError = delta[1] - _measurement[0] * sin(_measurement[1]);
+		//		if ( fabs(xError) > fabs(yError) )  {
+		//			_error[0] = xError;
+		//		} else {
+		//			_error[0] = yError;
+		//		}
+		//
+		//		_error[1] = _measurement[1] - delta[2];
+
+		//sqrt(pow(delta[0] - _measurement[0]*cos(_measurement[1]),2) + pow(delta[1] - _measurement[0]*sin(_measurement[1]),2));
+
+
+		// g2o edge: SE2 delta = _inverseMeasurement * (v1->estimate().inverse()*v2->estimate());
+//		float measurementOne =
+
+		_error[0] = -_measurement[0] + sqrt(delta[0] * delta[0] + delta[1] * delta[1]) ;
+		_error[1] = normalize_theta(delta[2] - _measurement[1]);
+
+
+
+		float angle = (v1->estimate()).toVector()[2], angle2 = (l2->estimate()).toVector()[2];
+		__android_log_print(ANDROID_LOG_VERBOSE, "Krokomierz edge", "Angle: %f %f", angle, angle2);
+		__android_log_print(ANDROID_LOG_VERBOSE, "Krokomierz edge", "Delta: %f %f %f Measurement: %f %f", delta[0], delta[1], delta[2], _measurement[0],_measurement[1]);
+		__android_log_print(ANDROID_LOG_VERBOSE, "Krokomierz edge", "Error: %f %f !", _error[0], _error[1]);
+
+
+
+
 	}
 
 	virtual bool setMeasurementData(double * d) {

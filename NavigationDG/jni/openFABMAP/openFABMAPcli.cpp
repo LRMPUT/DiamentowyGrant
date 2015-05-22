@@ -31,7 +31,7 @@
 #include "openfabmap.hpp"
 #include <fstream>
 
-#include "../DetectDescribe/NonFree/nonfree.hpp"
+#include "DetectDescribe/NonFree/nonfree.hpp"
 
 /*
 openFABMAP procedural functions
@@ -100,103 +100,103 @@ void sortKeypoints(std::vector<cv::KeyPoint>& keypoints);
 The openFabMapcli accepts a YML settings file, an example of which is provided.
 Modify options in the settings file for desired operation
 */
-int main(int argc, char * argv[])
-{
-	//load the settings file
-	std::string settfilename;
-	if (argc == 1) {
-		//assume settings in working directory
-		settfilename = "settings.yml";
-	} else if (argc == 3) {
-		if(std::string(argv[1]) != "-s") {
-			//incorrect option
-			return help();
-		} else {
-			//settings provided as argument
-			settfilename = std::string(argv[2]);
-		}
-	} else {
-		//incorrect arguments
-		return help();
-	}
-
-	cv::FileStorage fs;
-	fs.open(settfilename, cv::FileStorage::READ);
-	if (!fs.isOpened()) {
-		std::cerr << "Could not open settings file: " << settfilename << 
-			std::endl;
-		return -1;
-	}
-
-	cv::Ptr<cv::FeatureDetector> detector = generateDetector(fs);
-	if(!detector) {
-		std::cerr << "Feature Detector error" << std::endl;
-		return -1;
-	}
-
-	cv::Ptr<cv::DescriptorExtractor> extractor = generateExtractor(fs);
-	if(!extractor) {
-		std::cerr << "Feature Extractor error" << std::endl;
-		return -1;
-	}
-
-	//run desired function
-	int result = 0;
-	std::string function = fs["Function"];
-	if (function == "ShowFeatures") {
-		result = showFeatures(
-			fs["FilePaths"]["TrainPath"],
-			detector);
-
-	} else if (function == "GenerateVocabTrainData") {
-		result = generateVocabTrainData(fs["FilePaths"]["TrainPath"],
-			fs["FilePaths"]["TrainFeatDesc"], 
-			detector, extractor);
-
-	} else if (function == "TrainVocabulary") {
-		result = trainVocabulary(fs["FilePaths"]["Vocabulary"],
-			fs["FilePaths"]["TrainFeatDesc"],
-			fs["VocabTrainOptions"]["ClusterSize"]);
-
-	} else if (function == "GenerateFABMAPTrainData") {
-		result = generateBOWImageDescs(fs["FilePaths"]["TrainPath"],
-			fs["FilePaths"]["TrainImagDesc"], 
-			fs["FilePaths"]["Vocabulary"], detector, extractor,
-			fs["BOWOptions"]["MinWords"]);
-
-	} else if (function == "TrainChowLiuTree") {
-		result = trainChowLiuTree(fs["FilePaths"]["ChowLiuTree"],
-			fs["FilePaths"]["TrainImagDesc"],
-			fs["ChowLiuOptions"]["LowerInfoBound"]);
-
-	} else if (function == "GenerateFABMAPTestData") {
-		result = generateBOWImageDescs(fs["FilePaths"]["TestPath"],
-			fs["FilePaths"]["TestImageDesc"],
-			fs["FilePaths"]["Vocabulary"], detector, extractor,
-			fs["BOWOptions"]["MinWords"]);
-
-	} else if (function == "RunOpenFABMAP") {
-		std::string placeAddOption = fs["FabMapPlaceAddition"];
-		bool addNewOnly = (placeAddOption == "NewMaximumOnly");
-		of2::FabMap *fabmap = generateFABMAPInstance(fs);
-		if(fabmap) {
-			result = openFABMAP(fs["FilePaths"]["TestImageDesc"], fabmap,
-				fs["FilePaths"]["Vocabulary"],
-				fs["FilePaths"]["FabMapResults"], addNewOnly);
-		}
-			
-	} else {
-		std::cerr << "Incorrect Function Type" << std::endl;
-		result = -1;
-	}
-
-	std::cout << "openFABMAP done" << std::endl;
-	std::cin.sync(); std::cin.ignore();
-
-	fs.release();
-	return result;
-
-}
+//int main(int argc, char * argv[])
+//{
+//	//load the settings file
+//	std::string settfilename;
+//	if (argc == 1) {
+//		//assume settings in working directory
+//		settfilename = "settings.yml";
+//	} else if (argc == 3) {
+//		if(std::string(argv[1]) != "-s") {
+//			//incorrect option
+//			return help();
+//		} else {
+//			//settings provided as argument
+//			settfilename = std::string(argv[2]);
+//		}
+//	} else {
+//		//incorrect arguments
+//		return help();
+//	}
+//
+//	cv::FileStorage fs;
+//	fs.open(settfilename, cv::FileStorage::READ);
+//	if (!fs.isOpened()) {
+//		std::cerr << "Could not open settings file: " << settfilename <<
+//			std::endl;
+//		return -1;
+//	}
+//
+//	cv::Ptr<cv::FeatureDetector> detector = generateDetector(fs);
+//	if(!detector) {
+//		std::cerr << "Feature Detector error" << std::endl;
+//		return -1;
+//	}
+//
+//	cv::Ptr<cv::DescriptorExtractor> extractor = generateExtractor(fs);
+//	if(!extractor) {
+//		std::cerr << "Feature Extractor error" << std::endl;
+//		return -1;
+//	}
+//
+//	//run desired function
+//	int result = 0;
+//	std::string function = fs["Function"];
+//	if (function == "ShowFeatures") {
+//		result = showFeatures(
+//			fs["FilePaths"]["TrainPath"],
+//			detector);
+//
+//	} else if (function == "GenerateVocabTrainData") {
+//		result = generateVocabTrainData(fs["FilePaths"]["TrainPath"],
+//			fs["FilePaths"]["TrainFeatDesc"],
+//			detector, extractor);
+//
+//	} else if (function == "TrainVocabulary") {
+//		result = trainVocabulary(fs["FilePaths"]["Vocabulary"],
+//			fs["FilePaths"]["TrainFeatDesc"],
+//			fs["VocabTrainOptions"]["ClusterSize"]);
+//
+//	} else if (function == "GenerateFABMAPTrainData") {
+//		result = generateBOWImageDescs(fs["FilePaths"]["TrainPath"],
+//			fs["FilePaths"]["TrainImagDesc"],
+//			fs["FilePaths"]["Vocabulary"], detector, extractor,
+//			fs["BOWOptions"]["MinWords"]);
+//
+//	} else if (function == "TrainChowLiuTree") {
+//		result = trainChowLiuTree(fs["FilePaths"]["ChowLiuTree"],
+//			fs["FilePaths"]["TrainImagDesc"],
+//			fs["ChowLiuOptions"]["LowerInfoBound"]);
+//
+//	} else if (function == "GenerateFABMAPTestData") {
+//		result = generateBOWImageDescs(fs["FilePaths"]["TestPath"],
+//			fs["FilePaths"]["TestImageDesc"],
+//			fs["FilePaths"]["Vocabulary"], detector, extractor,
+//			fs["BOWOptions"]["MinWords"]);
+//
+//	} else if (function == "RunOpenFABMAP") {
+//		std::string placeAddOption = fs["FabMapPlaceAddition"];
+//		bool addNewOnly = (placeAddOption == "NewMaximumOnly");
+//		of2::FabMap *fabmap = generateFABMAPInstance(fs);
+//		if(fabmap) {
+//			result = openFABMAP(fs["FilePaths"]["TestImageDesc"], fabmap,
+//				fs["FilePaths"]["Vocabulary"],
+//				fs["FilePaths"]["FabMapResults"], addNewOnly);
+//		}
+//
+//	} else {
+//		std::cerr << "Incorrect Function Type" << std::endl;
+//		result = -1;
+//	}
+//
+//	std::cout << "openFABMAP done" << std::endl;
+//	std::cin.sync(); std::cin.ignore();
+//
+//	fs.release();
+//	return result;
+//
+//}
 
 /*
 displays the usage message
@@ -633,7 +633,14 @@ cv::Ptr<cv::FeatureDetector> generateDetector(cv::FileStorage &fs) {
 				(int)fs["FeatureOptions"]["FastDetector"]
 						["NonMaxSuppression"] > 0);	
 
-		} else if(detectorType == "SURF") {
+		}
+
+		//
+		//
+		// MN: Necessary SURF/SIFT are in the additional detectDescribe module
+		//
+		//
+		/*else if(detectorType == "SURF") {
 
 #ifdef OPENCV2P4
 			detector = new cv::SURF(
@@ -663,7 +670,7 @@ cv::Ptr<cv::FeatureDetector> generateDetector(cv::FileStorage &fs) {
 				fs["FeatureOptions"]["SiftDetector"]["ContrastThreshold"],
 				fs["FeatureOptions"]["SiftDetector"]["EdgeThreshold"]);
 #endif
-		} else if(detectorType == "MSER") {
+		} */else if(detectorType == "MSER") {
 
 			detector = new cv::MserFeatureDetector(
 				fs["FeatureOptions"]["MSERDetector"]["Delta"],
@@ -696,7 +703,14 @@ cv::Ptr<cv::DescriptorExtractor> generateExtractor(cv::FileStorage &fs)
 {
 	std::string extractorType = fs["FeatureOptions"]["ExtractorType"];
 	cv::Ptr<cv::DescriptorExtractor> extractor = NULL;
-	if(extractorType == "SIFT") {
+
+		//
+		//
+		// MN: Necessary SURF/SIFT are in the additional detectDescribe module
+		//
+		//
+
+/*	if(extractorType == "SIFT") {
 #ifdef OPENCV2P4
 		extractor = new cv::SIFT(
 			fs["FeatureOptions"]["SiftDetector"]["NumFeatures"],
@@ -729,7 +743,7 @@ cv::Ptr<cv::DescriptorExtractor> generateExtractor(cv::FileStorage &fs)
 	} else {
 		std::cerr << "Could not create Descriptor Extractor. Please specify "
 			"extractor type in settings file" << std::endl;
-	}
+	}*/
 
 	return extractor;
 

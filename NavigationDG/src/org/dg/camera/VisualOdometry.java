@@ -20,6 +20,7 @@ import org.opencv.core.Size;
 import org.opencv.features2d.DescriptorExtractor;
 import org.opencv.features2d.FeatureDetector;
 import org.opencv.highgui.Highgui;
+//import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 
 import android.R.string;
@@ -97,8 +98,9 @@ public class VisualOdometry implements Runnable {
 					File file = new File(root, "_exp/PEMRA_ref/" + name);
 					Log.d("PEMRA", "Path :" + file.getAbsolutePath());
 	
+					// OpenCV 3.0.0: Mat img = Imgcodecs.imread(file.getAbsolutePath()), dst = new Mat();
 					Mat img = Highgui.imread(file.getAbsolutePath()), dst = new Mat();
-	
+					
 					Log.d("PEMRA", "Img size:" + img.height() + "x" + img.width());
 
 					// Resizing to 640x480

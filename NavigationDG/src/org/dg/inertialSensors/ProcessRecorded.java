@@ -11,7 +11,9 @@ import java.io.PrintStream;
 import java.util.Locale;
 
 import android.hardware.SensorManager;
+import android.os.Environment;
 import android.util.Log;
+import android.view.inputmethod.CorrectionInfo;
 
 public class ProcessRecorded {
 	// TAG
@@ -124,6 +126,70 @@ public class ProcessRecorded {
 	}
 	
 	public static double process(File dir, float coeff){
+		
+		/* CYBCONF changes only here !!!  ---- START*/
+		
+		String datasetName = "xSenseTel1steady";
+//		String datasetName = "xSenseTel3rapid";
+//		String datasetName = "xSenseTel7";
+		
+		// ADD proper starting pose !
+		// IMPORTANT !!!
+		float[] quatFromxSense = new float[4];
+		
+		
+//		XSENSETEL1
+		quatFromxSense[0] = 0.7256f;
+		quatFromxSense[1] = 0.1506f;
+		quatFromxSense[2] = -0.1165f;
+		quatFromxSense[3] = -0.6612f;
+		
+//		XSENSETEL2
+//		quatFromxSense[0] = 0.15903501f; 
+//		quatFromxSense[1] = 0.261836f;
+//		quatFromxSense[2] = 0.5422768f;
+//		quatFromxSense[3] =  0.782359f;
+		
+//		XSENSETEL3
+//		quatFromxSense[0] = -0.26124102f;
+//		quatFromxSense[1] = -0.17012101f;
+//		quatFromxSense[2] = 0.43545377f;
+//		quatFromxSense[3] =  0.8445069f;
+		
+//		XSENSETEL6 - 
+//		quatFromxSense[0] = -0.0875097f; 
+//		quatFromxSense[1] = -0.16671999f; 
+//		quatFromxSense[2] = 0.58419895f;
+//		quatFromxSense[3] =  0.789467f; 
+		
+//		XSENSETEL8 - long dyanmic motion
+//		quatFromxSense[0] = 0.482751f;
+//		quatFromxSense[1] = 0.391338f;
+//		quatFromxSense[2] = -0.0919938f;
+//		quatFromxSense[3] = 0.77803f;
+		
+		
+//		XSENSETEL9 - Mixed long dataset
+//		quatFromxSense[0] = 0.325556f; 
+//		quatFromxSense[1] = -0.178088f; 
+//		quatFromxSense[2] = 0.17588362f; 
+//		quatFromxSense[3] =  0.911791f;
+		
+		
+		
+		
+		
+		/* CYBCONF changes only here !!! ---- END */
+
+		
+		
+		// Override parameters
+		dir = new File(String.format(
+				Environment.getExternalStorageDirectory() + "/DG/orientTestFromFile/" + datasetName));
+		if (!dir.exists()) {
+			dir.mkdirs();
+		}
+        
 		Scanner gyroScanner = null;
 		Scanner orientScanner = null;
 		Scanner xSenseScanner = null;
@@ -140,10 +206,19 @@ public class ProcessRecorded {
 			PrintStream xSenseOutStream = new PrintStream(new FileOutputStream(dir.toString() + "/xSenseEuler.log"));
 			PrintStream orientOutStream = new PrintStream(new FileOutputStream(dir.toString() + "/orientEuler.log"));
 			PrintStream AEKFOutStream = new PrintStream(new FileOutputStream(dir.toString() + "/AEKFEuler.log"));
+			
+			PrintStream compFilterQuatOutStream = new PrintStream(new FileOutputStream(dir.toString() + "/compFilterQuat.log"));
+			PrintStream xSenseQuatOutStream = new PrintStream(new FileOutputStream(dir.toString() + "/xSenseQuat.log"));
+			PrintStream orientQuatOutStream = new PrintStream(new FileOutputStream(dir.toString() + "/orientQuat.log"));
+			PrintStream AEKFQuatOutStream = new PrintStream(new FileOutputStream(dir.toString() + "/AEKFQuat.log"));
 
 			
 			ComplementaryFilter compFilter = new ComplementaryFilter(coeff);
+			compFilter.start();
+			compFilter.magAccUpdate(quatFromxSense);
+			
 			AHRSModule AEKF = new AHRSModule();
+			AEKF.correct(quatFromxSense[0], quatFromxSense[1], quatFromxSense[2], quatFromxSense[3]);
 			
 			long prevGyroTimestamp = gyroScanner.nextLong();
 			long nextGyroTimestamp = prevGyroTimestamp;
@@ -160,6 +235,9 @@ public class ProcessRecorded {
 			float [] lastAndroidQuat = new float [4];
 			
 //			Log.d(TAG, String.format("nextGyrotimestamp = %d", nextGyroTimestamp));
+			
+			int countPredict = 0, countCorrect = 0;
+			long CFpredict = 0, CFcorrect = 0, AEKFpredict = 0, AEKFcorrect = 0;
 			
 			int count = 0;
 			while((gyroScanner.hasNextFloat() || orientScanner.hasNextFloat())/* && (count < 150)*/){
@@ -215,13 +293,24 @@ public class ProcessRecorded {
 					gyroVals[2] = gyroScanner.nextFloat();
 					if(nextGyroTimestamp - prevGyroTimestamp > 0){
 						float dt = (nextGyroTimestamp - prevGyroTimestamp) * (float)ms2s;
+						
+						
+						long start = System.nanoTime();
 						compFilter.gyroscopeUpdate(gyroVals, dt);
+						long end = System.nanoTime();
+						CFpredict += (end - start);
 						
 						float x = (float) (gyroVals[0]);
 						float y = (float) (gyroVals[1]);
 						float z = (float) (gyroVals[2]);
 						float newDt = (float) (dt);
+						
+						start = System.nanoTime();
 						AEKF.predict(x, y, z, newDt);
+						end = System.nanoTime();
+						AEKFpredict += (end - start);
+						
+						countPredict++;
 					}
 					
 					if(orientQuat != null){
@@ -239,6 +328,9 @@ public class ProcessRecorded {
 						compFilterOrient = eulerZYX(compFilterMat);
 						saveToStream(compFilterOutStream, nextGyroTimestamp, compFilterOrient);
 						
+						float [] compFilterQuatSave = ComplementaryFilter.mat2quat(compFilterMat);
+						saveToStream(compFilterQuatOutStream, nextGyroTimestamp, compFilterQuatSave);
+						
 						// AEKF - QUAT TO EULER
 						float[] AEKFQuat = AEKF.getEstimate();
 						float[] AEKFMat = new float[9];
@@ -251,6 +343,9 @@ public class ProcessRecorded {
 					//	SensorManager.getOrientation(AEKFMat, AEKFOrient);
 						AEKFOrient = eulerZYX(AEKFMat);
 						saveToStream(AEKFOutStream, nextGyroTimestamp, AEKFOrient);
+						
+						float [] AEKFQuatSave = ComplementaryFilter.mat2quat(AEKFMat);
+						saveToStream(AEKFQuatOutStream, nextGyroTimestamp, AEKFQuatSave);
 						
 						
 						// ERROR
@@ -267,6 +362,9 @@ public class ProcessRecorded {
 						xSenseOrient = eulerZYX(xSenseMat);
 						
 						saveToStream(xSenseOutStream, (long)nextXSenseTimestamp, xSenseOrient);
+						
+						float [] xSensQuatSave = ComplementaryFilter.mat2quat(xSenseMat);
+						saveToStream(xSenseQuatOutStream, nextGyroTimestamp, xSensQuatSave);
 						
 						
 //						float[] diffQuat = quatMul(compFilterQuat, quatInv(xSenseQuatTelFrame));
@@ -377,6 +475,9 @@ public class ProcessRecorded {
 						orientOrient = eulerZYX(orientMat);
 						saveToStream(orientOutStream, (long)nextOrientTimestamp, orientOrient);
 						
+						float [] orientQuatSave = ComplementaryFilter.mat2quat(orientMat);
+						saveToStream(orientQuatOutStream, nextGyroTimestamp, orientQuatSave);
+						
 						count++;
 					}
 					
@@ -395,7 +496,10 @@ public class ProcessRecorded {
 					orientRotVec[2] = orientScanner.nextFloat();
 					SensorManager.getQuaternionFromVector(orientQuat, orientRotVec);
 					
+					long start = System.nanoTime();
 					compFilter.magAccUpdate(orientQuat);
+					long end = System.nanoTime();
+					CFcorrect += (end - start);
 					
 					// Check if need to change sign
 					float noChangeSign = RMSE(orientQuat, lastAndroidQuat);
@@ -429,7 +533,12 @@ public class ProcessRecorded {
 					}
 					lastAndroidQuat = orientQuat;
 					
+					start = System.nanoTime();
 					AEKF.correct(orientQuat[0], orientQuat[1], orientQuat[2], orientQuat[3]);
+					end = System.nanoTime();
+					AEKFcorrect += (end - start);
+					
+					countCorrect++;
 					
 					if(orientScanner.hasNextLong()){
 						nextOrientTimestamp = orientScanner.nextLong();
@@ -437,6 +546,15 @@ public class ProcessRecorded {
 				}
 				
 			}
+			
+			Log.d(TAG, String.format("CF avg predict time = %f", CFpredict * 1.0f / countPredict));
+			Log.d(TAG, String.format("CF avg correct time = %f", CFcorrect * 1.0f / countCorrect));
+			
+			Log.d(TAG, String.format("AEKF avg predict time = %f", AEKFpredict * 1.0f / countPredict));
+			Log.d(TAG, String.format("AEKF avg correct time = %f", AEKFcorrect * 1.0f / countCorrect));
+			
+			CFcorrect /= countCorrect;
+			
 			
 			J2 = J2 / ((nextGyroTimestamp - firstGyroTimestamp) * ms2s);
 			

@@ -11,11 +11,14 @@ import java.util.List;
 
 import org.dg.wifi.WiFiPlaceRecognition.IdPair;
 
+import android.media.MediaScannerConnection;
 import android.os.Environment;
 import android.util.Log;
 
 
 public class GraphManager {
+	
+	private static final String moduleLogName = "GraphManager.java";
 	
 	// Calls to the native part of the code
 	public native long NDKGraphCreate();
@@ -128,10 +131,7 @@ public class GraphManager {
 	   
 		NDKGraphAddVertexEdge(addrGraph, fileContent);
 		
-		optimize(150);
-
-		//Log.d("Main::Activity", "Destroying graph");
-		//NDKGraphDestroy(addrGraph);
+		optimize(100);
 	}
 	
 	
@@ -190,12 +190,25 @@ public class GraphManager {
 	}
 	
 	
+	public void addWiFiPlaceRecognitionVertex(int id, float X, float Y, float Z) {
+		checkGraphExistance();
+		
+		String g2oString = "VERTEX_SE2 " + id + " " + X + " " + Y + " " + Z +"\n";
+		save2file(g2oString);
+		NDKGraphAddVertexEdge(addrGraph, g2oString);
+	}
+	
+	
 	public void addStepometerMeasurement(double distance, double theta) {
 		checkGraphExistance();
 		
 		currentPoseId++;
-		//String informatiomMatrixOfStep = 0.2*distance + " 0.0 " + 20.0/180.0*Math.PI;
-		String informatiomMatrixOfStep = "1.0 0.0 0.1";
+		// The information value of angle depends on angle
+		float infValueTheta = (float) (Math.PI/2 - theta);
+		if ( infValueTheta  < 0.1f )
+			infValueTheta = 0.1f;
+		
+		String informatiomMatrixOfStep = "1.0 0.0 " + infValueTheta;
 		String edgeStep ="EDGE_SE2:STEP " + (currentPoseId-1) + " " + currentPoseId + " " + distance + " " + theta + " " + informatiomMatrixOfStep + "\n";
 		
 		save2file(edgeStep);
@@ -209,6 +222,11 @@ public class GraphManager {
 		Thread t = new Thread() {
 		public void run() {
 			NDKGraphOptimize(addrGraph, iterationCount, path);
+			Log.d(moduleLogName, "Optimization ended");
+		
+			NDKGraphDestroy(addrGraph);
+			Log.d("Main::Activity", "Destroyed graph");
+			
 			} ;
 		};
 		t.start();

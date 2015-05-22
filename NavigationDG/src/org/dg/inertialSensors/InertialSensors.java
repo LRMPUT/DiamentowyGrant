@@ -40,6 +40,8 @@ public class InertialSensors {
 	private final Semaphore orientMtx = new Semaphore(1, true);
 	private final Semaphore orientCompMtx = new Semaphore(1, true);
 	private final Semaphore orientAndroidMtx = new Semaphore(1, true);
+	private final Semaphore yawMtx = new Semaphore(1, true);
+	
 	int id = 0;
 	float acc[], mag[], accwog[], gyro[], orient[], orientComp[], orientAndroid[], lastAndroidQuat[];
 
@@ -61,6 +63,7 @@ public class InertialSensors {
 	int stepometerRunningCounter = 0;
 	final int stepometerWindowSize = 1024;
 	float lastYawZ = 0.0f;
+	boolean firstYawCall = true;
 	Stepometer stepometer;
 	
 	// Magnetic recognition
@@ -131,6 +134,7 @@ public class InertialSensors {
 	// Stepometer
 	public void startStepometer() {
 		stepometerStarted = true;
+
 	}
 
 	public void stopStepometer() {
@@ -158,11 +162,25 @@ public class InertialSensors {
 	}
 	
 	public float getYawForStepometer() {
-		float yawZ = orientAndroid[2];
-		float deltaYaw = yawZ - lastYawZ;
-		lastYawZ = yawZ;
-		return deltaYaw;
+		try {
+			yawMtx.acquire();
+			float yawZ = orientAndroid[2];
+			yawMtx.release();
+			float deltaYaw = yawZ - lastYawZ;
+			lastYawZ = yawZ;
+			
+			if ( firstYawCall) {
+				firstYawCall = false;
+				return 0.0f;
+			}
+			return deltaYaw;
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return 0.0f;
 	}
+		
 	
 	// Magnetic recognition
 	public int recognizePlaceBasedOnMagneticScan()
@@ -558,7 +576,11 @@ public class InertialSensors {
 				orientAndroidMtx.acquire();
 				orientAndroid[0] = computeEulerRollX(quaternion);
 				orientAndroid[1] = computeEulerPitchY(quaternion);
+				
+				yawMtx.acquire();
 				orientAndroid[2] = computeEulerYawZ(quaternion);
+				yawMtx.release();
+				
 				orientAndroidMtx.release();
 			} catch (InterruptedException e) {
 				e.printStackTrace();

@@ -52,6 +52,8 @@ public class WifiScanner extends BroadcastReceiver {
 	
 	// File to save data
 	PrintStream outStreamRawData = null;
+	
+
 
 	public WifiScanner(WifiManager _wifiManager) {
 		wifiManager = _wifiManager;
@@ -123,7 +125,8 @@ public class WifiScanner extends BroadcastReceiver {
 		startTimestampOfCurrentScan = System.currentTimeMillis();
 		
 		// We initialize the WiFi scan if WiFi is on
-		if (wifiManager.isWifiEnabled() && (singleScan || continuousScanning) && !getRunningState())
+		Log.e("WIFI", "WIFI START STATE: " + wifiManager.isWifiEnabled() + " " + wifiManager.pingSupplicant() + " " + wifiManager.getWifiState());
+		if (wifiManager.isWifiEnabled() && (singleScan || continuousScanning)) // && !getRunningState())
 		{
 			wifiManager.startScan();	
 			waitingForScan = true;
@@ -173,8 +176,20 @@ public class WifiScanner extends BroadcastReceiver {
 	
 	public void addLastScanToRecognition(int id)
 	{
-		if ( previousWiFiList.size() > 0 )
-			placeRecognition.addPlace(previousWiFiList, id);
+		if ( previousWiFiList.size() > 0 ) {
+			List<MyScanResult> myList = new ArrayList<MyScanResult>();
+			for (ScanResult sr : previousWiFiList) {
+				myList.add(new MyScanResult(sr.BSSID, sr.level));
+			}
+			placeRecognition.addPlace(myList, id, true);
+		}
+			
+	}
+	
+	public void addScanToRecognition(int id, List<MyScanResult> wifiScan)
+	{
+		if ( wifiScan.size() > 0 )
+			placeRecognition.addPlace(wifiScan, id, false);
 	}
 	
 	public int recognizePlaceBasedOnLastScan()
@@ -279,7 +294,7 @@ public class WifiScanner extends BroadcastReceiver {
 					
 			newMeasurement = true;
 		} catch (Exception e) {
-			Log.d("WiFi", "Scanning failed\n");
+			Log.d("WiFi", "Scanning failed: " + e.getMessage() + "\n");
 		}
 
 		Toast toast = Toast.makeText(arg0.getApplicationContext(),
@@ -292,8 +307,9 @@ public class WifiScanner extends BroadcastReceiver {
 		waitingForScan = false;
 		if (continuousScanning) {
 			startTimestampOfCurrentScan = System.currentTimeMillis();
-			wifiManager.startScan();
+			boolean value = wifiManager.startScan();
 			waitingForScan = true;
+			Log.d("WiFi", "Called start, waiting on next scan - startScan value: " + value + "\n");
 		}
 		id++;
 		

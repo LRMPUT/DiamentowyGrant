@@ -11,10 +11,6 @@ include /home/jachu/lib/NVPACK/OpenCV-2.4.10-android-sdk/sdk/native/jni/OpenCV.m
 #	- detection and description of features
 include $(LOCAL_PATH)/DetectDescribe/Android.mk
 
-# FABMAP library containing appearance-based loop closure
-include $(LOCAL_PATH)/openFABMAP/Android.mk
-
-
 
 LOCAL_MODULE    := VisualOdometryModule
 #LOCAL_SRC_FILES += FivePoint/FivePointAlgorithm.cpp VisualOdometryModuleExport.cpp

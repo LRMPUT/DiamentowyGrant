@@ -179,40 +179,6 @@ public class MainActivity extends Activity {
 	 */
 	private void initializeButtons() {
 
-		// 1. Take picture button
-//		initButtonTakePicture(R.id.buttonMainView1);
-
-		// 2. Start presenting the orientation
-		//initButtonStartOrientation(R.id.buttonMainView2, R.id.buttonMainView3);
-
-		// 3. Record inertial sensors
-//		initButtonRecordinertialSensors(R.id.buttonMainView3,
-//				R.id.buttonMainView2);
-
-		// 4. Record one WiFi scan
-//		initButtonRecordSingleWiFiScan(R.id.buttonMainView4);
-
-		// 5. Record continuous WiFi scans
-		//initButtonRecordContinuousWiFiScans(R.id.buttonMainView5,
-		//		R.id.buttonMainView4);
-
-//		// 6. Add WiFi scan to recognition list
-//		initButtonAddWiFiScanToRecognition(R.id.buttonMainView6);
-//
-//		// 7. Run stepometer
-//		initButtonRunStepometer(R.id.buttonMainView7);
-
-//		// Side View 1
-//		initButtonStartFloorDetection(R.id.buttonSideView1);
-//
-//		// Side View 2
-//		initButtonStartGraphOnline(R.id.buttonSideView2);
-//		
-//		// Side View 3
-//		initButtonStartGraphTestFromFile(R.id.buttonSideView3);
-//		
-//		// Side View 4 - Add magnetic place to recognition
-//		initButtonAddMagneticPlaceToRecognition(R.id.buttonSideView4);
 	}
 
 	

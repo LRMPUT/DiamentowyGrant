@@ -11,6 +11,7 @@ import java.util.TimerTask;
 
 import org.dg.camera.CameraSaver;
 import org.dg.camera.Preview;
+import org.dg.camera.VisualPlaceRecognition;
 import org.dg.inertialSensors.InertialSensors;
 import org.dg.inertialSensors.ProcessRecorded;
 import org.dg.openAIL.OpenAndroidIndoorLocalization;
@@ -39,9 +40,13 @@ import android.support.v4.view.ViewPager;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.SurfaceView;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.View.OnClickListener;
+import android.view.ViewGroup.LayoutParams;
 import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -59,6 +64,7 @@ public class MainScreenSlideActivity extends Activity implements
 	 * 
 	 * 
 	 */
+	Preview preview;
 	Camera camera;
 
 	// Orient in main update
@@ -94,6 +100,9 @@ public class MainScreenSlideActivity extends Activity implements
 
 				Toast.makeText(MainScreenSlideActivity.this,
 						"Loaded all libraries", Toast.LENGTH_LONG).show();
+				
+				
+				openAIL.initAfterOpenCV();
 			}
 				break;
 			default: {
@@ -271,6 +280,11 @@ public class MainScreenSlideActivity extends Activity implements
 			thread.start();
 		}
 		
+		// Side View 7 - TESTING VisualPlaceRecognition
+		if (link.contains("Visual Place Recognition")) {
+			openAIL.visualPlaceRecognition.callAndVerifyAllMethods();
+		}
+		
 	}
 
 	@Override
@@ -310,6 +324,9 @@ public class MainScreenSlideActivity extends Activity implements
 			}
 		});
 
+
+		
+		
 		// Init Sensor Managers
 		SensorManager sensorManager;
 		sensorManager = (android.hardware.SensorManager) getSystemService(Context.SENSOR_SERVICE);
@@ -470,8 +487,8 @@ public class MainScreenSlideActivity extends Activity implements
 				mLoaderCallback);
 
 		camera = Camera.open();
-		// preview.setCamera(camera);
-		// camera.startPreview();
+		//preview.setCamera(camera);
+		//camera.startPreview();
 
 	}
 
