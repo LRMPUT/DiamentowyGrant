@@ -1,6 +1,9 @@
 package org.dg.main;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
@@ -239,11 +242,30 @@ public class MainScreenSlideActivity extends Activity implements
 					}
 
 					File dir = new File(String.format(
-							Environment.getExternalStorageDirectory() + "/DG/orientTestFromFile/xSenseTel1steady"));
+							Environment.getExternalStorageDirectory() + "/DG/xSenseTel3"));
 					if (!dir.exists()) {
 						dir.mkdirs();
 					}
-			        ProcessRecorded.process(dir, 0.999325f);
+					
+					try{
+						PrintStream paramOutStream = new PrintStream(new FileOutputStream(dir.toString() + "/param.log"));
+						float param = 0.000001f;
+						while(param < 0.02f){
+	//						ProcessRecorded.process(dir, 0.999325f);
+							double score = ProcessRecorded.process(dir, 1.0f - param);
+							
+							paramOutStream.print(Float.toString(param) + " " + Double.toString(score));
+							paramOutStream.print(System.getProperty("line.separator"));
+							
+							Log.d(TAG, String.format("param = %f, score = %f", param, score));
+							
+							param *= 2;
+						}
+						paramOutStream.close();
+					}
+					catch(FileNotFoundException e){
+						e.printStackTrace();
+					}
 			    }
 			};
 			thread.start();
