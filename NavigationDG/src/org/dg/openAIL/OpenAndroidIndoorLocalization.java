@@ -11,6 +11,7 @@ import java.util.Scanner;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import org.dg.camera.VisualPlaceRecognition;
 import org.dg.graphManager.GraphManager;
 import org.dg.graphManager.wiFiMeasurement;
 import org.dg.inertialSensors.InertialSensors;
@@ -44,6 +45,9 @@ public class OpenAndroidIndoorLocalization {
 	// WiFi
 	public WifiScanner wifiScanner;
 	int detectWiFiIssue;
+	
+	// Visual Place Recognition
+	public VisualPlaceRecognition visualPlaceRecognition;
 
 	// Graph
 	public GraphManager graphManager;
@@ -84,7 +88,14 @@ public class OpenAndroidIndoorLocalization {
 
 		// Init WiFi
 		wifiScanner = new WifiScanner(wifiManager);
-
+		
+	}
+	
+	public void initAfterOpenCV() {
+		Log.d(moduleLogName, "Initializing OpenAIL submodules after OpenCV initialization");
+		
+		// Init Visual Place Recognition
+		visualPlaceRecognition = new VisualPlaceRecognition();
 	}
 
 	public void startGraph() {

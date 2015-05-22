@@ -138,6 +138,9 @@ public class ScreenSlidePageFragment extends Fragment {
 			// Side View 6 - Process orientation estimation data from file
 			initButtonStartOrientationEstimationFromFile(rootView, R.id.buttonSideView6);
 			
+			// Side View 7 - Process Visual Place Recognition
+			initButtonVisualPlaceRecognition(rootView, R.id.buttonSideView7);
+			
 
 		} else if (mPageNumber == 2 || true) {
 			rootView = (ViewGroup) inflater.inflate(
@@ -422,6 +425,21 @@ public class ScreenSlidePageFragment extends Fragment {
 		buttonStartOrientFromFile.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
 				onSomeClick(v, "Orient file test");
+			}
+		});
+	}
+	
+	/**
+	 * 
+	 */
+	// Side View 7 - Process Visual Place Recognition
+	private void initButtonVisualPlaceRecognition(
+			final ViewGroup rootView, int id) {
+		Button buttonStartOrientFromFile = (Button) rootView.findViewById(id);
+		buttonStartOrientFromFile.setText("Visual Place Recognition");
+		buttonStartOrientFromFile.setOnClickListener(new OnClickListener() {
+			public void onClick(View v) {
+				onSomeClick(v, "Visual Place Recognition");
 			}
 		});
 	}

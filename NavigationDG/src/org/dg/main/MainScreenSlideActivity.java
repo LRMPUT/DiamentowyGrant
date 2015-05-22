@@ -8,6 +8,7 @@ import java.util.TimerTask;
 
 import org.dg.camera.CameraSaver;
 import org.dg.camera.Preview;
+import org.dg.camera.VisualPlaceRecognition;
 import org.dg.inertialSensors.InertialSensors;
 import org.dg.inertialSensors.ProcessRecorded;
 import org.dg.openAIL.OpenAndroidIndoorLocalization;
@@ -96,6 +97,9 @@ public class MainScreenSlideActivity extends Activity implements
 
 				Toast.makeText(MainScreenSlideActivity.this,
 						"Loaded all libraries", Toast.LENGTH_LONG).show();
+				
+				
+				openAIL.initAfterOpenCV();
 			}
 				break;
 			default: {
@@ -249,10 +253,14 @@ public class MainScreenSlideActivity extends Activity implements
 						dir.mkdirs();
 					}
 			        ProcessRecorded.process(dir, 0.999325f);
-			       
 			    }
 			};
 			thread.start();
+		}
+		
+		// Side View 7 - TESTING VisualPlaceRecognition
+		if (link.contains("Visual Place Recognition")) {
+			openAIL.visualPlaceRecognition.callAndVerifyAllMethods();
 		}
 		
 	}
