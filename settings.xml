@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?> 
+<OpenAIL>
+	<InertialSensors useModule="On" stepometer="1"/>
+	<GraphManager/>
+	<WiFiPlaceRecognition useModule="On"/> 
+	<VisualOdometry useModule="On"/>
+	<VisualPlaceRecognition useModule="On"/>
+</OpenAIL>

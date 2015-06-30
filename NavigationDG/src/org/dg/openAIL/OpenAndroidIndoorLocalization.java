@@ -58,27 +58,27 @@ public class OpenAndroidIndoorLocalization {
 	public OpenAndroidIndoorLocalization(SensorManager sensorManager,
 			WifiManager wifiManager) {
 
-//		Log.d(moduleLogName, "XxX");
-//		
-//		String configFileName = String.format(Locale.getDefault(), Environment
-//				.getExternalStorageDirectory().toString()
-//				+ "/OpenAIL"
-//				+ "/settings.xml");
-//		
-//		Log.d(moduleLogName, "XxX2");
-//		ConfigurationReader configReader = new ConfigurationReader();
-//		
-//		Log.d(moduleLogName, "XxX3");
-//		try {
-//			parameters = configReader.readParameters(configFileName);
-//		} catch (XmlPullParserException e) {
-//			Log.e(moduleLogName, "Failed to parse the config file");
-//		} catch (IOException e) {
-//			Log.e(moduleLogName, "Missing config file");
-//		}
-//		Log.d(moduleLogName, "XxX4");
-//		
-//		Log.d(moduleLogName, "TEST: " + parameters.stepometer);
+		Log.d(moduleLogName, "XxX");
+		
+		String configFileName = String.format(Locale.getDefault(), Environment
+				.getExternalStorageDirectory().toString()
+				+ "/OpenAIL"
+				+ "/settings.xml");
+		
+		Log.d(moduleLogName, "XxX2");
+		ConfigurationReader configReader = new ConfigurationReader();
+		
+		Log.d(moduleLogName, "XxX3");
+		try {
+			parameters = configReader.readParameters(configFileName);
+		} catch (XmlPullParserException e) {
+			Log.e(moduleLogName, "Failed to parse the config file");
+		} catch (IOException e) {
+			Log.e(moduleLogName, "Missing config file");
+		}
+		Log.d(moduleLogName, "XxX4");
+		
+		Log.d(moduleLogName, "TEST: " + parameters.inertialSensors.stepometer);
 		
 		// Init graph
 		graphManager = new GraphManager();
