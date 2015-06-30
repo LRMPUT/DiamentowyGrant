@@ -30,6 +30,10 @@
 
 #include "openfabmap.hpp"
 #include <fstream>
+#include <iostream>
+#include <vector>
+
+#include <opencv2/highgui/highgui.hpp>
 
 #include "DetectDescribe/NonFree/nonfree.hpp"
 
@@ -388,7 +392,7 @@ int generateBOWImageDescs(std::string dataPath,
 	cv::Mat fabmapTrainData;
 	std::cout << "Extracting Bag-of-words Image Descriptors" << std::endl;
 	std::cout.setf(std::ios_base::fixed);
-	std::cout.precision(0);
+//	std::cout.precision(0);
 
 	std::ofstream maskw;
 	
@@ -560,7 +564,7 @@ int openFABMAP(std::string testPath,
 				
 				if(l->imgIdx < 0) {
 					//add the new place to the confusion matrix 'diagonal'
-					confusion_mat.at<double>(i, matches.size()-1) = l->match;
+					confusion_mat.at<double>(i, int(matches.size())-1) = l->match;
 
 				} else {
 					//add the score to the confusion matrix
@@ -611,9 +615,9 @@ cv::Ptr<cv::FeatureDetector> generateDetector(cv::FileStorage &fs) {
 
 			detector = new cv::DynamicAdaptedFeatureDetector(
 				cv::AdjusterAdapter::create(detectorType),
-				fs["FeatureOptions"]["Adaptive"]["MinFeatures"], 
-				fs["FeatureOptions"]["Adaptive"]["MaxFeatures"], 
-				fs["FeatureOptions"]["Adaptive"]["MaxIters"]);
+				int(fs["FeatureOptions"]["Adaptive"]["MinFeatures"]),
+				int(fs["FeatureOptions"]["Adaptive"]["MaxFeatures"]),
+				int(fs["FeatureOptions"]["Adaptive"]["MaxIters"]));
 		}
 
 	} else if(detectorMode == "STATIC") {
@@ -629,7 +633,7 @@ cv::Ptr<cv::FeatureDetector> generateDetector(cv::FileStorage &fs) {
 		} else if(detectorType == "FAST") {
 
 			detector = new cv::FastFeatureDetector(
-				fs["FeatureOptions"]["FastDetector"]["Threshold"],
+				int(fs["FeatureOptions"]["FastDetector"]["Threshold"]),
 				(int)fs["FeatureOptions"]["FastDetector"]
 						["NonMaxSuppression"] > 0);	
 
@@ -812,31 +816,31 @@ of2::FabMap *generateFABMAPInstance(cv::FileStorage &settings)
 	std::string fabMapVersion = settings["openFabMapOptions"]["FabMapVersion"];
 	if(fabMapVersion == "FABMAP1") {
 		fabmap = new of2::FabMap1(clTree, 
-			settings["openFabMapOptions"]["PzGe"],
-			settings["openFabMapOptions"]["PzGne"],
+			double(settings["openFabMapOptions"]["PzGe"]),
+			double(settings["openFabMapOptions"]["PzGne"]),
 			options,
-			settings["openFabMapOptions"]["NumSamples"]);
+			int(settings["openFabMapOptions"]["NumSamples"]));
 	} else if(fabMapVersion == "FABMAPLUT") {
 		fabmap = new of2::FabMapLUT(clTree,
-			settings["openFabMapOptions"]["PzGe"],
-			settings["openFabMapOptions"]["PzGne"],
+			double(settings["openFabMapOptions"]["PzGe"]),
+			double(settings["openFabMapOptions"]["PzGne"]),
 			options,
-			settings["openFabMapOptions"]["NumSamples"],
-			settings["openFabMapOptions"]["FabMapLUT"]["Precision"]);
+			int(settings["openFabMapOptions"]["NumSamples"]),
+			int(settings["openFabMapOptions"]["FabMapLUT"]["Precision"]));
 	} else if(fabMapVersion == "FABMAPFBO") {
 		fabmap = new of2::FabMapFBO(clTree, 
-			settings["openFabMapOptions"]["PzGe"],
-			settings["openFabMapOptions"]["PzGne"],
+			double(settings["openFabMapOptions"]["PzGe"]),
+			double(settings["openFabMapOptions"]["PzGne"]),
 			options,
-			settings["openFabMapOptions"]["NumSamples"],
-			settings["openFabMapOptions"]["FabMapFBO"]["RejectionThreshold"],
-			settings["openFabMapOptions"]["FabMapFBO"]["PsGd"],
-			settings["openFabMapOptions"]["FabMapFBO"]["BisectionStart"],
-			settings["openFabMapOptions"]["FabMapFBO"]["BisectionIts"]);
+			int(settings["openFabMapOptions"]["NumSamples"]),
+			double(settings["openFabMapOptions"]["FabMapFBO"]["RejectionThreshold"]),
+			double(settings["openFabMapOptions"]["FabMapFBO"]["PsGd"]),
+			int(settings["openFabMapOptions"]["FabMapFBO"]["BisectionStart"]),
+			int(settings["openFabMapOptions"]["FabMapFBO"]["BisectionIts"]));
 	} else if(fabMapVersion == "FABMAP2") {
 		fabmap = new of2::FabMap2(clTree, 
-			settings["openFabMapOptions"]["PzGe"],
-			settings["openFabMapOptions"]["PzGne"],
+			double(settings["openFabMapOptions"]["PzGe"]),
+			double(settings["openFabMapOptions"]["PzGne"]),
 			options);
 	} else {
 		std::cerr << "Could not identify openFABMAPVersion from settings"
@@ -858,78 +862,78 @@ draws keypoints to scale with coloring proportional to feature strength
 */
 void drawRichKeypoints(const cv::Mat& src, std::vector<cv::KeyPoint>& kpts, cv::Mat& dst) {
 	
-	cv::Mat grayFrame;
-	cvtColor(src, grayFrame, CV_RGB2GRAY);
-	cvtColor(grayFrame, dst, CV_GRAY2RGB);
-	
-	if (kpts.size() == 0) {
-		return;
-	}
-	
-	std::vector<cv::KeyPoint> kpts_cpy, kpts_sorted;
-	
-	kpts_cpy.insert(kpts_cpy.end(), kpts.begin(), kpts.end());
-	
-	double maxResponse = kpts_cpy.at(0).response;
-	double minResponse = kpts_cpy.at(0).response;
-	
-	while (kpts_cpy.size() > 0) {
-		
-		double maxR = 0.0;
-		unsigned int idx = 0;
-		
-		for (unsigned int iii = 0; iii < kpts_cpy.size(); iii++) {
-			
-			if (kpts_cpy.at(iii).response > maxR) {
-				maxR = kpts_cpy.at(iii).response;
-				idx = iii;
-			}
-			
-			if (kpts_cpy.at(iii).response > maxResponse) {
-				maxResponse = kpts_cpy.at(iii).response;
-			}
-			
-			if (kpts_cpy.at(iii).response < minResponse) {
-				minResponse = kpts_cpy.at(iii).response;
-			}
-		}
-		
-		kpts_sorted.push_back(kpts_cpy.at(idx));
-		kpts_cpy.erase(kpts_cpy.begin() + idx);
-		
-	}
-	
-	int thickness = 1;
-	cv::Point center;
-	cv::Scalar colour;
-	int red = 0, blue = 0, green = 0;
-	int radius;
-	double normalizedScore;
-	
-	if (minResponse == maxResponse) {
-		colour = CV_RGB(255, 0, 0);
-	}
-	
-	for (int iii = kpts_sorted.size()-1; iii >= 0; iii--) {
-
-		if (minResponse != maxResponse) {
-			normalizedScore = pow((kpts_sorted.at(iii).response - minResponse) / (maxResponse - minResponse), 0.25);
-			red = int(255.0 * normalizedScore);
-			green = int(255.0 - 255.0 * normalizedScore);
-			colour = CV_RGB(red, green, blue);
-		}
-		
-		center = kpts_sorted.at(iii).pt;
-        center.x *= 16;
-        center.y *= 16;
-        
-        radius = (int)(16.0 * ((double)(kpts_sorted.at(iii).size)/2.0));
-        
-        if (radius > 0) {
-            circle(dst, center, radius, colour, thickness, CV_AA, 4);
-        }
-		
-	}
+//	cv::Mat grayFrame;
+//	cvtColor(src, grayFrame, CV_RGB2GRAY);
+//	cvtColor(grayFrame, dst, CV_GRAY2RGB);
+//
+//	if (kpts.size() == 0) {
+//		return;
+//	}
+//
+//	std::vector<cv::KeyPoint> kpts_cpy, kpts_sorted;
+//
+//	kpts_cpy.insert(kpts_cpy.end(), kpts.begin(), kpts.end());
+//
+//	double maxResponse = kpts_cpy.at(0).response;
+//	double minResponse = kpts_cpy.at(0).response;
+//
+//	while (kpts_cpy.size() > 0) {
+//
+//		double maxR = 0.0;
+//		unsigned int idx = 0;
+//
+//		for (unsigned int iii = 0; iii < kpts_cpy.size(); iii++) {
+//
+//			if (kpts_cpy.at(iii).response > maxR) {
+//				maxR = kpts_cpy.at(iii).response;
+//				idx = iii;
+//			}
+//
+//			if (kpts_cpy.at(iii).response > maxResponse) {
+//				maxResponse = kpts_cpy.at(iii).response;
+//			}
+//
+//			if (kpts_cpy.at(iii).response < minResponse) {
+//				minResponse = kpts_cpy.at(iii).response;
+//			}
+//		}
+//
+//		kpts_sorted.push_back(kpts_cpy.at(idx));
+//		kpts_cpy.erase(kpts_cpy.begin() + idx);
+//
+//	}
+//
+//	int thickness = 1;
+//	cv::Point center;
+//	cv::Scalar colour;
+//	int red = 0, blue = 0, green = 0;
+//	int radius;
+//	double normalizedScore;
+//
+//	if (minResponse == maxResponse) {
+//		colour = CV_RGB(255, 0, 0);
+//	}
+//
+//	for (int iii = kpts_sorted.size()-1; iii >= 0; iii--) {
+//
+//		if (minResponse != maxResponse) {
+//			normalizedScore = pow((kpts_sorted.at(iii).response - minResponse) / (maxResponse - minResponse), 0.25);
+//			red = int(255.0 * normalizedScore);
+//			green = int(255.0 - 255.0 * normalizedScore);
+//			colour = CV_RGB(red, green, blue);
+//		}
+//
+//		center = kpts_sorted.at(iii).pt;
+//        center.x *= 16;
+//        center.y *= 16;
+//
+//        radius = (int)(16.0 * ((double)(kpts_sorted.at(iii).size)/2.0));
+//
+//        if (radius > 0) {
+//            circle(dst, center, radius, colour, thickness, CV_AA, 4);
+//        }
+//
+//	}
 	
 }
 
@@ -938,23 +942,23 @@ Removes surplus features and those with invalid size
 */
 void filterKeypoints(std::vector<cv::KeyPoint>& kpts, int maxSize, int maxFeatures) {
 	
-	if (maxSize == 0) {
-		return;
-	}
-	
-	sortKeypoints(kpts);
-	
-	for (unsigned int iii = 0; iii < kpts.size(); iii++) {
-		
-		if (kpts.at(iii).size > float(maxSize)) { 
-			kpts.erase(kpts.begin() + iii);
-			iii--;
-		}
-	}
-	
-	if ((maxFeatures != 0) && ((int)kpts.size() > maxFeatures)) {
-        kpts.erase(kpts.begin()+maxFeatures, kpts.end());
-    }
+//	if (maxSize == 0) {
+//		return;
+//	}
+//
+//	sortKeypoints(kpts);
+//
+//	for (unsigned int iii = 0; iii < kpts.size(); iii++) {
+//
+//		if (kpts.at(iii).size > float(maxSize)) {
+//			kpts.erase(kpts.begin() + iii);
+//			iii--;
+//		}
+//	}
+//
+//	if ((maxFeatures != 0) && ((int)kpts.size() > maxFeatures)) {
+//        kpts.erase(kpts.begin()+maxFeatures, kpts.end());
+//    }
 	
 }
 
@@ -963,37 +967,37 @@ Sorts keypoints in descending order of response (strength)
 */
 void sortKeypoints(std::vector<cv::KeyPoint>& keypoints) {
 	
-	if (keypoints.size() <= 1) {
-        return;
-    }
-	
-	std::vector<cv::KeyPoint> sortedKeypoints;
-
-    // Add the first one
-    sortedKeypoints.push_back(keypoints.at(0));
-
-    for (unsigned int i = 1; i < keypoints.size(); i++) {
-
-        unsigned int j = 0;
-        bool hasBeenAdded = false;
-
-        while ((j < sortedKeypoints.size()) && (!hasBeenAdded)) {
-
-            if (abs(keypoints.at(i).response) > abs(sortedKeypoints.at(j).response)) {
-                sortedKeypoints.insert(sortedKeypoints.begin() + j, keypoints.at(i));
-
-                hasBeenAdded = true;
-            }
-
-            j++;
-        }
-
-        if (!hasBeenAdded) {
-            sortedKeypoints.push_back(keypoints.at(i));
-        }
-
-    }
-
-    keypoints.swap(sortedKeypoints);
+//	if (keypoints.size() <= 1) {
+//        return;
+//    }
+//
+//	std::vector<cv::KeyPoint> sortedKeypoints;
+//
+//    // Add the first one
+//    sortedKeypoints.push_back(keypoints.at(0));
+//
+//    for (unsigned int i = 1; i < keypoints.size(); i++) {
+//
+//        unsigned int j = 0;
+//        bool hasBeenAdded = false;
+//
+//        while ((j < sortedKeypoints.size()) && (!hasBeenAdded)) {
+//
+//            if (abs(keypoints.at(i).response) > abs(sortedKeypoints.at(j).response)) {
+//                sortedKeypoints.insert(sortedKeypoints.begin() + j, keypoints.at(i));
+//
+//                hasBeenAdded = true;
+//            }
+//
+//            j++;
+//        }
+//
+//        if (!hasBeenAdded) {
+//            sortedKeypoints.push_back(keypoints.at(i));
+//        }
+//
+//    }
+//
+//    keypoints.swap(sortedKeypoints);
 	
 }
