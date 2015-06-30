@@ -171,6 +171,15 @@ public class WifiScanner extends BroadcastReceiver {
 		return bestName;
 	}
 
+	public List<MyScanResult> getLastScan()
+	{
+		List<MyScanResult> myList = new ArrayList<MyScanResult>();
+		for (ScanResult sr : previousWiFiList) {
+			myList.add(new MyScanResult(sr.BSSID, sr.level));
+		}
+		return myList;
+	}
+	
 	public void addLastScanToRecognition(int id) {
 		if (previousWiFiList.size() > 0) {
 			List<MyScanResult> myList = new ArrayList<MyScanResult>();

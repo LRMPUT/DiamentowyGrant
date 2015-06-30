@@ -3,6 +3,8 @@ package org.dg.main;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
+import java.util.Scanner;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -261,6 +263,33 @@ public class MainScreenSlideActivity extends Activity implements
 		// Side View 7 - TESTING VisualPlaceRecognition
 		if (link.contains("Visual Place Recognition")) {
 			openAIL.visualPlaceRecognition.callAndVerifyAllMethods();
+		}
+		
+		// Save WiFi place
+		if (link.contains("Save WiFi place")) {
+			
+			Scanner scanner = new Scanner(link);
+
+			// use US locale to be able to identify doubles in the string
+			scanner.useLocale(Locale.US);
+
+			int i = 0;
+			double[] pos = new double[3];
+			while (scanner.hasNext()) {
+
+				// if the next is a double, print found and the double
+				if (scanner.hasNextDouble()) {
+					pos[i++] = scanner.nextDouble();
+				} else
+					scanner.next();
+			}
+			
+			if ( i == 3)
+				Log.d(TAG, "Save WiFi position::" + pos[0] + "::" + pos[1] + "::" + pos[2] + "::");
+			else
+				Log.d(TAG, "Save WiFi position - could not find 3 numbers");
+			
+			openAIL.saveWiFiMapPoint(pos[0], pos[1], pos[2]);
 		}
 		
 	}

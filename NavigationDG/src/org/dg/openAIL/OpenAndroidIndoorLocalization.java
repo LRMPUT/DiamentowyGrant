@@ -21,6 +21,7 @@ import org.dg.wifi.WifiScanner;
 import org.xmlpull.v1.XmlPullParserException;
 
 import android.hardware.SensorManager;
+import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.os.Environment;
 import android.util.Log;
@@ -149,6 +150,13 @@ public class OpenAndroidIndoorLocalization {
 		}
 	}
 
+	
+	public void saveWiFiMapPoint(double x, double y, double z) {
+		List<MyScanResult> wifiList = wifiScanner.getLastScan();
+		
+		
+	}
+	
 	class UpdateGraph extends TimerTask {
 		public void run() {
 
