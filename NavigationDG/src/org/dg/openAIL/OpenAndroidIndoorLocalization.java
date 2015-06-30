@@ -66,7 +66,7 @@ public class OpenAndroidIndoorLocalization {
 			inertialSensors = new InertialSensors(sensorManager);
 
 		// Init WiFi
-		wifiScanner = new WifiScanner(wifiManager);
+		wifiScanner = new WifiScanner(wifiManager, parameters.wifiPlaceRecognition);
 		
 	}
 
@@ -81,7 +81,10 @@ public class OpenAndroidIndoorLocalization {
 		graphManager.start();
 		
 		// Load WiFi place recognition database
-		loadWiFiPlaceDatabase();
+		if (parameters.wifiPlaceRecognition.usePriorDatabase)
+		{
+			loadWiFiPlaceDatabase(parameters.wifiPlaceRecognition.priorDatabaseFile);
+		}
 		
 		wifiScanner.startNewPlaceRecognitionThread();
 
@@ -97,12 +100,12 @@ public class OpenAndroidIndoorLocalization {
 		graphManager.optimize(100);
 	}
 
-	private void loadWiFiPlaceDatabase() {
+	private void loadWiFiPlaceDatabase(String filename) {
 		// Reading database
 		String readFileName = String.format(Locale.getDefault(), Environment
 				.getExternalStorageDirectory().toString()
-				+ "/DG"
-				+ "/WiFiPlace.database");
+				+ "/OpenAIL/PriorData/"
+				+ filename);
 
 		try {
 			Scanner placeDatabaseScanner = new Scanner(new BufferedReader(
@@ -177,11 +180,7 @@ public class OpenAndroidIndoorLocalization {
 				wifiScanner.setGraphPoseId(currentPoseId);
 
 				// Find all matching places
-				// List<Integer> placesIds =
-				// wifiScanner.returnAllMatchingPlacesToLastScan();
-				// for (Integer id : placesIds)
-				// Log.d("Graph", "WiFi fingerprint - matching id (current " +
-				// currentPoseId + "): " + id);
+				
 				List<IdPair<Integer, Integer>> recognizedPlaces = wifiScanner
 						.getRecognizedPlacesList();
 				Log.d(moduleLogName, "The placeRecognition thread found "

@@ -21,12 +21,20 @@ public class ConfigurationReader {
 	// Class to store all parameters used in OpenAIL
 	public class Parameters {
 		public class InertialSensors {
-			boolean useModule;
-			boolean stepometer;
+			public boolean useModule;
+			public boolean stepometer;
 		}
 		
 		public class WiFiPlaceRecognition {
-			boolean useModule;
+			public boolean useModule;
+			public int	maxPlaceDatabaseSize;
+			public int	maxQueueSize; 
+			public double fractionOfQueueAfterReduction;
+			public int	minNumberOfSharedNetworks;
+			public double minPercentOfSharedNetworks;
+			public double maxAvgErrorThreshold;
+			public boolean usePriorDatabase;
+			public String priorDatabaseFile;
 		}
 
 		InertialSensors inertialSensors = new InertialSensors();
@@ -71,9 +79,16 @@ public class ConfigurationReader {
 	
 	private void logAllParameters() {
 		
-		Log.d(moduleLogName, "Listing all parameters");
-		Log.d(moduleLogName, "InertialSensors: useModule=" + parameters.inertialSensors.useModule + " stepometer=" + parameters.inertialSensors.stepometer);
-		Log.d(moduleLogName, "WiFiPlaceRecognition: useModule=" + parameters.wifiPlaceRecognition.useModule);
+		Log.d(moduleLogName, "InertialSensors:\n--- useModule=" + parameters.inertialSensors.useModule + "\n--- stepometer=" + parameters.inertialSensors.stepometer);
+		Log.d(moduleLogName, "WiFiPlaceRecognition:\n--- useModule=" + parameters.wifiPlaceRecognition.useModule +
+				"\n--- maxPlaceDatabaseSize=" + parameters.wifiPlaceRecognition.maxPlaceDatabaseSize +
+				"\n--- maxQueueSize=" + parameters.wifiPlaceRecognition.maxQueueSize +
+				"\n--- fractionOfQueueAfterReduction=" + parameters.wifiPlaceRecognition.fractionOfQueueAfterReduction +
+				"\n--- minNumberOfSharedNetworks=" + parameters.wifiPlaceRecognition.minNumberOfSharedNetworks +
+				"\n--- minPercentOfSharedNetworks=" + parameters.wifiPlaceRecognition.minPercentOfSharedNetworks +
+				"\n--- maxAvgErrorThreshold=" + parameters.wifiPlaceRecognition.maxAvgErrorThreshold + 
+				"\n--- usePriorDatabase=" + parameters.wifiPlaceRecognition.usePriorDatabase + 
+				"\n--- priorDatabaseFile=" + parameters.wifiPlaceRecognition.priorDatabaseFile);		
 	}
 
 
@@ -121,8 +136,8 @@ public class ConfigurationReader {
 		Log.d(moduleLogName, "stepometer = " + stepometerString);
 		
 		// Storing read values
-		parameters.inertialSensors.useModule = useModuleString.equals("On");
-		parameters.inertialSensors.stepometer = useModuleString.equals("On");
+		parameters.inertialSensors.useModule = useModuleString.equals("True");
+		parameters.inertialSensors.stepometer = useModuleString.equals("True");
 		
 		parser.nextTag();
 		parser.require(XmlPullParser.END_TAG, ns, "InertialSensors");
@@ -136,12 +151,35 @@ public class ConfigurationReader {
 
 		// Reading attributes
 		String useModuleString = parser.getAttributeValue(null, "useModule");
-
+		String maxPlaceDatabaseSizeString = parser.getAttributeValue(null, "maxPlaceDatabaseSize"); 
+		String maxQueueSizeString = parser.getAttributeValue(null, "maxQueueSize"); 
+		String fractionOfQueueAfterReductionString = parser.getAttributeValue(null, "fractionOfQueueAfterReduction");
+		String minNumberOfSharedNetworksString = parser.getAttributeValue(null, "minNumberOfSharedNetworks");
+		String minPercentOfSharedNetworksString = parser.getAttributeValue(null, "minPercentOfSharedNetworks");
+		String maxAvgErrorThresholdString = parser.getAttributeValue(null, "maxAvgErrorThreshold");
+		String usePriorDatabaseString = parser.getAttributeValue(null, "usePriorDatabase");
+		parameters.wifiPlaceRecognition.priorDatabaseFile = parser.getAttributeValue(null, "priorDatabaseFile");
+		
 		// Logging those values
 		Log.d(moduleLogName, "useModule = " + useModuleString);
-
+		Log.d(moduleLogName, "maxPlaceDatabaseSize = " + maxPlaceDatabaseSizeString);
+		Log.d(moduleLogName, "maxQueueSize = " + maxQueueSizeString);
+		Log.d(moduleLogName, "fractionOfQueueAfterReduction = " + fractionOfQueueAfterReductionString);
+		Log.d(moduleLogName, "minNumberOfSharedNetworks = " + minNumberOfSharedNetworksString);
+		Log.d(moduleLogName, "minPercentOfSharedNetworks = " + minPercentOfSharedNetworksString);
+		Log.d(moduleLogName, "maxAvgErrorThreshold = " + maxAvgErrorThresholdString);
+		Log.d(moduleLogName, "usePriorDatabase = " + parameters.wifiPlaceRecognition.usePriorDatabase);
+		Log.d(moduleLogName, "priorDatabaseFile = " + parameters.wifiPlaceRecognition.priorDatabaseFile);
+	
 		// Storing read values
-		parameters.wifiPlaceRecognition.useModule = useModuleString.equals("On");
+		parameters.wifiPlaceRecognition.useModule = useModuleString.equals("True");
+		parameters.wifiPlaceRecognition.maxPlaceDatabaseSize = Integer.parseInt(maxPlaceDatabaseSizeString);
+		parameters.wifiPlaceRecognition.maxQueueSize = Integer.parseInt(maxQueueSizeString);
+		parameters.wifiPlaceRecognition.fractionOfQueueAfterReduction = Double.parseDouble(fractionOfQueueAfterReductionString);
+		parameters.wifiPlaceRecognition.minNumberOfSharedNetworks = Integer.parseInt(minNumberOfSharedNetworksString);
+		parameters.wifiPlaceRecognition.minPercentOfSharedNetworks = Double.parseDouble(minPercentOfSharedNetworksString);
+		parameters.wifiPlaceRecognition.maxAvgErrorThreshold = Double.parseDouble(maxAvgErrorThresholdString);
+		parameters.wifiPlaceRecognition.usePriorDatabase = usePriorDatabaseString.equals("True");
 				
 		parser.nextTag();
 		parser.require(XmlPullParser.END_TAG, ns, "WiFiPlaceRecognition");
