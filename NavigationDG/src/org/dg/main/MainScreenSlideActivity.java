@@ -461,8 +461,8 @@ public class MainScreenSlideActivity extends Activity implements
 	@Override
 	protected void onResume() {
 		super.onResume();
-		OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_2_4_9, this,
-				mLoaderCallback);
+//		OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_2_4_9, this,
+//				mLoaderCallback);
 
 		camera = Camera.open();
 		//preview.setCamera(camera);

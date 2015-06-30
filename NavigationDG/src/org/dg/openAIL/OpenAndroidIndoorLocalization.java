@@ -27,16 +27,13 @@ import android.util.Log;
 
 // This is a class that is supposed to provide the interface for all available solutions
 public class OpenAndroidIndoorLocalization {
-	
-	
-	
-	ConfigurationReader.Parameters parameters;
-	
-
 	private static final String moduleLogName = "OpenAIL";
-
+	
+	
+	
 	// Parameters
 	static boolean WiFiFeatures = true;
+	ConfigurationReader.Parameters parameters;
 
 	// Inertial sensors
 	public SensorManager sensorManager;
@@ -58,39 +55,21 @@ public class OpenAndroidIndoorLocalization {
 	public OpenAndroidIndoorLocalization(SensorManager sensorManager,
 			WifiManager wifiManager) {
 
-		Log.d(moduleLogName, "XxX");
-		
-		String configFileName = String.format(Locale.getDefault(), Environment
-				.getExternalStorageDirectory().toString()
-				+ "/OpenAIL"
-				+ "/settings.xml");
-		
-		Log.d(moduleLogName, "XxX2");
-		ConfigurationReader configReader = new ConfigurationReader();
-		
-		Log.d(moduleLogName, "XxX3");
-		try {
-			parameters = configReader.readParameters(configFileName);
-		} catch (XmlPullParserException e) {
-			Log.e(moduleLogName, "Failed to parse the config file");
-		} catch (IOException e) {
-			Log.e(moduleLogName, "Missing config file");
-		}
-		Log.d(moduleLogName, "XxX4");
-		
-		Log.d(moduleLogName, "TEST: " + parameters.inertialSensors.stepometer);
+		// Reading settings
+		parameters = readParametersFromXML("settings.xml");
 		
 		// Init graph
 		graphManager = new GraphManager();
 
-		// Init Sensor Managers
-		inertialSensors = new InertialSensors(sensorManager);
+		// Init inertial sensors
+		if ( parameters.inertialSensors.useModule )
+			inertialSensors = new InertialSensors(sensorManager);
 
 		// Init WiFi
 		wifiScanner = new WifiScanner(wifiManager);
 		
 	}
-	
+
 	public void initAfterOpenCV() {
 		Log.d(moduleLogName, "Initializing OpenAIL submodules after OpenCV initialization");
 		
@@ -240,6 +219,28 @@ public class OpenAndroidIndoorLocalization {
 
 		}
 
+	}
+	
+	/**
+	 * 
+	 */
+	private ConfigurationReader.Parameters readParametersFromXML(String fileName) {
+		String configFileName = String.format(Locale.getDefault(), Environment
+				.getExternalStorageDirectory().toString()
+				+ "/OpenAIL"
+				+ "/" + fileName);
+		
+		ConfigurationReader configReader = new ConfigurationReader();
+		
+		try {
+			ConfigurationReader.Parameters params = configReader.readParameters(configFileName);
+			return params;
+		} catch (XmlPullParserException e) {
+			Log.e(moduleLogName, "Failed to parse the config file");
+		} catch (IOException e) {
+			Log.e(moduleLogName, "Missing config file");
+		}
+		return null;
 	}
 
 }
