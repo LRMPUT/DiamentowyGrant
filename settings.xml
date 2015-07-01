@@ -1,8 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?> 
 <OpenAIL>
-	<InertialSensors useModule="On" stepometer="1"/>
-	<GraphManager/>
-	<WiFiPlaceRecognition useModule="On"/> 
-	<VisualOdometry useModule="On"/>
-	<VisualPlaceRecognition useModule="On"/>
+	<InertialSensors useModule="True" stepometer="True"/>
+	
+	<GraphManager	wifiFingerprintDeadBandRadius="6.0"
+								informationMatrixOfWiFiFingerprint="1.0"
+								informationMatrixOfWiFi="1.0"
+								optimizeFromFileIterationCount="100"/>	
+	
+	<WiFiPlaceRecognition 	useModule="True" 
+										maxPlaceDatabaseSize="500" 
+										maxQueueSize="200" 
+										fractionOfQueueAfterReduction="0.3" 
+										minNumberOfSharedNetworks="7"
+										minPercentOfSharedNetworks="0.75"
+										maxAvgErrorThreshold="8"
+										usePriorDatabase="True"
+										priorDatabaseFile="CM.wifidatabase"/> 
+	<VisualOdometry useModule="True"/>
+	<VisualPlaceRecognition useModule="True"/>
 </OpenAIL>
