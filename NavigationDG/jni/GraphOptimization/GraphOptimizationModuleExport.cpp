@@ -19,8 +19,11 @@ JNIEXPORT jlong JNICALL Java_org_dg_graphManager_GraphManager_NDKGraphCreate(
 JNIEXPORT void JNICALL Java_org_dg_graphManager_GraphManager_NDKGraphAddVertexEdge(
 		JNIEnv* env, jobject self, jlong addrGraph, jstring g2oVertexEdge);
 
-JNIEXPORT void JNICALL Java_org_dg_graphManager_GraphManager_NDKGraphGetVertexPosition(
+JNIEXPORT jdoubleArray JNICALL Java_org_dg_graphManager_GraphManager_NDKGraphGetVertexPosition(
 		JNIEnv* env, jobject self, jlong addrGraph, jint id);
+
+JNIEXPORT jdoubleArray JNICALL Java_org_dg_graphManager_GraphManager_NDKGraphGetPositionOfAllVertices(
+		JNIEnv* env, jobject self, jlong addrGraph);
 
 JNIEXPORT jint JNICALL Java_org_dg_graphManager_GraphManager_NDKGraphOptimize(
 		JNIEnv* env, jobject self, jlong addrGraph, jint iterationCount,
@@ -52,14 +55,59 @@ JNIEXPORT void JNICALL Java_org_dg_graphManager_GraphManager_NDKGraphAddVertexEd
 	graphManager.addToGraph(g2oStream);
 }
 
-JNIEXPORT void JNICALL Java_org_dg_graphManager_GraphManager_NDKGraphGetVertexPosition(
+JNIEXPORT jdoubleArray JNICALL Java_org_dg_graphManager_GraphManager_NDKGraphGetVertexPosition(
 		JNIEnv* env, jobject self, jlong addrGraph, jint id) {
 	// Calling
 	GraphManager &graphManager = *(GraphManager*) addrGraph;
 
-	// Get the position - TODO: how to return it?
-	graphManager.getVertexPosition(id);
+	// Get the position
+	std::vector<double> estimate = graphManager.getVertexPosition(id);
+
+
+	jdoubleArray result;
+	int size = 4;
+	result = env->NewDoubleArray(size);
+	if (result == NULL) {
+	    return NULL; /* out of memory error thrown */
+	}
+
+	jdouble fill[4];
+	memset(fill,0, 4);
+	for(int i=0;i<estimate.size();i++) {
+		fill[i] = estimate[i];
+	}
+
+	// move from the temp structure to the java structure
+	(env)->SetDoubleArrayRegion(result, 0, size, fill);
+	return result;
 }
+
+JNIEXPORT jdoubleArray JNICALL Java_org_dg_graphManager_GraphManager_NDKGraphGetPositionOfAllVertices(
+		JNIEnv* env, jobject self, jlong addrGraph)
+{
+	// Calling
+	GraphManager &graphManager = *(GraphManager*) addrGraph;
+
+	// Get the position
+	std::vector<double> estimate = graphManager.getPositionOfAllVertices();
+
+	jdoubleArray result;
+	int size = estimate.size();
+	result = env->NewDoubleArray(size);
+	if (result == NULL) {
+		return NULL; /* out of memory error thrown */
+	}
+
+	jdouble fill[ size ];
+	for (int i = 0; i < estimate.size(); i++) {
+		fill[i] = estimate[i];
+	}
+
+	// move from the temp structure to the java structure
+	(env)->SetDoubleArrayRegion(result, 0, size, fill);
+	return result;
+}
+
 
 JNIEXPORT jint JNICALL Java_org_dg_graphManager_GraphManager_NDKGraphOptimize(
 		JNIEnv* env, jobject self, jlong addrGraph, jint iterationCount,

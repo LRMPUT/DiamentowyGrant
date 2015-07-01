@@ -114,6 +114,7 @@ public class OpenAndroidIndoorLocalization {
 		//graphManager.optimize(100);
 		// TESTING GET POSITION
 		graphManager.getVertexPosition(0);
+		graphManager.getPositionsOfVertices();
 	}
 
 	private void loadWiFiPlaceDatabase(String filename) {

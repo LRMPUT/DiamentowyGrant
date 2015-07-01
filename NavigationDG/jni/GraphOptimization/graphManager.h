@@ -94,7 +94,10 @@ public:
 	void addToGraph(string dataToProcess);
 
 	// Get information about position of vertex with given id
-	void getVertexPosition(int id);
+	std::vector<double> getVertexPosition(int id);
+
+	// Get information about position of all vertices
+	std::vector<double> getPositionOfAllVertices();
 
 private:
 	// Adding vertices:

@@ -22,7 +22,8 @@ public class GraphManager {
 	// Calls to the native part of the code
 	public native long NDKGraphCreate();
 	public native void NDKGraphAddVertexEdge(long addrGraph, String g2oStream);
-	public native void NDKGraphGetVertexPosition(long addrGraph, int id);
+	public native double[] NDKGraphGetVertexPosition(long addrGraph, int id);
+	public native double[] NDKGraphGetPositionOfAllVertices(long addrGraph);
 	public native int NDKGraphOptimize(long addrGraph, int iterationCount, String path);
 	public native void NDKGraphDestroy(long addrGraph);
 
@@ -187,7 +188,20 @@ public class GraphManager {
 	}
 	
 	public void getVertexPosition(int id) {
-		NDKGraphGetVertexPosition(addrGraph, id);
+		double [] pos = NDKGraphGetVertexPosition(addrGraph, id);
+		
+		Log.d(moduleLogName, "Vertex estimate of wanted id: " + pos[0] + " " + pos[1] + " " + pos[2] + " " + pos[3]);
+	}
+	
+	public void getPositionsOfVertices() {
+		double [] pos = NDKGraphGetPositionOfAllVertices(addrGraph);
+		
+		Log.d(moduleLogName, "Listing whole graph");
+		for (int i=0;i<pos.length;i+=4)
+		{
+			Log.d(moduleLogName, "Vertex estimate: " + pos[i] + " " + pos[i+1] + " " + pos[i+2] + " " + pos[i+3]);
+		}
+		
 	}
 	
 	public void addWiFiPlaceRecognitionVertex(int id, float X, float Y, float Z) {
@@ -235,7 +249,6 @@ public class GraphManager {
 						e.printStackTrace();
 					}
 				}
-				Log.d(moduleLogName, "Optimization iteration just ended");
 			}
 			Log.d(moduleLogName, "Optimization ended");
 		
