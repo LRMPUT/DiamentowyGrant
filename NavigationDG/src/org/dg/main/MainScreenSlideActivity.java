@@ -289,7 +289,7 @@ public class MainScreenSlideActivity extends Activity implements
 			else
 				Log.d(TAG, "Save WiFi position - could not find 3 numbers");
 			
-			openAIL.saveWiFiMapPoint(pos[0], pos[1], pos[2]);
+			openAIL.saveWiFiMapPoint(pos[0], pos[1], pos[2], "newMap.wifidatabase");
 		}
 		
 	}

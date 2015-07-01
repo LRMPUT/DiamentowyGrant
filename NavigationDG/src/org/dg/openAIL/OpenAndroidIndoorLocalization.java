@@ -1,9 +1,12 @@
 package org.dg.openAIL;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -55,6 +58,14 @@ public class OpenAndroidIndoorLocalization {
 
 	public OpenAndroidIndoorLocalization(SensorManager sensorManager,
 			WifiManager wifiManager) {
+		
+		// Create directory if it doesn't exist
+				File folder = new File(Environment.getExternalStorageDirectory()
+						+ "/OpenAIL/PriorData/");
+
+				if (!folder.exists()) {
+					folder.mkdir();
+				}
 
 		// Reading settings
 		parameters = readParametersFromXML("settings.xml");
@@ -111,9 +122,10 @@ public class OpenAndroidIndoorLocalization {
 		try {
 			Scanner placeDatabaseScanner = new Scanner(new BufferedReader(
 					new FileReader(readFileName)));
+			placeDatabaseScanner.useLocale(Locale.US);
 
+			int id = 5000;
 			while (placeDatabaseScanner.hasNext()) {
-				int id = placeDatabaseScanner.nextInt();
 				float X = placeDatabaseScanner.nextFloat();
 				float Y = placeDatabaseScanner.nextFloat();
 				float Z = placeDatabaseScanner.nextFloat();
@@ -126,10 +138,17 @@ public class OpenAndroidIndoorLocalization {
 				List<MyScanResult> wifiScan = new ArrayList<MyScanResult>();
 				for (int i = 0; i < wifiCount; i++) {
 					String line = placeDatabaseScanner.nextLine();
-					String[] values = line.split("\\s+");
+					
+					
+					String[] values = line.split("\\t+");
 
 					String BSSID = values[0];
-					int level = Integer.parseInt(values[3]);
+					int level;
+					if ( values.length == 3)
+						level = Integer.parseInt(values[2]);
+					else 
+						level = Integer.parseInt(values[1]);
+					
 					MyScanResult scan = new MyScanResult(BSSID, level);
 					wifiScan.add(scan);
 					
@@ -141,6 +160,8 @@ public class OpenAndroidIndoorLocalization {
 
 				// Add new scan to datbase
 				wifiScanner.addScanToRecognition(id, wifiScan);
+				
+				id++;
 			}
 			placeDatabaseScanner.close();
 
@@ -151,10 +172,42 @@ public class OpenAndroidIndoorLocalization {
 	}
 
 	
-	public void saveWiFiMapPoint(double x, double y, double z) {
+	/*
+	 * Method used to save last WiFi scan with wanted position (X,Y,Z) in a file
+	 * that can be used as prior map
+	 */
+	public void saveWiFiMapPoint(double posX, double posY, double posZ, String fileName) {
+		// Getting the last WiFi scan
 		List<MyScanResult> wifiList = wifiScanner.getLastScan();
 		
+		// File to save results
+		String pathName = "";
+		pathName = String.format(Locale.getDefault(), Environment
+				.getExternalStorageDirectory().toString()
+				+ "/OpenAIL/PriorData/" + fileName);
+		FileOutputStream foutStream;
+		PrintStream outStreamRawData = null;
+		try {
+			foutStream = new FileOutputStream(pathName, true);
+			outStreamRawData = new PrintStream(foutStream);
+		} catch (FileNotFoundException e1) {
+			// TODO Auto-generated catch block
+			e1.printStackTrace();
+		}
+
+		// Save the initial line of scan (posX, posY, posZ, number of WiFi networks)
+		outStreamRawData.print(posX + " " + posY + " " + posZ + " " + wifiList.size()
+				+ "\n");
 		
+		// Save BSSID (MAC), SSID (network name), lvl (in DBm)
+		for (int i = 0; i < wifiList.size(); i++) {
+			MyScanResult scanResult = wifiList.get(i);
+			outStreamRawData.print(scanResult.BSSID + "\t" + scanResult.networkName + "\t" + scanResult.level
+					+ "\n");
+		}
+		
+		// Close stream
+		outStreamRawData.close();
 	}
 	
 	class UpdateGraph extends TimerTask {
