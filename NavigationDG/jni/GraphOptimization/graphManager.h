@@ -1,6 +1,7 @@
 #include <jni.h>
 #include <string.h>
 #include <android/log.h>
+#include <pthread.h>
 
 // Core
 #include "g2o/core/sparse_optimizer.h"
@@ -36,6 +37,43 @@ G2O_USE_TYPE_GROUP(slam2d);
 
 #define DEBUG_TAG "NDK_DG_GraphManager"
 
+namespace ail {
+class Vertex {
+public:
+	int vertexId;
+
+	enum Type {
+		/// Vertex 2D -- x, y
+		VERTEX2D,
+		/// Vertex SE(2) -- x, y, theta
+		VERTEXSE2
+	};
+
+	Type type;
+};
+
+class Vertex2D: public Vertex {
+public:
+	Vertex2D() {
+		pos = Eigen::Vector2d::Zero();
+	}
+	Eigen::Vector2d pos;
+};
+
+class VertexSE2: public Vertex {
+public:
+	VertexSE2() {
+		pos = Eigen::Vector2d::Zero();
+		orient = 0.0;
+	}
+	Eigen::Vector2d pos;
+	double orient;
+};
+
+}
+
+
+
 class GraphManager {
 private:
 	SparseOptimizer optimizer;
@@ -55,6 +93,9 @@ public:
 	// Add information in string to graph
 	void addToGraph(string dataToProcess);
 
+	// Get information about position of vertex with given id
+	void getVertexPosition(int id);
+
 private:
 	// Adding vertices:
 	// 0 - SE2
@@ -72,4 +113,13 @@ private:
 
 	// Typical odometry SE2 edge
 	int addEdgeSE2(stringstream &data);
+
+	// findIndex of vertex with given id
+	int findIndexInVertices(int id);
+
+	// Current estimates
+	std::vector<ail::Vertex*> vertices;
+
+	// Lock to graph
+	pthread_mutex_t graphMtx;
 };

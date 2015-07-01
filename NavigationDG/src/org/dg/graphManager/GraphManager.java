@@ -22,7 +22,8 @@ public class GraphManager {
 	// Calls to the native part of the code
 	public native long NDKGraphCreate();
 	public native void NDKGraphAddVertexEdge(long addrGraph, String g2oStream);
-	public native void NDKGraphOptimize(long addrGraph, int iterationCount, String path);
+	public native void NDKGraphGetVertexPosition(long addrGraph, int id);
+	public native int NDKGraphOptimize(long addrGraph, int iterationCount, String path);
 	public native void NDKGraphDestroy(long addrGraph);
 
 	// It is called on the class initialization
@@ -34,6 +35,10 @@ public class GraphManager {
 	long addrGraph = 0;
 	int currentPoseId = 0;
 	boolean started = false;
+	boolean continueOptimization = true;
+	
+	// Thread used in optimization 
+	Thread optimizationThread;
 	
 	// Parameters
 	org.dg.openAIL.ConfigurationReader.Parameters.GraphManager parameters;
@@ -181,6 +186,9 @@ public class GraphManager {
 		return currentPoseId;
 	}
 	
+	public void getVertexPosition(int id) {
+		NDKGraphGetVertexPosition(addrGraph, id);
+	}
 	
 	public void addWiFiPlaceRecognitionVertex(int id, float X, float Y, float Z) {
 		checkGraphExistance();
@@ -209,20 +217,45 @@ public class GraphManager {
 	
 	
 	public void optimize(final int iterationCount) {
-		final String path = Environment.getExternalStorageDirectory().getAbsolutePath() + "/DG/testGraph/";
+		checkGraphExistance();
+		final String path = Environment.getExternalStorageDirectory().getAbsolutePath() + "/OpenAIL/Log/";
+		continueOptimization = true;
 		
-		Thread t = new Thread() {
+		optimizationThread = new Thread() {
 		public void run() {
-			NDKGraphOptimize(addrGraph, iterationCount, path);
+			
+			while ( continueOptimization )
+			{
+				int res = NDKGraphOptimize(addrGraph, iterationCount, path);
+				if (res == 0)
+				{
+					try {
+						Thread.sleep(200);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
+				Log.d(moduleLogName, "Optimization iteration just ended");
+			}
 			Log.d(moduleLogName, "Optimization ended");
 		
-			NDKGraphDestroy(addrGraph);
-			Log.d("Main::Activity", "Destroyed graph");
+			//NDKGraphDestroy(addrGraph);
+			//Log.d("Main::Activity", "Destroyed graph");
 			
 			} ;
 		};
-		t.start();
-		
+		optimizationThread.start();
+	}
+	
+	public void stopOptimizationThread() {
+		continueOptimization = false;
+		try {
+			if ( optimizationThread != null )
+				optimizationThread.join();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 	
 	// PRIVATE

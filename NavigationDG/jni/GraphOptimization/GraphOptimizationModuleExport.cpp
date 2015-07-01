@@ -19,13 +19,17 @@ JNIEXPORT jlong JNICALL Java_org_dg_graphManager_GraphManager_NDKGraphCreate(
 JNIEXPORT void JNICALL Java_org_dg_graphManager_GraphManager_NDKGraphAddVertexEdge(
 		JNIEnv* env, jobject self, jlong addrGraph, jstring g2oVertexEdge);
 
-JNIEXPORT void JNICALL Java_org_dg_graphManager_GraphManager_NDKGraphOptimize(
+JNIEXPORT void JNICALL Java_org_dg_graphManager_GraphManager_NDKGraphGetVertexPosition(
+		JNIEnv* env, jobject self, jlong addrGraph, jint id);
+
+JNIEXPORT jint JNICALL Java_org_dg_graphManager_GraphManager_NDKGraphOptimize(
 		JNIEnv* env, jobject self, jlong addrGraph, jint iterationCount,
 		jstring logThis);
 
 JNIEXPORT void JNICALL Java_org_dg_graphManager_GraphManager_NDKGraphDestroy(
 		JNIEnv* env, jobject self, jlong addrGraph);
 
+// Declarations
 JNIEXPORT jlong JNICALL Java_org_dg_graphManager_GraphManager_NDKGraphCreate(
 		JNIEnv* env, jobject self) {
 	// Create new object
@@ -48,12 +52,21 @@ JNIEXPORT void JNICALL Java_org_dg_graphManager_GraphManager_NDKGraphAddVertexEd
 	graphManager.addToGraph(g2oStream);
 }
 
-JNIEXPORT void JNICALL Java_org_dg_graphManager_GraphManager_NDKGraphOptimize(
+JNIEXPORT void JNICALL Java_org_dg_graphManager_GraphManager_NDKGraphGetVertexPosition(
+		JNIEnv* env, jobject self, jlong addrGraph, jint id) {
+	// Calling
+	GraphManager &graphManager = *(GraphManager*) addrGraph;
+
+	// Get the position - TODO: how to return it?
+	graphManager.getVertexPosition(id);
+}
+
+JNIEXPORT jint JNICALL Java_org_dg_graphManager_GraphManager_NDKGraphOptimize(
 		JNIEnv* env, jobject self, jlong addrGraph, jint iterationCount,
 		jstring logThis) {
 	// Calling
 	GraphManager &graphManager = *(GraphManager*) addrGraph;
-	graphManager.optimize(iterationCount);
+	int res = graphManager.optimize(iterationCount);
 
 	// Retrieve string from jstring concerning the path
 	jboolean isCopy;
@@ -66,6 +79,7 @@ JNIEXPORT void JNICALL Java_org_dg_graphManager_GraphManager_NDKGraphOptimize(
 	graphManager.saveOptimizationResult(ofs);
 	ofs.close();
 
+	return res;
 }
 
 JNIEXPORT void JNICALL Java_org_dg_graphManager_GraphManager_NDKGraphDestroy(
