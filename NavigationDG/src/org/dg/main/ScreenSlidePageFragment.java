@@ -16,6 +16,7 @@ import android.view.ViewGroup;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup.LayoutParams;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.FrameLayout;
 import android.widget.TextView;
 
@@ -140,6 +141,9 @@ public class ScreenSlidePageFragment extends Fragment {
 			
 			// Side View 7 - Process Visual Place Recognition
 			initButtonVisualPlaceRecognition(rootView, R.id.buttonSideView7);
+			
+			// Save WiFi Map
+			initButtonSaveWiFiMap(rootView, R.id.buttonSaveWiFiMap);
 			
 
 		} else if (mPageNumber == 2 || true) {
@@ -440,6 +444,29 @@ public class ScreenSlidePageFragment extends Fragment {
 		buttonStartOrientFromFile.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
 				onSomeClick(v, "Visual Place Recognition");
+			}
+		});
+	}
+	
+	// Save WiFi Map
+	private void initButtonSaveWiFiMap(
+			final ViewGroup rootView, int id) {
+		EditText x = (EditText) rootView.findViewById(R.id.editTextWiFiPosX);
+		EditText y = (EditText) rootView.findViewById(R.id.editTextWiFiPosY);
+		EditText z = (EditText) rootView.findViewById(R.id.editTextWiFiPosZ);
+		
+		x.setText("0.0");
+		y.setText("0.0");
+		z.setText("0.0");
+		
+		Button buttonStartOrientFromFile = (Button) rootView.findViewById(id);
+		buttonStartOrientFromFile.setText("Save WiFi place");
+		buttonStartOrientFromFile.setOnClickListener(new OnClickListener() {
+			public void onClick(View v) {
+				EditText x = (EditText) rootView.findViewById(R.id.editTextWiFiPosX);
+				EditText y = (EditText) rootView.findViewById(R.id.editTextWiFiPosY);
+				EditText z = (EditText) rootView.findViewById(R.id.editTextWiFiPosZ);
+				onSomeClick(v, "Save WiFi place: " + x.getText() + " " + y.getText() + " " + z.getText());
 			}
 		});
 	}

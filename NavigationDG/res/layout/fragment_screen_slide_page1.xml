@@ -13,7 +13,7 @@
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
-            android:layout_weight="0.06"
+            android:layout_weight="0.00"
             android:orientation="vertical" >
 
             <Button
@@ -59,7 +59,46 @@
                 android:text="Nothing" />
 
         </LinearLayout>
+        
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:layout_weight="0.06"
+            android:orientation="vertical" >
 
+            <TextView
+                android:id="@+id/textView1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Gathering WiFi map"
+                android:textAppearance="?android:attr/textAppearanceMedium" />
+
+            <EditText
+                android:id="@+id/editTextWiFiPosX"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="numberDecimal" >
+            </EditText>
+
+            <EditText
+                android:id="@+id/editTextWiFiPosY"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="numberDecimal" />
+
+            <EditText
+                android:id="@+id/editTextWiFiPosZ"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:inputType="numberDecimal" />
+
+            <Button
+                android:id="@+id/buttonSaveWiFiMap"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Nothing" />
+
+        </LinearLayout>
         <LinearLayout
             android:layout_width="wrap_content"
             android:layout_height="match_parent"

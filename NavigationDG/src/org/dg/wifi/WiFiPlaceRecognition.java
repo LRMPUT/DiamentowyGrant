@@ -1,41 +1,28 @@
 package org.dg.wifi;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.PriorityQueue;
-import java.util.Scanner;
 import java.util.concurrent.Semaphore;
-
 import org.dg.wifi.MyScanResult;
-
-import android.net.wifi.ScanResult;
 import android.os.Environment;
 import android.util.Log;
+import android.util.Pair;
 
 public class WiFiPlaceRecognition implements Runnable {
 
 	private static final String moduleLogName = "WiFiPlaceRecognition";
 
-	// The sanity percent
-	static final float wiFiSanityPercent = 0.75f;
-
-	// The average error threshold
-	static final float wiFiAvgErrorThreshold = 8f;
-
+	org.dg.openAIL.ConfigurationReader.Parameters.WiFiPlaceRecognition parameters;
+	
 	// The database of places
-	final int maxPlaceDatabaseSize = 500;
 	List<List<MyScanResult>> placeDatabase = new ArrayList<List<MyScanResult>>();
 	List<Integer> placeIds = new ArrayList<Integer>();
 
@@ -43,8 +30,7 @@ public class WiFiPlaceRecognition implements Runnable {
 	PrintStream outStreamPlaceRecognitionData = null;
 
 	// Queue Mutex
-	final int WiFiPlaceRecognitionSize = 150;
-	PriorityQueue<WiFiPlaceLink> queue;
+	PriorityQueue<WiFiPlaceLink> queueOfWiFiMatchesToCheck;
 	private final Semaphore queueMtx = new Semaphore(1, true);
 	
 	// List of recognized places
@@ -57,27 +43,28 @@ public class WiFiPlaceRecognition implements Runnable {
 	boolean newPlaceToProcess = false;
 	int indexOfNewPlaceToProcess = -1;
 
-	public WiFiPlaceRecognition() {
-		// QUEUE
+	public WiFiPlaceRecognition(org.dg.openAIL.ConfigurationReader.Parameters.WiFiPlaceRecognition wifiPlaceRecognitionParameters) {
+		
+		parameters = wifiPlaceRecognitionParameters;
+				
+		// Creating queue
 		Comparator<WiFiPlaceLink> wiFiPlaceComparator = new WiFiPlaceComparator();
-		queue = new PriorityQueue<WiFiPlaceLink>(WiFiPlaceRecognitionSize,
+		queueOfWiFiMatchesToCheck = new PriorityQueue<WiFiPlaceLink>(parameters.maxQueueSize,
 				wiFiPlaceComparator);
 
 		// Getting place to save data
 		File folder = new File(Environment.getExternalStorageDirectory()
-				+ "/DG");
+				+ "/OpenAIL/Log");
 
 		if (!folder.exists()) {
 			folder.mkdir();
 		}
 		
-
 		// File to save results
 		String fileName = "";
 		fileName = String.format(Locale.getDefault(), Environment
 				.getExternalStorageDirectory().toString()
-				+ "/DG"
-				+ "/WiFiPlaceRecognition.list");
+				+ "/OpenAIL/Log/WiFiPlaceRecognition.list");
 
 		// RawMeasurements
 		FileOutputStream foutStream;
@@ -107,68 +94,9 @@ public class WiFiPlaceRecognition implements Runnable {
 		}
 	}
 
-	public int recognizePlace(List<ScanResult> wiFiList) {
-//		sortListByMAC(wiFiList);
-//
-//		int bestIndex = 0, index = 0;
-//		float bestValue = 0.0f;
-//
-//		// Check all places in database
-//		for (List<ScanResult> place : placeDatabase) {
-//			// Computing similarity measure
-//			float value = computeBSSIDSimilarity(place, wiFiList);
-//
-//			// Finding the most probable place
-//			if (value > bestValue) {
-//				bestValue = value;
-//				bestIndex = index;
-//			}
-//			index = index + 1;
-//		}
-//
-//		// Sanity check - if the best place does not have 75% of the check place
-//		// wifis
-//		if (bestValue < wiFiSanityPercent * wiFiList.size())
-//			return -1;
-//
-//		return placeIds.get(bestIndex);
-		return -404;
-	}
 
-	public List<Integer> returnAllMatchingPlaces(List<ScanResult> wiFiList,
-			int currentPoseId) {
-		List<Integer> result = new ArrayList<Integer>();
-//
-//		sortListByMAC(wiFiList);
-//
-//		// Check all places in database
-//		int index = 0;
-//		for (List<ScanResult> place : placeDatabase) {
-//			// Computing similarity measure
-//			float value = computeBSSIDSimilarity(place, wiFiList);
-//
-//			// Compute average error
-//			float avgError = computeAverageMeanSquaredBSSIDError(place,
-//					wiFiList);
-//
-//			// Finding the most probable place
-//			if (currentPoseId != placeIds.get(index)) {
-//				outStreamPlaceRecognitionData.print(placeIds.get(index) + " "
-//						+ currentPoseId + " " + value + " " + wiFiSanityPercent
-//						+ " " + wiFiList.size() + " " + avgError + " "
-//						+ wiFiAvgErrorThreshold + "\n");
-//
-//				if (value > wiFiSanityPercent * wiFiList.size()
-//						&& avgError < wiFiAvgErrorThreshold) {
-//
-//					result.add(placeIds.get(index));
-//				}
-//			}
-//			index = index + 1;
-//		}
-//
-		return result;
-	}
+
+	
 
 	public int getSizeOfPlaceDatabase() {
 		return placeDatabase.size();
@@ -191,23 +119,11 @@ public class WiFiPlaceRecognition implements Runnable {
 		Collections.sort(wiFiList, comparator);
 	}
 
-	// Compute similarity as the number of shared WiFi networks
-	private int computeBSSIDSimilarity(List<MyScanResult> listA,
-			List<MyScanResult> listB) {
-		int result = 0;
-		for (MyScanResult scanA : listA) {
-			for (MyScanResult scanB : listB) {
-				if (scanA.BSSID.compareTo(scanB.BSSID) == 0) {
-					result++;
-					break;
-				}
-			}
-		}
-		return result;
-	}
-
+	
+	
 	// Compute average error over shared networks
-	private float computeAverageMeanSquaredBSSIDError(List<MyScanResult> listA,
+	// TODO: Can be done faster as lists are sorted!
+	private Pair<Integer, Double> computeBSSIDSimilarity(List<MyScanResult> listA,
 			List<MyScanResult> listB) {
 		float result = 0.0f;
 		int count = 0;
@@ -219,10 +135,13 @@ public class WiFiPlaceRecognition implements Runnable {
 				}
 			}
 		}
-		return (float) Math.sqrt(result / count);
+		
+		return new Pair<Integer, Double>(count, Math.sqrt(result / count));
 	}
 
-	// Method used in priority queue
+	// Method used by priority queue to order elements
+	// TODO: X, Y !!!
+	// Now it is based on indices
 	public class WiFiPlaceComparator implements Comparator<WiFiPlaceLink> {
 		@Override
 		public int compare(WiFiPlaceLink x, WiFiPlaceLink y) {
@@ -240,34 +159,42 @@ public class WiFiPlaceRecognition implements Runnable {
 		}
 	}
 
+	// We try to add element to queue
 	public void addToQueue(WiFiPlaceLink linkToTest) {
-
-		// We wont compare wifi links connected to the same node in graph
 
 		try {
 			queueMtx.acquire();
 
-			if (queue.size() == WiFiPlaceRecognitionSize) {
-				Log.d(moduleLogName, "There is a need to clear queue, size : "
-						+ queue.size());
-
-				Comparator<WiFiPlaceLink> wiFiPlaceComparator = new WiFiPlaceComparator();
-				PriorityQueue<WiFiPlaceLink> newQueue = new PriorityQueue<WiFiPlaceLink>(
-						WiFiPlaceRecognitionSize, wiFiPlaceComparator);
-				for (int i = 0; i < WiFiPlaceRecognitionSize / 2; i++) {
-					newQueue.add(queue.poll());
-				}
-				queue = newQueue;
-				Log.d(moduleLogName, "Reduced queue size: " + queue.size());
+			// We reached the maximal size of queue
+			if (queueOfWiFiMatchesToCheck.size() >= parameters.maxQueueSize) {
+				reduceTheSizeOfQueue();
 			}
-
-			queue.add(linkToTest);
+			
+			// We add the element
+			queueOfWiFiMatchesToCheck.add(linkToTest);
 
 			queueMtx.release();
 		} catch (InterruptedException e) {
 			Log.d(moduleLogName, "Failed to access queue mutex");
 		}
 
+	}
+
+	/**
+	 * Method used to reduce the size of queue 
+	 */
+	private void reduceTheSizeOfQueue() {
+		Log.d(moduleLogName, "There is a need to clear queue, size : "
+				+ queueOfWiFiMatchesToCheck.size());
+
+		Comparator<WiFiPlaceLink> wiFiPlaceComparator = new WiFiPlaceComparator();
+		PriorityQueue<WiFiPlaceLink> newQueue = new PriorityQueue<WiFiPlaceLink>(
+				parameters.maxQueueSize, wiFiPlaceComparator);
+		for (int i = 0; i < parameters.fractionOfQueueAfterReduction * parameters.maxQueueSize; i++) {
+			newQueue.add(queueOfWiFiMatchesToCheck.poll());
+		}
+		queueOfWiFiMatchesToCheck = newQueue;
+		Log.d(moduleLogName, "Reduced queue size: " + queueOfWiFiMatchesToCheck.size());
 	}
 	
 	void startRecognition() {
@@ -354,7 +281,7 @@ public class WiFiPlaceRecognition implements Runnable {
 			 
 			try {
 				// Just sleep so we do not use CPU
-				while (queue.size() == 0 && performRecognition == true) {
+				while (queueOfWiFiMatchesToCheck.size() == 0 && performRecognition == true) {
 					Log.d(moduleLogName, "Sleeping ...");
 					Thread.sleep(500);
 					
@@ -367,6 +294,10 @@ public class WiFiPlaceRecognition implements Runnable {
 				
 				if (!performRecognition)
 					break;
+				
+				
+				
+				// parameters.maxPlaceDatabaseSize
 				
 				
 				// We need to reduce the size of the database
@@ -389,30 +320,30 @@ public class WiFiPlaceRecognition implements Runnable {
 					addNewPlaceInRecognitionThread();
 				}
 				
-				Log.d(moduleLogName, "Queue size : " + queue.size());
+				Log.d(moduleLogName, "Queue size : " + queueOfWiFiMatchesToCheck.size());
 				
 				queueMtx.acquire();
-				WiFiPlaceLink linkToTest = queue.poll();
+				WiFiPlaceLink linkToTest = queueOfWiFiMatchesToCheck.poll();
 				queueMtx.release();
 				
 				// Computing similarity measure
-				float value = computeBSSIDSimilarity(linkToTest.listA,
+				Pair<Integer, Double> x = computeBSSIDSimilarity(linkToTest.listA,
 						linkToTest.listB);
-
+				
 				// Compute average error
-				float avgError = computeAverageMeanSquaredBSSIDError(
-						linkToTest.listA, linkToTest.listB);
+				float value = x.first;
+				Double avgError = x.second;
 
 				// Finding the most probable place
 				outStreamPlaceRecognitionData.print(linkToTest.indexA + " "
 						+ linkToTest.indexB + " " + value + " "
-						+ wiFiSanityPercent + " " + linkToTest.listA.size()
+						+ parameters.minPercentOfSharedNetworks + " " + linkToTest.listA.size()
 						+ " " + linkToTest.listB.size() + " " + avgError + " "
-						+ wiFiAvgErrorThreshold + "\n");
+						+ parameters.maxAvgErrorThreshold + "\n");
 
-				if (value > 7 && value > wiFiSanityPercent * linkToTest.listA.size()
-						&& value > wiFiSanityPercent * linkToTest.listB.size()
-						&& avgError < wiFiAvgErrorThreshold) {
+				if (value > parameters.minNumberOfSharedNetworks && value > parameters.minPercentOfSharedNetworks * linkToTest.listA.size()
+						&& value > parameters.minPercentOfSharedNetworks * linkToTest.listB.size()
+						&& avgError < parameters.maxAvgErrorThreshold) {
 
 					Log.d(moduleLogName, "Found local connection - adding it to list of recognized places");
 					recognizedPlacesMtx.acquire();

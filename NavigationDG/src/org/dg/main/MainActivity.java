@@ -461,7 +461,8 @@ public class MainActivity extends Activity {
 
 	class UpdateWiFiSRecognitionGUI extends TimerTask {
 		public void run() {
-			int recognizedPlaceId = openAIL.wifiScanner.recognizePlaceBasedOnLastScan();
+//			int recognizedPlaceId = openAIL.wifiScanner.recognizePlaceBasedOnLastScan();
+			int recognizedPlaceId = 0;
 			int sizeOfPlaceDatabase = openAIL.wifiScanner.getSizeOfPlaceDatabase();
 
 			int recognizedMagneticPlaceId = openAIL.inertialSensors.recognizePlaceBasedOnMagneticScan();
