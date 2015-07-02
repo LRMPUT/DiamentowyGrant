@@ -1,5 +1,8 @@
 package org.dg.camera;
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.PrintStream;
 import java.util.Locale;
 
 import org.opencv.core.Mat;
@@ -51,21 +54,36 @@ public class VisualPlaceRecognition {
 		trainVisualPlaceRecognition();
 		
 		{
-			String fabmapTestRecPath = String.format(Locale.getDefault(), Environment
-					.getExternalStorageDirectory().toString()
-					+ "/OpenAIL"
-					+ "/VPR/testRec/");
-			
-			File fTestRec = new File(fabmapTestRecPath);        
-			File fileTestRec[] = fTestRec.listFiles();
-			Log.d(moduleLogName, "Test rec size: " + fileTestRec.length);
-			
-			for (int i=0; i < fileTestRec.length; i++)
-			{
-			    Log.d(moduleLogName, "Train filename:" + fileTestRec[i].getName());
-			    Mat testRecImage = Highgui.imread(fabmapTestRecPath + fileTestRec[i].getName(), 0);
-			    
-			    recognizePlace(testRecImage);
+			try{
+				String resPath = String.format(Locale.getDefault(), Environment
+						.getExternalStorageDirectory().toString()
+						+ "/OpenAIL"
+						+ "/VPR/res.log");
+				PrintStream resStream = new PrintStream(new FileOutputStream(resPath));
+				
+				String fabmapTestRecPath = String.format(Locale.getDefault(), Environment
+						.getExternalStorageDirectory().toString()
+						+ "/OpenAIL"
+						+ "/VPR/testRec/");
+				
+				File fTestRec = new File(fabmapTestRecPath);        
+				File fileTestRec[] = fTestRec.listFiles();
+				Log.d(moduleLogName, "Test rec size: " + fileTestRec.length);
+				
+				for (int i=0; i < fileTestRec.length; i++)
+				{
+				    Log.d(moduleLogName, "Train filename:" + fileTestRec[i].getName());
+				    Mat testRecImage = Highgui.imread(fabmapTestRecPath + fileTestRec[i].getName(), 0);
+				    
+				    int match = recognizePlace(testRecImage);
+				    
+				    resStream.print(String.format("%d %d\n", i, match));
+				}
+				
+				resStream.close();
+			}
+			catch(Exception e){
+				e.printStackTrace();
 			}
 		}
 		
@@ -141,10 +159,12 @@ public class VisualPlaceRecognition {
 	}
 	
 	// Method used to try to match new image from camera to existing dataset of images
-	public void recognizePlace(Mat imageToTest) {
-		int match = testLocationFabmapNDK(addrFabMapEnv, imageToTest.getNativeObjAddr(), true);
+	public int recognizePlace(Mat imageToTest) {
+		int match = testLocationFabmapNDK(addrFabMapEnv, imageToTest.getNativeObjAddr(), false);
 
 		Log.d(moduleLogName, "Recognized place: " + match);
+		
+		return match;
 	}
 
 }

@@ -20,7 +20,7 @@ public class Preview extends ViewGroup implements SurfaceHolder.Callback {
     SurfaceHolder mHolder;
     Size mPreviewSize;
     List<Size> mSupportedPreviewSizes;
-    Camera mCamera; 
+    Camera mCamera = null; 
 
     public Preview(Context context, SurfaceView sv) {
         super(context);
@@ -44,8 +44,10 @@ public class Preview extends ViewGroup implements SurfaceHolder.Callback {
     }
 
     public void setCamera(Camera camera) {
+//    	Log.d(TAG, String.format("Preview::setCamera"));
     	mCamera = camera;
     	if (mCamera != null) {
+//        	Log.d(TAG, String.format("Preview::setCamera, mCamera != null"));
     		mSupportedPreviewSizes = mCamera.getParameters().getSupportedPreviewSizes();
     		requestLayout();
 
@@ -67,6 +69,7 @@ public class Preview extends ViewGroup implements SurfaceHolder.Callback {
 
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
+//    	Log.d(TAG, "onMeasure");
         // We purposely disregard child measurements because act as a
         // wrapper to a SurfaceView that centers the camera preview instead
         // of stretching it.
@@ -76,6 +79,7 @@ public class Preview extends ViewGroup implements SurfaceHolder.Callback {
 
         if (mSupportedPreviewSizes != null) {
             mPreviewSize = getOptimalPreviewSize(mSupportedPreviewSizes, width, height);
+//        	Log.d(TAG, String.format("mPreviewSize = (%d, %d)", mPreviewSize.width, mPreviewSize.height));
         }
     }
 
@@ -110,9 +114,16 @@ public class Preview extends ViewGroup implements SurfaceHolder.Callback {
     public void surfaceCreated(SurfaceHolder holder) {
         // The Surface has been created, acquire the camera and tell it where
         // to draw.
+//    	Log.d(TAG, "surfaceCreated");
         try {
             if (mCamera != null) {
+//            	Log.d(TAG, "mCamera != null");
+            	
+//        		Camera.Parameters parameters = mCamera.getParameters();
+//        		parameters.setPreviewSize(306, 163);
+            	
                 mCamera.setPreviewDisplay(holder);
+                mCamera.startPreview();
             }
         } catch (IOException exception) {
             Log.e(TAG, "IOException caused by setPreviewDisplay()", exception);
@@ -161,8 +172,15 @@ public class Preview extends ViewGroup implements SurfaceHolder.Callback {
     }
 
     public void surfaceChanged(SurfaceHolder holder, int format, int w, int h) {
+//    	Log.d(TAG, "surfaceChanged");
     	if(mCamera != null) {
+//        	Log.d(TAG, "mCamera != null");
+        	
+        	//need to stop - otherwise setParameters will fail when changing previewSize
+            mCamera.stopPreview();
+            
     		Camera.Parameters parameters = mCamera.getParameters();
+//    		parameters.setPreviewSize(640, 480);
     		parameters.setPreviewSize(mPreviewSize.width, mPreviewSize.height);
     		requestLayout();
 

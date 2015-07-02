@@ -7,8 +7,10 @@ import org.dg.main.MainActivity.UpdateWiFiSRecognitionGUI;
 
 import android.app.Activity;
 import android.app.Fragment;
+import android.hardware.Camera;
 import android.os.Bundle;
 import android.os.Handler;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.SurfaceView;
 import android.view.View;
@@ -30,6 +32,8 @@ import android.widget.TextView;
  * </p>
  */
 public class ScreenSlidePageFragment extends Fragment {
+    private final String TAG = "ScreenSlidePageFragment";
+    
 	/**
 	 * The argument key for the page number this fragment represents.
 	 */
@@ -49,7 +53,10 @@ public class ScreenSlidePageFragment extends Fragment {
 	/**
 	 * 
 	 */
-	Preview preview;
+	Preview preview = null;
+	
+
+	Camera camera = null;
 
 	/**
 	 * Factory method for this fragment class. Constructs a new fragment for the
@@ -79,17 +86,27 @@ public class ScreenSlidePageFragment extends Fragment {
 		// Inflate the layout containing a title and body text.
 		final ViewGroup rootView;
 		if (mPageNumber == 0) {
+//	    	Log.d(TAG, String.format("mPageNumber = %d", mPageNumber));
+	    	
 			rootView = (ViewGroup) inflater.inflate(
 					R.layout.fragment_screen_slide_page0, container, false);
 			
+//			Camera.Parameters parameters = camera.getParameters();
+//			parameters.setPreviewSize(640, 480);
+//			camera.setParameters(parameters);
+			
 			// Camera preview stuff
-//			preview = new Preview((SurfaceView) rootView.findViewById(R.id.SurfaceView01));
-//
-//			preview.setLayoutParams(new LayoutParams(LayoutParams.FILL_PARENT,
-//					LayoutParams.FILL_PARENT));
-//
-//			((FrameLayout) rootView.findViewById(R.id.preview)).addView(preview);
-//			preview.setKeepScreenOn(true);
+			SurfaceView surfView = (SurfaceView)rootView.findViewById(R.id.SurfaceView01);
+			preview = new Preview(surfView);
+			preview.setCamera(camera);
+			
+			preview.measure(surfView.getWidth(), surfView.getHeight());
+			
+			preview.setLayoutParams(new LayoutParams(LayoutParams.FILL_PARENT,
+					LayoutParams.FILL_PARENT));
+
+//			((FrameLayout) rootView.findViewById(R.id.previewFrameLayout)).addView(preview);
+			preview.setKeepScreenOn(true);
 
 		} else if (mPageNumber == 1) {
 			rootView = (ViewGroup) inflater.inflate(
@@ -561,11 +578,11 @@ public class ScreenSlidePageFragment extends Fragment {
 						R.id.textViewOrient3);
 
 				mTextViewRollX.setText("Roll (X): "
-						+ String.format("%.2f", orient[0]) + '°');
+						+ String.format("%.2f", orient[0]) + 'ï¿½');
 				mTextViewPitchY.setText("Pitch (Y): "
-						+ String.format("%.2f", orient[1]) + '°');
+						+ String.format("%.2f", orient[1]) + 'ï¿½');
 				mTextViewYawZ.setText("Yaw (Z): "
-						+ String.format("%.2f", orient[2]) + '°');
+						+ String.format("%.2f", orient[2]) + 'ï¿½');
 
 				// ORIENTATION COMPLEMENTARY X, Y, Z
 				TextView mTextViewCompRollX = (TextView) getView()
@@ -576,11 +593,11 @@ public class ScreenSlidePageFragment extends Fragment {
 						R.id.textViewOrientComp3);
 
 				mTextViewCompRollX.setText("Comp Roll (X): "
-						+ String.format("%.2f", compOrient[0]) + '°');
+						+ String.format("%.2f", compOrient[0]) + 'ï¿½');
 				mTextViewCompPitchY.setText("Comp Pitch (Y): "
-						+ String.format("%.2f", compOrient[1]) + '°');
+						+ String.format("%.2f", compOrient[1]) + 'ï¿½');
 				mTextViewCompYawZ.setText("Comp Yaw (Z): "
-						+ String.format("%.2f", compOrient[2]) + '°');
+						+ String.format("%.2f", compOrient[2]) + 'ï¿½');
 
 				TextView mTextViewNetworkCount = (TextView) getView()
 						.findViewById(R.id.textViewWiFi1);
@@ -617,6 +634,19 @@ public class ScreenSlidePageFragment extends Fragment {
 						+ String.format("%.2f", estimatedHeight) + " m");
 			}
 		}
+	}
+	
+	public void setCamera(Camera icamera){
+//    	Log.d(TAG, String.format("setCamera, mPageNumber = %d", mPageNumber));
+    	
+    	camera = icamera;
+    	if(preview != null){
+    		preview.setCamera(camera);
+    	}
+    	
+//		Camera.Parameters parameters = camera.getParameters();
+//		parameters.setPreviewSize(640, 480);
+//		camera.setParameters(parameters);
 	}
 
 	class UpdateWiFiInGUI implements Runnable {

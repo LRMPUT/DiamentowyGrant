@@ -500,7 +500,9 @@ JNIEXPORT jint JNICALL Java_org_dg_camera_VisualPlaceRecognition_testLocationFab
 	fabMapEnv->bide.compute(testImage, kpts, bow);
 
 	std::vector<of2::IMatch> matches;
-	fabMapEnv->fabmap->compare(bow, matches, addToTest);
+	if(!bow.empty()){
+		fabMapEnv->fabmap->compare(bow, matches, addToTest);
+	}
 
 //	static const double matchThresh = 0.5;
 	double bestMatchProb = 0.0;

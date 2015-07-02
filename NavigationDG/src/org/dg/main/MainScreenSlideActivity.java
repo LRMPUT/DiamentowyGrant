@@ -66,7 +66,7 @@ public class MainScreenSlideActivity extends Activity implements
 	 * 
 	 * 
 	 */
-	Preview preview;
+//	Preview preview;
 	Camera camera;
 
 	// Orient in main update
@@ -374,6 +374,11 @@ public class MainScreenSlideActivity extends Activity implements
 		// Initialize update of orient in GUI
 		orientAndWiFiScanUpdateTimer.scheduleAtFixedRate(
 				new UpdateOrientAndWiFiScanGUI(), 2000, 100);
+		
+//		//open camera
+//		camera = Camera.open();
+//		ScreenSlidePageFragment cameraFragment = (ScreenSlidePageFragment)((ScreenSlidePagerAdapter)mPagerAdapter).getItem(0);
+//		cameraFragment.setCamera(camera);
 	}
 
 	@Override
@@ -512,21 +517,39 @@ public class MainScreenSlideActivity extends Activity implements
 
 	@Override
 	protected void onResume() {
+//		Log.d(TAG, "onResume");
 		super.onResume();
 //		OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_2_4_9, this,
 //				mLoaderCallback);
 
 		camera = Camera.open();
-		//preview.setCamera(camera);
+		
+//		Camera.Parameters parameters = camera.getParameters();
+//		List<Camera.Size> previewSizes = parameters.getSupportedPreviewSizes();
+//		for(int i = 0; i < previewSizes.size(); ++i){
+//			Log.d(TAG, String.format("size %d = (%d, %d)", i, previewSizes.get(i).width, previewSizes.get(i).height));			
+//		}
+//		parameters.setPreviewSize(640, 480);
+//		camera.setParameters(parameters);
+		
+		//fragment with camera preview
+		ScreenSlidePageFragment cameraFragment = (ScreenSlidePageFragment)((ScreenSlidePagerAdapter)mPagerAdapter).getItem(0);
+		cameraFragment.setCamera(camera);
+//		preview.setCamera(camera);
 		//camera.startPreview();
 
 	}
 
 	@Override
 	protected void onPause() {
+//		Log.d(TAG, "onPause");
 		if (camera != null) {
-			camera.stopPreview();
+//			camera.stopPreview();
 			// preview.setCamera(null);
+			
+			//fragment with camera preview
+			ScreenSlidePageFragment cameraFragment = (ScreenSlidePageFragment)((ScreenSlidePagerAdapter)mPagerAdapter).getItem(0);
+			cameraFragment.setCamera(null);
 			camera.release();
 			camera = null;
 		}

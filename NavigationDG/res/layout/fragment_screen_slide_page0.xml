@@ -23,6 +23,7 @@
             android:id="@+id/SurfaceView01"
             android:layout_width="306dp"
             android:layout_height="163dp" />
+
     </LinearLayout>
 
 </LinearLayout>
