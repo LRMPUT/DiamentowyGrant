@@ -578,11 +578,11 @@ public class ScreenSlidePageFragment extends Fragment {
 						R.id.textViewOrient3);
 
 				mTextViewRollX.setText("Roll (X): "
-						+ String.format("%.2f", orient[0]) + 'ï¿½');
+						+ String.format("%.2f", orient[0]) + '°');
 				mTextViewPitchY.setText("Pitch (Y): "
-						+ String.format("%.2f", orient[1]) + 'ï¿½');
+						+ String.format("%.2f", orient[1]) + '°');
 				mTextViewYawZ.setText("Yaw (Z): "
-						+ String.format("%.2f", orient[2]) + 'ï¿½');
+						+ String.format("%.2f", orient[2]) + '°');
 
 				// ORIENTATION COMPLEMENTARY X, Y, Z
 				TextView mTextViewCompRollX = (TextView) getView()
@@ -593,11 +593,11 @@ public class ScreenSlidePageFragment extends Fragment {
 						R.id.textViewOrientComp3);
 
 				mTextViewCompRollX.setText("Comp Roll (X): "
-						+ String.format("%.2f", compOrient[0]) + 'ï¿½');
+						+ String.format("%.2f", compOrient[0]) + '°');
 				mTextViewCompPitchY.setText("Comp Pitch (Y): "
-						+ String.format("%.2f", compOrient[1]) + 'ï¿½');
+						+ String.format("%.2f", compOrient[1]) + '°');
 				mTextViewCompYawZ.setText("Comp Yaw (Z): "
-						+ String.format("%.2f", compOrient[2]) + 'ï¿½');
+						+ String.format("%.2f", compOrient[2]) + '°');
 
 				TextView mTextViewNetworkCount = (TextView) getView()
 						.findViewById(R.id.textViewWiFi1);
