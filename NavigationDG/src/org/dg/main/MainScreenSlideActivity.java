@@ -1,6 +1,9 @@
 package org.dg.main;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -63,7 +66,7 @@ public class MainScreenSlideActivity extends Activity implements
 	 * 
 	 * 
 	 */
-	Preview preview;
+//	Preview preview;
 	Camera camera;
 
 	// Orient in main update
@@ -250,11 +253,30 @@ public class MainScreenSlideActivity extends Activity implements
 					}
 
 					File dir = new File(String.format(
-							Environment.getExternalStorageDirectory() + "/DG/orientTestFromFile/xSenseTel1steady"));
+							Environment.getExternalStorageDirectory() + "/DG/xSenseTel3"));
 					if (!dir.exists()) {
 						dir.mkdirs();
 					}
-			        ProcessRecorded.process(dir, 0.999325f);
+					
+					try{
+						PrintStream paramOutStream = new PrintStream(new FileOutputStream(dir.toString() + "/param.log"));
+						float param = 0.000001f;
+						while(param < 0.02f){
+	//						ProcessRecorded.process(dir, 0.999325f);
+							double score = ProcessRecorded.process(dir, 1.0f - param);
+							
+							paramOutStream.print(Float.toString(param) + " " + Double.toString(score));
+							paramOutStream.print(System.getProperty("line.separator"));
+							
+							Log.d(TAG, String.format("param = %f, score = %f", param, score));
+							
+							param *= 2;
+						}
+						paramOutStream.close();
+					}
+					catch(FileNotFoundException e){
+						e.printStackTrace();
+					}
 			    }
 			};
 			thread.start();
@@ -352,6 +374,11 @@ public class MainScreenSlideActivity extends Activity implements
 		// Initialize update of orient in GUI
 		orientAndWiFiScanUpdateTimer.scheduleAtFixedRate(
 				new UpdateOrientAndWiFiScanGUI(), 2000, 100);
+		
+//		//open camera
+//		camera = Camera.open();
+//		ScreenSlidePageFragment cameraFragment = (ScreenSlidePageFragment)((ScreenSlidePagerAdapter)mPagerAdapter).getItem(0);
+//		cameraFragment.setCamera(camera);
 	}
 
 	@Override
@@ -490,21 +517,39 @@ public class MainScreenSlideActivity extends Activity implements
 
 	@Override
 	protected void onResume() {
+//		Log.d(TAG, "onResume");
 		super.onResume();
 //		OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_2_4_9, this,
 //				mLoaderCallback);
 
 		camera = Camera.open();
-		//preview.setCamera(camera);
+		
+//		Camera.Parameters parameters = camera.getParameters();
+//		List<Camera.Size> previewSizes = parameters.getSupportedPreviewSizes();
+//		for(int i = 0; i < previewSizes.size(); ++i){
+//			Log.d(TAG, String.format("size %d = (%d, %d)", i, previewSizes.get(i).width, previewSizes.get(i).height));			
+//		}
+//		parameters.setPreviewSize(640, 480);
+//		camera.setParameters(parameters);
+		
+		//fragment with camera preview
+		ScreenSlidePageFragment cameraFragment = (ScreenSlidePageFragment)((ScreenSlidePagerAdapter)mPagerAdapter).getItem(0);
+		cameraFragment.setCamera(camera);
+//		preview.setCamera(camera);
 		//camera.startPreview();
 
 	}
 
 	@Override
 	protected void onPause() {
+//		Log.d(TAG, "onPause");
 		if (camera != null) {
-			camera.stopPreview();
+//			camera.stopPreview();
 			// preview.setCamera(null);
+			
+			//fragment with camera preview
+			ScreenSlidePageFragment cameraFragment = (ScreenSlidePageFragment)((ScreenSlidePagerAdapter)mPagerAdapter).getItem(0);
+			cameraFragment.setCamera(null);
 			camera.release();
 			camera = null;
 		}

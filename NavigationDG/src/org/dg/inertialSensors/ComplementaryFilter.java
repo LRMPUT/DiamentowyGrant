@@ -12,6 +12,7 @@ public class ComplementaryFilter {
 	private static final String TAG = "ComplementaryFilter";
 
 	private static final float eps = 1e-9f;
+	private static final float epsSing = 1e-2f;
 //	private static final float ns2s = 1.0f / 1000000000.0f;
 	private float coeff = 0.9992f;
 	
@@ -154,6 +155,17 @@ public class ComplementaryFilter {
 		float[] fusedOrient = new float[3];
 		
 		for(int ang = 0; ang < 3; ang++){
+			if(ang == 1){
+				//detect singularity
+				if(Math.abs(Math.abs(gyroOrient[ang]) - 0.5 * Math.PI) < epsSing){
+					Log.d(TAG, String.format("Singularity, azimuth diff = %f",
+								gyroOrient[ang] - accMagOrient[ang]));
+				}
+				if(Math.abs(Math.abs(accMagOrient[ang]) - 0.5 * Math.PI) < epsSing){
+					Log.d(TAG, String.format("Singularity, azimuth diff = %f",
+							gyroOrient[ang] - accMagOrient[ang]));
+				}
+			}
 			if(Math.abs(gyroOrient[ang] - accMagOrient[ang]) < Math.abs(Math.abs(gyroOrient[ang] - accMagOrient[ang]) - 2.0 * Math.PI)){
 				fusedOrient[ang] = gyroOrient[ang] * coeff + accMagOrient[ang] * (1 - coeff);
 			}
