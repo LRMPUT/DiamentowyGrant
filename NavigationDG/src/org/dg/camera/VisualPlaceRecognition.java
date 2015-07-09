@@ -77,7 +77,7 @@ public class VisualPlaceRecognition {
 				    
 				    int match = recognizePlace(testRecImage);
 				    
-				    resStream.print(String.format("%d %d\n", i, match));
+				    resStream.print(String.format("%d %d\n", i + 1, match + 1));
 				}
 				
 				resStream.close();
@@ -129,8 +129,8 @@ public class VisualPlaceRecognition {
 			+ "/VPR/settings.yml");
 			
 			// Call training of fabmap library
-//			addrFabMapEnv = createAndTrainFabmapNDK(fabmapSettingsPath, trainingSetSize);
-			addrFabMapEnv = createAndLoadFabmapNDK(fabmapSettingsPath);
+			addrFabMapEnv = createAndTrainFabmapNDK(fabmapSettingsPath, trainingSetSize);
+//			addrFabMapEnv = createAndLoadFabmapNDK(fabmapSettingsPath);
 		}
 		
 		// Read testimages

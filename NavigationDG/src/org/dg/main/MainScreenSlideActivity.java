@@ -375,10 +375,6 @@ public class MainScreenSlideActivity extends Activity implements
 		orientAndWiFiScanUpdateTimer.scheduleAtFixedRate(
 				new UpdateOrientAndWiFiScanGUI(), 2000, 100);
 		
-//		//open camera
-//		camera = Camera.open();
-//		ScreenSlidePageFragment cameraFragment = (ScreenSlidePageFragment)((ScreenSlidePagerAdapter)mPagerAdapter).getItem(0);
-//		cameraFragment.setCamera(camera);
 	}
 
 	@Override

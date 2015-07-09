@@ -2,13 +2,13 @@ LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 
 # Visual Place Recognition library
-include C:/DiamentowyGrant/OpenCV-2.4.10-android-sdk/sdk/native/jni/OpenCV.mk
+include /home/jachu/lib/NVPACK/OpenCV-2.4.10-android-sdk/sdk/native/jni/OpenCV.mk
 
 # DetectDescriebe contains:
 #	- LDB
 #	- NonFree module
 #	- detection and description of features
-# include $(LOCAL_PATH)/DetectDescribe/Android.mk
+include $(LOCAL_PATH)/DetectDescribe/Android.mk
 
 # FABMAP library containing appearance-based loop closure
 sources:= BOWMSCTrainer.cpp ChowLiuTree.cpp FabMap.cpp openFABMAPcli.cpp VisualPlaceRecognitionModuleExport.cpp
