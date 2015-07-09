@@ -38,12 +38,20 @@ public class ScreenSlidePageFragment extends Fragment {
 	 * The argument key for the page number this fragment represents.
 	 */
 	public static final String ARG_PAGE = "page";
+//	public static final String DEVICE_ORIENTATION = "deviceOrientation";
 
 	/**
 	 * The fragment's page number, which is set to the argument value for
 	 * {@link #ARG_PAGE}.
 	 */
 	private int mPageNumber;
+	
+	/**
+	 * The orientation of device, which is set to the argument value for
+	 * {@link #DEVICE_ORIENTATION}.
+	 * 
+	 */
+//	private int mDeviceOrientation;
 
 	/**
 	 * Handlers to change GUI
@@ -62,10 +70,11 @@ public class ScreenSlidePageFragment extends Fragment {
 	 * Factory method for this fragment class. Constructs a new fragment for the
 	 * given page number.
 	 */
-	public static ScreenSlidePageFragment create(int pageNumber) {
+	public static ScreenSlidePageFragment create(int pageNumber) {//, int deviceOrientation
 		ScreenSlidePageFragment fragment = new ScreenSlidePageFragment();
 		Bundle args = new Bundle();
 		args.putInt(ARG_PAGE, pageNumber);
+		//args.putInt(DEVICE_ORIENTATION, deviceOrientation);
 		fragment.setArguments(args);
 		return fragment;
 	}
@@ -77,6 +86,7 @@ public class ScreenSlidePageFragment extends Fragment {
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		mPageNumber = getArguments().getInt(ARG_PAGE);
+	//mDeviceOrientation = getArguments().getInt(DEVICE_ORIENTATION);
 	}
 
 	@Override
@@ -98,6 +108,11 @@ public class ScreenSlidePageFragment extends Fragment {
 			// Camera preview stuff
 			SurfaceView surfView = (SurfaceView)rootView.findViewById(R.id.SurfaceView01);
 			preview = new Preview(surfView);
+			
+//			android.hardware.Camera.CameraInfo info = new android.hardware.Camera.CameraInfo();
+//		    android.hardware.Camera.getCameraInfo(0, info);
+//		    int rotation = activity.getWindowManager().getDefaultDisplay().getRotation();
+			
 			preview.setCamera(camera);
 			
 			preview.measure(surfView.getWidth(), surfView.getHeight());
@@ -578,11 +593,11 @@ public class ScreenSlidePageFragment extends Fragment {
 						R.id.textViewOrient3);
 
 				mTextViewRollX.setText("Roll (X): "
-						+ String.format("%.2f", orient[0]) + 'ï¿½');
+						+ String.format("%.2f", orient[0]) + '°');
 				mTextViewPitchY.setText("Pitch (Y): "
-						+ String.format("%.2f", orient[1]) + 'ï¿½');
+						+ String.format("%.2f", orient[1]) + '°');
 				mTextViewYawZ.setText("Yaw (Z): "
-						+ String.format("%.2f", orient[2]) + 'ï¿½');
+						+ String.format("%.2f", orient[2]) + '°');
 
 				// ORIENTATION COMPLEMENTARY X, Y, Z
 				TextView mTextViewCompRollX = (TextView) getView()
@@ -593,11 +608,11 @@ public class ScreenSlidePageFragment extends Fragment {
 						R.id.textViewOrientComp3);
 
 				mTextViewCompRollX.setText("Comp Roll (X): "
-						+ String.format("%.2f", compOrient[0]) + 'ï¿½');
+						+ String.format("%.2f", compOrient[0]) + '°');
 				mTextViewCompPitchY.setText("Comp Pitch (Y): "
-						+ String.format("%.2f", compOrient[1]) + 'ï¿½');
+						+ String.format("%.2f", compOrient[1]) + '°');
 				mTextViewCompYawZ.setText("Comp Yaw (Z): "
-						+ String.format("%.2f", compOrient[2]) + 'ï¿½');
+						+ String.format("%.2f", compOrient[2]) + '°');
 
 				TextView mTextViewNetworkCount = (TextView) getView()
 						.findViewById(R.id.textViewWiFi1);

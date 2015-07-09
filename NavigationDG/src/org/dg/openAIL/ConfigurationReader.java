@@ -25,6 +25,13 @@ public class ConfigurationReader {
 			public boolean stepometer;
 		}
 		
+		public class GraphManager {
+			public double wifiFingerprintDeadBandRadius;
+			public double informationMatrixOfWiFiFingerprint;
+			public double informationMatrixOfWiFi;
+			public int optimizeFromFileIterationCount;
+		}
+		
 		public class WiFiPlaceRecognition {
 			public boolean useModule;
 			public int	maxPlaceDatabaseSize;
@@ -38,6 +45,7 @@ public class ConfigurationReader {
 		}
 
 		InertialSensors inertialSensors = new InertialSensors();
+		GraphManager graphManager = new GraphManager();
 		WiFiPlaceRecognition wifiPlaceRecognition = new WiFiPlaceRecognition();
 	}
 
@@ -80,6 +88,12 @@ public class ConfigurationReader {
 	private void logAllParameters() {
 		
 		Log.d(moduleLogName, "InertialSensors:\n--- useModule=" + parameters.inertialSensors.useModule + "\n--- stepometer=" + parameters.inertialSensors.stepometer);
+		
+		Log.d(moduleLogName, "GraphManager:\n--- wifiFingerprintDeadBandRadius=" + parameters.graphManager.wifiFingerprintDeadBandRadius + 
+				"\n--- informationMatrixOfWiFiFingerprint=" + parameters.graphManager.informationMatrixOfWiFiFingerprint +
+				"\n--- informationMatrixOfWiFi=" + parameters.graphManager.informationMatrixOfWiFi +
+				"\n--- optimizeFromFileIterationCount=" + parameters.graphManager.optimizeFromFileIterationCount);
+				
 		Log.d(moduleLogName, "WiFiPlaceRecognition:\n--- useModule=" + parameters.wifiPlaceRecognition.useModule +
 				"\n--- maxPlaceDatabaseSize=" + parameters.wifiPlaceRecognition.maxPlaceDatabaseSize +
 				"\n--- maxQueueSize=" + parameters.wifiPlaceRecognition.maxQueueSize +
@@ -109,6 +123,9 @@ public class ConfigurationReader {
 			switch (currentModule) {
 			case INERTIALSENSORS:
 				readInertialSensors(parser);
+				break;
+			case GRAPHMANAGER:
+				readGraphManager(parser);
 				break;
 			case WIFIPLACERECOGNITION:
 				readWiFiPlaceRecognition(parser);
@@ -142,6 +159,35 @@ public class ConfigurationReader {
 		parser.nextTag();
 		parser.require(XmlPullParser.END_TAG, ns, "InertialSensors");
 		Log.d(moduleLogName, "</InertialSensors>");
+	}
+	
+	// Parses the contents of an entry.
+	private void readGraphManager(XmlPullParser parser)
+			throws XmlPullParserException, IOException {
+		Log.d(moduleLogName, "<GraphManager>");
+		parser.require(XmlPullParser.START_TAG, ns, "GraphManager");
+
+		// Reading attributes
+		String wifiFingerprintDeadBandRadiusString = parser.getAttributeValue(null, "wifiFingerprintDeadBandRadius");
+		String informationMatrixOfWiFiFingerprintString = parser.getAttributeValue(null, "informationMatrixOfWiFiFingerprint");
+		String informationMatrixOfWiFiString = parser.getAttributeValue(null, "informationMatrixOfWiFi");
+		String optimizeFromFileIterationCountString = parser.getAttributeValue(null, "optimizeFromFileIterationCount");
+
+		// Logging those values
+		Log.d(moduleLogName, "wifiFingerprintDeadBandRadius = " + wifiFingerprintDeadBandRadiusString);
+		Log.d(moduleLogName, "informationMatrixOfWiFiFingerprint = " + informationMatrixOfWiFiFingerprintString);
+		Log.d(moduleLogName, "informationMatrixOfWiFi = " + informationMatrixOfWiFiString);
+		Log.d(moduleLogName, "optimizeFromFileIterationCount = " + optimizeFromFileIterationCountString);
+
+		// Storing read values
+		parameters.graphManager.wifiFingerprintDeadBandRadius = Double.parseDouble(wifiFingerprintDeadBandRadiusString);
+		parameters.graphManager.informationMatrixOfWiFiFingerprint = Double.parseDouble(informationMatrixOfWiFiFingerprintString);
+		parameters.graphManager.informationMatrixOfWiFi = Double.parseDouble(informationMatrixOfWiFiString);
+		parameters.graphManager.optimizeFromFileIterationCount = Integer.parseInt(optimizeFromFileIterationCountString);
+
+		parser.nextTag();
+		parser.require(XmlPullParser.END_TAG, ns, "GraphManager");
+		Log.d(moduleLogName, "</GraphManager>");
 	}
 
 	private void readWiFiPlaceRecognition(XmlPullParser parser)

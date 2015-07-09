@@ -96,9 +96,9 @@ public:
 
 
 		float angle = (v1->estimate()).toVector()[2], angle2 = (l2->estimate()).toVector()[2];
-		__android_log_print(ANDROID_LOG_VERBOSE, "Krokomierz edge", "Angle: %f %f", angle, angle2);
-		__android_log_print(ANDROID_LOG_VERBOSE, "Krokomierz edge", "Delta: %f %f %f Measurement: %f %f", delta[0], delta[1], delta[2], _measurement[0],_measurement[1]);
-		__android_log_print(ANDROID_LOG_VERBOSE, "Krokomierz edge", "Error: %f %f !", _error[0], _error[1]);
+//		__android_log_print(ANDROID_LOG_VERBOSE, "Krokomierz edge", "Angle: %f %f", angle, angle2);
+//		__android_log_print(ANDROID_LOG_VERBOSE, "Krokomierz edge", "Delta: %f %f %f Measurement: %f %f", delta[0], delta[1], delta[2], _measurement[0],_measurement[1]);
+//		__android_log_print(ANDROID_LOG_VERBOSE, "Krokomierz edge", "Error: %f %f !", _error[0], _error[1]);
 
 
 

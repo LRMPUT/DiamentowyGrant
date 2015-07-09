@@ -42,6 +42,7 @@ import android.support.v4.view.ViewPager;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.Surface;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
@@ -520,20 +521,52 @@ public class MainScreenSlideActivity extends Activity implements
 
 		camera = Camera.open();
 		
-//		Camera.Parameters parameters = camera.getParameters();
-//		List<Camera.Size> previewSizes = parameters.getSupportedPreviewSizes();
-//		for(int i = 0; i < previewSizes.size(); ++i){
-//			Log.d(TAG, String.format("size %d = (%d, %d)", i, previewSizes.get(i).width, previewSizes.get(i).height));			
-//		}
-//		parameters.setPreviewSize(640, 480);
-//		camera.setParameters(parameters);
+		// Rotating the view according to device 
+		android.hardware.Camera.CameraInfo info = new android.hardware.Camera.CameraInfo();
+	    android.hardware.Camera.getCameraInfo(0, info);
+	    int rotation = this.getWindowManager().getDefaultDisplay().getRotation();
+	    int degrees = 0;
+	    switch (rotation)
+	    {
+	    case Surface.ROTATION_0:
+	        degrees = 0;
+	        break;
+	    case Surface.ROTATION_90:
+	        degrees = 90;
+	        break;
+	    case Surface.ROTATION_180:
+	        degrees = 180;
+	        break;
+	    case Surface.ROTATION_270:
+	        degrees = 270;
+	        break;
+	    }
+
+	    int result;
+	    if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT)
+	    {
+	        result = (info.orientation + degrees) % 360;
+	        result = (360 - result) % 360; // compensate the mirror
+	    }
+	    else {
+	        result = (info.orientation - degrees + 360) % 360;
+	    }
+	    camera.setDisplayOrientation(result);
+		
+	    // Settings the focus to some fixed value
+		Camera.Parameters parameters = camera.getParameters();		
+		List<String> modes = parameters.getSupportedFocusModes();
+		if ( modes.contains(Camera.Parameters.FOCUS_MODE_FIXED)) {
+			parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_FIXED);
+		}
+		else if ( modes.contains(Camera.Parameters.FOCUS_MODE_INFINITY)) {
+			parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_INFINITY);
+		}
+		camera.setParameters(parameters);
 		
 		//fragment with camera preview
 		ScreenSlidePageFragment cameraFragment = (ScreenSlidePageFragment)((ScreenSlidePagerAdapter)mPagerAdapter).getItem(0);
 		cameraFragment.setCamera(camera);
-//		preview.setCamera(camera);
-		//camera.startPreview();
-
 	}
 
 	@Override

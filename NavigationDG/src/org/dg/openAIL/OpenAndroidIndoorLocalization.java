@@ -71,7 +71,7 @@ public class OpenAndroidIndoorLocalization {
 		parameters = readParametersFromXML("settings.xml");
 		
 		// Init graph
-		graphManager = new GraphManager();
+		graphManager = new GraphManager(parameters.graphManager);
 
 		// Init inertial sensors
 		if ( parameters.inertialSensors.useModule )
@@ -102,6 +102,7 @@ public class OpenAndroidIndoorLocalization {
 
 		updateGraphTimer.scheduleAtFixedRate(new UpdateGraph(), 1000, 200);
 		detectWiFiIssue = 0;
+		graphManager.optimize(5);
 	}
 
 	public void stopAndOptimizeGraph() {
@@ -109,7 +110,11 @@ public class OpenAndroidIndoorLocalization {
 		wifiScanner.stopNewPlaceRecognitionThread();
 
 		graphManager.stop();
-		graphManager.optimize(100);
+		graphManager.stopOptimizationThread();
+		//graphManager.optimize(100);
+		// TESTING GET POSITION
+		graphManager.getVertexPosition(0);
+		graphManager.getPositionsOfVertices();
 	}
 
 	private void loadWiFiPlaceDatabase(String filename) {
@@ -212,7 +217,7 @@ public class OpenAndroidIndoorLocalization {
 	
 	class UpdateGraph extends TimerTask {
 		public void run() {
-
+			
 			// get distance
 			double distance = inertialSensors.getGraphStepDistance();
 
@@ -261,8 +266,8 @@ public class OpenAndroidIndoorLocalization {
 					// Adding WiFi measurements
 					List<wiFiMeasurement> wifiList = wifiScanner
 							.getGraphWiFiList();
-					if (wifiList != null)
-						graphManager.addMultipleWiFiMeasurements(wifiList);
+//					if (wifiList != null)
+//						graphManager.addMultipleWiFiMeasurements(wifiList);
 				}
 			} else if (wifiScanner.getRunningState()) {
 
