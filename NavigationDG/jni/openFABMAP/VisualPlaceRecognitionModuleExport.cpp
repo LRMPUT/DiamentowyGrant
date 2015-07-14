@@ -318,6 +318,9 @@ JNIEXPORT jlong JNICALL Java_org_dg_camera_VisualPlaceRecognition_createAndTrain
 			detector->detect(trainImages[i], kpts);
 			extractor->compute(trainImages[i], kpts, curDesc);
 
+			__android_log_print(ANDROID_LOG_DEBUG,  DEBUG_TAG_FABMAP,
+					"image %d, kpts.size() = %d\n", i, kpts.size());
+
 			trainDesc.push_back(curDesc);
 		}
 
@@ -341,7 +344,8 @@ JNIEXPORT jlong JNICALL Java_org_dg_camera_VisualPlaceRecognition_createAndTrain
 		of2::BOWMSCTrainer trainer(clusterRadius);
 		trainer.add(trainDesc);
 		cv::Mat vocab = trainer.cluster();
-
+		__android_log_print(ANDROID_LOG_DEBUG,  DEBUG_TAG_FABMAP,
+										"vocabulary size = (%d, %d)\n", vocab.cols, vocab.rows);
 
 		//extract words
 		__android_log_print(ANDROID_LOG_DEBUG,  DEBUG_TAG_FABMAP,
@@ -472,6 +476,9 @@ JNIEXPORT void JNICALL Java_org_dg_camera_VisualPlaceRecognition_addTestSetFabma
 		fabMapEnv->detector->detect(testImages[i], kpts);
 		fabMapEnv->bide.compute(testImages[i], kpts, bow);
 
+		__android_log_print(ANDROID_LOG_DEBUG,  DEBUG_TAG_FABMAP,
+				"image %d, kpts.size() = %d\n", i, kpts.size());
+
 		testData.push_back(bow);
 	}
 
@@ -499,6 +506,15 @@ JNIEXPORT jint JNICALL Java_org_dg_camera_VisualPlaceRecognition_testLocationFab
 	fabMapEnv->detector->detect(testImage, kpts);
 	fabMapEnv->bide.compute(testImage, kpts, bow);
 
+	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG_FABMAP,
+					"kpts.size() = %d\n", kpts.size());
+
+	//to avoid mismatch - 100 is a safe value
+	static const int kptsThresh = 100;
+	if(kpts.size() < kptsThresh){
+		return -1;
+	}
+
 	std::vector<of2::IMatch> matches;
 	if(!bow.empty()){
 		fabMapEnv->fabmap->compare(bow, matches, addToTest);
@@ -508,8 +524,8 @@ JNIEXPORT jint JNICALL Java_org_dg_camera_VisualPlaceRecognition_testLocationFab
 	double bestMatchProb = 0.0;
 	int bestMatchTestIdx = -1;
 	for(std::vector<of2::IMatch>::iterator it = matches.begin(); it != matches.end(); ++it){
-		__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG_FABMAP,
-				"testIdx = %d, match = %f\n", it->imgIdx, it->match);
+//		__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG_FABMAP,
+//				"testIdx = %d, match = %f\n", it->imgIdx, it->match);
 //		if(it->match > matchThresh){
 			if(bestMatchProb < it->match){
 				bestMatchProb = it->match;
@@ -517,6 +533,9 @@ JNIEXPORT jint JNICALL Java_org_dg_camera_VisualPlaceRecognition_testLocationFab
 			}
 //		}
 	}
+
+	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG_FABMAP,
+					"bestMatchProb = %f\n", bestMatchProb);
 
 	// Return the id of the recognized place, -1 if it is different place than the images in the database
 	return bestMatchTestIdx;

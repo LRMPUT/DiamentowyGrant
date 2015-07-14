@@ -3,6 +3,7 @@ package org.dg.main;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
@@ -10,6 +11,8 @@ import java.util.Locale;
 import java.util.Scanner;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.dg.camera.CameraSaver;
 import org.dg.camera.Preview;
@@ -21,6 +24,10 @@ import org.dg.wifi.WifiScanner;
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
+import org.opencv.android.Utils;
+import org.opencv.core.CvType;
+import org.opencv.core.Mat;
+import org.opencv.imgproc.Imgproc;
 
 import android.app.Activity;
 import android.app.Fragment;
@@ -28,6 +35,10 @@ import android.app.FragmentManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.ImageFormat;
+import android.graphics.Rect;
 import android.hardware.SensorManager;
 import android.hardware.Camera;
 import android.net.wifi.WifiManager;
@@ -69,6 +80,12 @@ public class MainScreenSlideActivity extends Activity implements
 	 */
 //	Preview preview;
 	Camera camera;
+	
+	Camera.PreviewCallback previewCallback;
+	
+	ReentrantLock curPreviewImageLock = new ReentrantLock();
+	
+	Mat curPreviewImage = null;
 
 	// Orient in main update
 	private Timer orientAndWiFiScanUpdateTimer = new Timer();
@@ -315,6 +332,49 @@ public class MainScreenSlideActivity extends Activity implements
 			openAIL.saveWiFiMapPoint(pos[0], pos[1], pos[2], "newMap.wifidatabase");
 		}
 		
+		// Save VPR place
+		if (link.contains("Save VPR place")) {
+			
+			Scanner scanner = new Scanner(link);
+
+			// use US locale to be able to identify doubles in the string
+			scanner.useLocale(Locale.US);
+
+			int i = 0;
+			double[] pos = new double[3];
+			while (scanner.hasNext()) {
+
+				// if the next is a double, print found and the double
+				if (scanner.hasNextDouble()) {
+					pos[i++] = scanner.nextDouble();
+				} else
+					scanner.next();
+			}
+			
+			if ( i == 3){
+				Log.d(TAG, "Save VPR position::" + pos[0] + "::" + pos[1] + "::" + pos[2] + "::");
+			}
+			else{
+				Log.d(TAG, "Save VPR position - could not find 3 numbers");
+			}
+			
+			Camera.Parameters params = camera.getParameters();
+			int size = params.getPreviewSize().width * params.getPreviewSize().height * 
+		            ImageFormat.getBitsPerPixel(params.getPreviewFormat()) / 8;
+			
+	        byte buffer[] = new byte[size];
+	        camera.addCallbackBuffer(buffer);
+			
+			Mat image = getCurPreviewImage();
+			
+			if(image != null){
+				openAIL.visualPlaceRecognition.savePlace(pos[0], pos[1], pos[2], image);
+			}
+			else{
+				Log.e(TAG, "Save VPR position - image == null");
+			}
+		}
+		
 	}
 
 	@Override
@@ -376,10 +436,6 @@ public class MainScreenSlideActivity extends Activity implements
 		orientAndWiFiScanUpdateTimer.scheduleAtFixedRate(
 				new UpdateOrientAndWiFiScanGUI(), 2000, 100);
 		
-//		//open camera
-//		camera = Camera.open();
-//		ScreenSlidePageFragment cameraFragment = (ScreenSlidePageFragment)((ScreenSlidePagerAdapter)mPagerAdapter).getItem(0);
-//		cameraFragment.setCamera(camera);
 	}
 
 	@Override
@@ -571,6 +627,59 @@ public class MainScreenSlideActivity extends Activity implements
 		//fragment with camera preview
 		ScreenSlidePageFragment cameraFragment = (ScreenSlidePageFragment)((ScreenSlidePagerAdapter)mPagerAdapter).getItem(0);
 		cameraFragment.setCamera(camera);
+		
+		//preview callback to capture images from preview
+		previewCallback = new Camera.PreviewCallback()  
+	    { 
+		    public void onPreviewFrame(byte[] data, Camera camera) 
+		    {
+				Camera.Parameters params = camera.getParameters();
+				int imageFormat = params.getPreviewFormat();
+				 
+//				Log.d(TAG, "onPreviewFrame");
+				   
+				if (imageFormat == ImageFormat.NV21)
+				{
+//					Log.d(TAG, "imageFormat == ImageFormat.NV21");
+//					Log.d(TAG, String.format("data.length = %d", data.length));
+		    	   
+					Camera.Size prevSize = params.getPreviewSize();
+					
+//					Log.d(TAG, String.format("preview size = (%d, %d)", prevSize.width, prevSize.height));
+					
+					Mat imageBGRA = new Mat();
+					Mat imageYUV = new Mat(prevSize.height + prevSize.height / 2, prevSize.width, CvType.CV_8UC1);
+					imageYUV.put(0,  0, data);
+					//						Gray = mYuv.submat(0, getFrameHeight(), 0, getFrameWidth());
+					Imgproc.cvtColor(imageYUV, imageBGRA, Imgproc.COLOR_YUV420sp2BGR, 4);
+		    	   
+					curPreviewImageLock.lock();
+					
+					try {
+//					    Bitmap bmp = BitmapFactory.decodeByteArray(data , 0, data.length);
+//					    if(bmp != null){
+//						    Log.d(TAG, "bmp != null");
+//						    
+//					 	   Mat curPreviewImage = new Mat(bmp.getHeight(),bmp.getWidth(),CvType.CV_8UC3);
+//						   Bitmap myBitmap32 = bmp.copy(Bitmap.Config.ARGB_8888, true);
+//						   Utils.bitmapToMat(myBitmap32, curPreviewImage);
+//					    }
+						
+						curPreviewImage = imageBGRA;
+						
+					} finally {
+					//						Log.d(TAG, "onPreviewFrame finally");
+						curPreviewImageLock.unlock();
+					}
+		    	   
+		    	   
+
+		       }
+		   }
+
+	    };
+	    
+	    camera.setPreviewCallback(previewCallback);
 	}
 
 	@Override
@@ -588,4 +697,22 @@ public class MainScreenSlideActivity extends Activity implements
 		}
 		super.onPause();
 	}
+	
+	protected Mat getCurPreviewImage(){
+		Mat ret = null;
+		
+		curPreviewImageLock.lock();
+		
+		try {
+			if(curPreviewImage != null){
+				ret = curPreviewImage.clone();
+			}
+		} finally {
+//			Log.d(TAG, "getCurPreviewImage finally");
+			curPreviewImageLock.unlock();
+		}
+		
+		return ret;
+	}
+	
 }

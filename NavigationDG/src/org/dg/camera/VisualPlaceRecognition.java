@@ -43,6 +43,8 @@ public class VisualPlaceRecognition {
 	// Test images
 	Mat[] testImages;
 	
+	int saveImageNextNum = 0;
+	
 	public VisualPlaceRecognition() {
 		
 		//Initialize FabMapEnv pointer to NULL
@@ -72,12 +74,12 @@ public class VisualPlaceRecognition {
 				
 				for (int i=0; i < fileTestRec.length; i++)
 				{
-				    Log.d(moduleLogName, "Train filename:" + fileTestRec[i].getName());
+				    Log.d(moduleLogName, "Test rec filename:" + fileTestRec[i].getName());
 				    Mat testRecImage = Highgui.imread(fabmapTestRecPath + fileTestRec[i].getName(), 0);
 				    
 				    int match = recognizePlace(testRecImage);
 				    
-				    resStream.print(String.format("%d %d\n", i, match));
+				    resStream.print(String.format("%d %d\n", i + 1, match + 1));
 				}
 				
 				resStream.close();
@@ -165,6 +167,23 @@ public class VisualPlaceRecognition {
 		Log.d(moduleLogName, "Recognized place: " + match);
 		
 		return match;
+	}
+	
+	public void savePlace(double x, double y, double z, Mat image){
+		String imagePath = String.format(Locale.getDefault(), Environment
+				.getExternalStorageDirectory().toString()
+				+ "/OpenAIL"
+				+ "/VPR"
+				+ "/images"
+				+ "/rec/"
+				+ String.format("img%04d.png", saveImageNextNum));
+		
+		Log.d(moduleLogName, "Saving image to: " + imagePath);
+		Log.d(moduleLogName, String.format("image size = (%d, %d)", image.cols(), image.rows()));
+		
+		Highgui.imwrite(imagePath, image);
+		
+		saveImageNextNum++;
 	}
 
 }

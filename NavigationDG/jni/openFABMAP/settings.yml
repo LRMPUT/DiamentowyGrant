@@ -143,7 +143,7 @@ VocabTrainOptions:
    # a smaller clustersize increases the specificity of each codeword
    # and will increase the number of words in the vocabulary
 
-   ClusterSize: 0.45
+   ClusterSize: 0.30
 
 #---------------------------------------------------------------------------
 
@@ -171,7 +171,7 @@ openFabMapOptions:
    #Detector Model
 
    PzGe: 0.39
-   PzGne: 0
+   PzGne: 0.005
 
    #The method to calculate the likelihood of a 'new location'
    #Note, FAB-MAP2.0 cannot use mean-field
