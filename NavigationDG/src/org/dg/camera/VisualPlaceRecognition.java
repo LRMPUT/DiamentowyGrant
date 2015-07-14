@@ -9,6 +9,7 @@ import org.opencv.core.Mat;
 import org.opencv.highgui.Highgui;
 import org.opencv.imgproc.Imgproc;
 
+import android.hardware.Camera.PictureCallback;
 import android.os.Environment;
 import android.util.Log;
 

@@ -7,10 +7,11 @@ import java.io.IOException;
 
 import android.hardware.Camera;
 import android.hardware.Camera.PictureCallback;
+import android.hardware.Camera.PreviewCallback;
 import android.os.Environment;
 import android.util.Log;
 
-public class CameraSaver implements PictureCallback {
+public class CameraSaver implements PictureCallback, PreviewCallback{
 	final String TAG = "CameraSaver";
 
 	@Override
@@ -21,7 +22,7 @@ public class CameraSaver implements PictureCallback {
 		try {
 
 			File folder = new File(Environment.getExternalStorageDirectory()
-					+ "/DG");
+					+ "/OpenIAL/Imgs");
 			boolean success = true;
 			if (!folder.exists()) {
 				success = folder.mkdir();
@@ -51,4 +52,10 @@ public class CameraSaver implements PictureCallback {
 
 	}
 
+	@Override
+	public void onPreviewFrame(byte[] data, Camera camera) {
+		// TODO Auto-generated method stub
+		Log.d(TAG, "CameraSaver::onPreviewFrame");
+	}
+	
 }

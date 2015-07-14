@@ -1,19 +1,28 @@
 package org.dg.camera;
 
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.List;
+import java.util.Locale;
 
 import android.content.Context;
+import android.graphics.ImageFormat;
+import android.graphics.Rect;
+import android.graphics.YuvImage;
 import android.hardware.Camera;
+import android.hardware.Camera.PreviewCallback;
 import android.hardware.Camera.Size;
+import android.os.Environment;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
 
-public class Preview extends ViewGroup implements SurfaceHolder.Callback {
+public class Preview extends ViewGroup implements SurfaceHolder.Callback, PreviewCallback  {
     private final String TAG = "Camera::Preview";
 
     SurfaceView mSurfaceView;
@@ -81,7 +90,7 @@ public class Preview extends ViewGroup implements SurfaceHolder.Callback {
 
         if (mSupportedPreviewSizes != null) {
             mPreviewSize = getOptimalPreviewSize(mSupportedPreviewSizes, width, height);
-//        	Log.d(TAG, String.format("mPreviewSize = (%d, %d)", mPreviewSize.width, mPreviewSize.height));
+        	Log.d(TAG, String.format("mPreviewSize = (%d, %d)", mPreviewSize.width, mPreviewSize.height));
         }
     }
 
@@ -141,7 +150,7 @@ public class Preview extends ViewGroup implements SurfaceHolder.Callback {
 
 
     private Size getOptimalPreviewSize(List<Size> sizes, int w, int h) {
-        final double ASPECT_TOLERANCE = 0.1;
+        final double ASPECT_TOLERANCE = 0.3;
         double targetRatio = (double) w / h;
         if (sizes == null) return null;
 
@@ -172,6 +181,7 @@ public class Preview extends ViewGroup implements SurfaceHolder.Callback {
         }
         return optimalSize;
     }
+    
 
     public void surfaceChanged(SurfaceHolder holder, int format, int w, int h) {
 //    	Log.d(TAG, "surfaceChanged");
@@ -182,13 +192,48 @@ public class Preview extends ViewGroup implements SurfaceHolder.Callback {
             mCamera.stopPreview();
             
     		Camera.Parameters parameters = mCamera.getParameters();
-//    		parameters.setPreviewSize(640, 480);
-    		parameters.setPreviewSize(mPreviewSize.width, mPreviewSize.height);
+    		parameters.setPreviewSize(640, 480);
+    		
+    //		parameters.setPreviewSize(mPreviewSize.width, mPreviewSize.height);
     		requestLayout();
 
     		mCamera.setParameters(parameters);
     		mCamera.startPreview();
+    		mCamera.setPreviewCallback(this);
     	}
     }
+    
+    @Override
+	public void onPreviewFrame(byte[] data, Camera camera) {
+		// TODO Auto-generated method stub
+    	Camera.Parameters parameters = mCamera.getParameters();
+		Log.d(TAG, "Preview::onPreviewFrame format: " + parameters.getPreviewFormat() + " Sizes: " + mPreviewSize.width + " x " + mPreviewSize.height);
+		
+		YuvImage image = new YuvImage(data, ImageFormat.NV21, mPreviewSize.width, mPreviewSize.height, null);
+		
+		// Save Stream
+		String fileName = String.format(Locale.getDefault(), Environment
+				.getExternalStorageDirectory().toString()
+				+ "/OpenAIL/Imgs/%d.jpg", System.currentTimeMillis());
+		FileOutputStream outStream;
+		
+		try {
+			outStream = new FileOutputStream(fileName);
+			// Conversion and save to file
+			image.compressToJpeg(new Rect(0, 0, mPreviewSize.width, mPreviewSize.height), 100, outStream);
+			// Closing used streams
+			outStream.close();
+			
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		
+	}
+	
 
 }
