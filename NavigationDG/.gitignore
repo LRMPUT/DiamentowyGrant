@@ -1,7 +1,4 @@
 /bin
 /libs
 /obj
-.project
-.cproject
-jni/openFABMAP/Android.mk
 

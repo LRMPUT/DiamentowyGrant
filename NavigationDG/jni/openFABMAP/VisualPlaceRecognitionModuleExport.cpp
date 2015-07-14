@@ -506,6 +506,15 @@ JNIEXPORT jint JNICALL Java_org_dg_camera_VisualPlaceRecognition_testLocationFab
 	fabMapEnv->detector->detect(testImage, kpts);
 	fabMapEnv->bide.compute(testImage, kpts, bow);
 
+	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG_FABMAP,
+					"kpts.size() = %d\n", kpts.size());
+
+	//to avoid mismatch - 100 is a safe value
+	static const int kptsThresh = 100;
+	if(kpts.size() < kptsThresh){
+		return -1;
+	}
+
 	std::vector<of2::IMatch> matches;
 	if(!bow.empty()){
 		fabMapEnv->fabmap->compare(bow, matches, addToTest);
@@ -524,6 +533,9 @@ JNIEXPORT jint JNICALL Java_org_dg_camera_VisualPlaceRecognition_testLocationFab
 			}
 //		}
 	}
+
+	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG_FABMAP,
+					"bestMatchProb = %f\n", bestMatchProb);
 
 	// Return the id of the recognized place, -1 if it is different place than the images in the database
 	return bestMatchTestIdx;
