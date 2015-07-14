@@ -177,6 +177,9 @@ public class ScreenSlidePageFragment extends Fragment {
 			// Save WiFi Map
 			initButtonSaveWiFiMap(rootView, R.id.buttonSaveWiFiMap);
 			
+			// Save VPR
+			initButtonSaveVPR(rootView, R.id.buttonSaveVPR);
+			
 
 		} else if (mPageNumber == 2 || true) {
 			rootView = (ViewGroup) inflater.inflate(
@@ -502,6 +505,29 @@ public class ScreenSlidePageFragment extends Fragment {
 			}
 		});
 	}
+	
+	// Save VPR image
+	private void initButtonSaveVPR(final ViewGroup rootView, int id)
+	{
+		EditText x = (EditText) rootView.findViewById(R.id.editTextWiFiPosX);
+		EditText y = (EditText) rootView.findViewById(R.id.editTextWiFiPosY);
+		EditText z = (EditText) rootView.findViewById(R.id.editTextWiFiPosZ);
+		
+		x.setText("0.0");
+		y.setText("0.0");
+		z.setText("0.0");
+		
+		Button buttonStartOrientFromFile = (Button) rootView.findViewById(id);
+		buttonStartOrientFromFile.setText("Save VPR place");
+		buttonStartOrientFromFile.setOnClickListener(new OnClickListener() {
+			public void onClick(View v) {
+				EditText x = (EditText) rootView.findViewById(R.id.editTextWiFiPosX);
+				EditText y = (EditText) rootView.findViewById(R.id.editTextWiFiPosY);
+				EditText z = (EditText) rootView.findViewById(R.id.editTextWiFiPosZ);
+				onSomeClick(v, "Save VPR place: " + x.getText() + " " + y.getText() + " " + z.getText());
+			}
+		});
+	}
 
 	/**
 	 * Returns the page number represented by this fragment object.
@@ -593,11 +619,11 @@ public class ScreenSlidePageFragment extends Fragment {
 						R.id.textViewOrient3);
 
 				mTextViewRollX.setText("Roll (X): "
-						+ String.format("%.2f", orient[0]) + '°');
+						+ String.format("%.2f", orient[0]) + ' deg');
 				mTextViewPitchY.setText("Pitch (Y): "
-						+ String.format("%.2f", orient[1]) + '°');
+						+ String.format("%.2f", orient[1]) + ' deg');
 				mTextViewYawZ.setText("Yaw (Z): "
-						+ String.format("%.2f", orient[2]) + '°');
+						+ String.format("%.2f", orient[2]) + ' deg');
 
 				// ORIENTATION COMPLEMENTARY X, Y, Z
 				TextView mTextViewCompRollX = (TextView) getView()
@@ -608,11 +634,11 @@ public class ScreenSlidePageFragment extends Fragment {
 						R.id.textViewOrientComp3);
 
 				mTextViewCompRollX.setText("Comp Roll (X): "
-						+ String.format("%.2f", compOrient[0]) + '°');
+						+ String.format("%.2f", compOrient[0]) + ' deg');
 				mTextViewCompPitchY.setText("Comp Pitch (Y): "
-						+ String.format("%.2f", compOrient[1]) + '°');
+						+ String.format("%.2f", compOrient[1]) + ' deg');
 				mTextViewCompYawZ.setText("Comp Yaw (Z): "
-						+ String.format("%.2f", compOrient[2]) + '°');
+						+ String.format("%.2f", compOrient[2]) + ' deg');
 
 				TextView mTextViewNetworkCount = (TextView) getView()
 						.findViewById(R.id.textViewWiFi1);
