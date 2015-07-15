@@ -364,6 +364,8 @@ public class MainScreenSlideActivity extends Activity implements
 			
 			if(image != null){
 				openAIL.visualPlaceRecognition.savePlace(pos[0], pos[1], pos[2], image);
+				Toast.makeText(this, "Saved image",
+						Toast.LENGTH_LONG).show();
 			}
 			else{
 				Log.e(TAG, "Save VPR position - image == null");
@@ -388,9 +390,11 @@ public class MainScreenSlideActivity extends Activity implements
 		fragments.add(ScreenSlidePageFragment.create(0));
 		fragments.add(ScreenSlidePageFragment.create(1));
 		fragments.add(ScreenSlidePageFragment.create(2));
+		
 
 		// Instantiate a ViewPager and a PagerAdapter.
 		mPager = (ViewPager) findViewById(R.id.pager);
+		mPager.setOffscreenPageLimit(3);
 		mPagerAdapter = new ScreenSlidePagerAdapter(getFragmentManager(),
 				fragments);
 		mPager.setAdapter(mPagerAdapter);
@@ -546,7 +550,7 @@ public class MainScreenSlideActivity extends Activity implements
 	 * A simple pager adapter that represents 5 {@link ScreenSlidePageFragment}
 	 * objects, in sequence.
 	 */
-	private class ScreenSlidePagerAdapter extends FragmentStatePagerAdapter {
+	public class ScreenSlidePagerAdapter extends FragmentStatePagerAdapter {
 		private List<ScreenSlidePageFragment> fragments;
 
 		public ScreenSlidePagerAdapter(FragmentManager fm,
@@ -607,7 +611,7 @@ public class MainScreenSlideActivity extends Activity implements
 	        result = (info.orientation - degrees + 360) % 360;
 	    }
 	    camera.setDisplayOrientation(result);
-		
+	    
 	    // Settings the focus to some fixed value
 		Camera.Parameters parameters = camera.getParameters();		
 		List<String> modes = parameters.getSupportedFocusModes();
@@ -646,6 +650,8 @@ public class MainScreenSlideActivity extends Activity implements
 	
 	protected Mat getCurPreviewImage(){
 		ScreenSlidePageFragment cameraFragment = (ScreenSlidePageFragment)((ScreenSlidePagerAdapter)mPagerAdapter).getItem(0);
+
+		openAIL.preview = cameraFragment.preview;
 		return cameraFragment.preview.getCurPreviewImage();
 	}
 	

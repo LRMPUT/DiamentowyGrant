@@ -11,10 +11,14 @@ import java.util.List;
 import java.util.Locale;
 import java.util.PriorityQueue;
 import java.util.concurrent.Semaphore;
+
+import org.dg.openAIL.IdPair;
 import org.dg.wifi.MyScanResult;
+
 import android.os.Environment;
 import android.util.Log;
 import android.util.Pair;
+
 
 public class WiFiPlaceRecognition implements Runnable {
 
@@ -213,10 +217,14 @@ public class WiFiPlaceRecognition implements Runnable {
 		}
 	}
 	
-	List<IdPair<Integer, Integer>> getRecognizedPlacesList() {
+	List<IdPair<Integer, Integer>> getAndClearRecognizedPlacesList() {
 		try {
 			recognizedPlacesMtx.acquire();
-			List<IdPair<Integer, Integer>> returnList = new ArrayList<IdPair<Integer, Integer>>(recognizedPlaces);
+			List<IdPair<Integer, Integer>> returnList = new ArrayList<IdPair<Integer, Integer>>(recognizedPlaces.size());
+			for(IdPair<Integer, Integer> item: recognizedPlaces) 
+				returnList.add( new IdPair<Integer, Integer>(item) );
+			recognizedPlaces.clear();
+			
 			recognizedPlacesMtx.release();
 			return returnList;
 		} catch (InterruptedException e) {
@@ -242,31 +250,7 @@ public class WiFiPlaceRecognition implements Runnable {
 		}
 	}
 	
-	public class IdPair<A, B> {
-	    private A first;
-	    private B second;
-
-	    public IdPair(A first, B second) {
-	   
-	    	this.first = first;
-	    	this.second = second;
-	    }
-	    public A getFirst() {
-	    	return first;
-	    }
-
-	    public void setFirst(A first) {
-	    	this.first = first;
-	    }
-
-	    public B getSecond() {
-	    	return second;
-	    }
-
-	    public void setSecond(B second) {
-	    	this.second = second;
-	    }
-	} 
+	
 
 	@Override
 	public void run() {

@@ -121,6 +121,8 @@ void GraphManager::addToGraph(string dataToProcess) {
 			addEdgeSE2(data);
 		else if (type == "EDGE_SE2:WIFI_FINGERPRINT")
 			addEdgeWiFiFingerprint(data);
+		else if (type == "EDGE_SE2:VPR_VICINITY")
+			addEdgeVPRVicinity(data);
 		else if (type == "VERTEX_SE2")
 			addVertex(data, 0);
 		else if (type == "VERTEX_XY")
@@ -224,6 +226,29 @@ int GraphManager::addVertex(stringstream &data, int type) {
 	vertices.push_back(ailVertex);
 }
 
+int GraphManager::addVicinityEdge(stringstream &data, string name)
+{
+	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK:LC: [Adding %s edge]", name.c_str());
+	int id1, id2;
+	EdgeSE2PlaceVicinity* e = new EdgeSE2PlaceVicinity();
+
+	data >> id1 >> id2;
+	OptimizableGraph::Vertex* from = optimizer.vertex(id1);
+	OptimizableGraph::Vertex* to = optimizer.vertex(id2);
+
+	if (from && to) {
+		e->setVertex(0, from);
+		e->setVertex(1, to);
+		e->read(data);
+		if (!optimizer.addEdge(e)) {
+			__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK:LC: [Unable to add edge %s]", name.c_str());
+			delete e;
+			return -1;
+		}
+	}
+	return 0;
+}
+
 int GraphManager::addEdgeWiFi(stringstream &data) {
 	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK:LC: [%s]",
 					"Adding wifi edge");
@@ -255,27 +280,12 @@ int GraphManager::addEdgeWiFi(stringstream &data) {
 }
 
 int GraphManager::addEdgeWiFiFingerprint(stringstream &data) {
-	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK:LC: [%s]",
-					"Adding wifi fingerprint edge");
-	int id1, id2;
-	EdgeSE2PlaceVicinity* e = new EdgeSE2PlaceVicinity();
+	return addVicinityEdge(data, "WiFi Fingerprint");
+}
 
-	data >> id1 >> id2;
-	OptimizableGraph::Vertex* from = optimizer.vertex(id1);
-	OptimizableGraph::Vertex* to = optimizer.vertex(id2);
-
-	if (from && to) {
-		e->setVertex(0, from);
-		e->setVertex(1, to);
-		e->read(data);
-		if (!optimizer.addEdge(e)) {
-			__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK:LC: [%s]",
-					"Unable to add edge wifi fingerprint");
-			delete e;
-			return -1;
-		}
-	}
-	return 0;
+// Visual Place Recognition vicinity edge
+int GraphManager::addEdgeVPRVicinity(stringstream &data) {
+	return addVicinityEdge(data, "VPR Vicinity");
 }
 
 int GraphManager::addEdgeStepometer(stringstream &data) {

@@ -61,7 +61,7 @@ public class ScreenSlidePageFragment extends Fragment {
 	/**
 	 * 
 	 */
-	Preview preview = null;
+	public Preview preview = null;
 	
 
 	Camera camera = null;
@@ -96,7 +96,7 @@ public class ScreenSlidePageFragment extends Fragment {
 		// Inflate the layout containing a title and body text.
 		final ViewGroup rootView;
 		if (mPageNumber == 0) {
-//	    	Log.d(TAG, String.format("mPageNumber = %d", mPageNumber));
+	    	Log.d(TAG, String.format("mPageNumber = %d", mPageNumber));
 	    	
 			rootView = (ViewGroup) inflater.inflate(
 					R.layout.fragment_screen_slide_page0, container, false);

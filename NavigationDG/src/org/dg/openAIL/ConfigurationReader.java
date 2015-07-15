@@ -26,6 +26,8 @@ public class ConfigurationReader {
 		}
 		
 		public class GraphManager {
+			public double vprVicinityDeadBandRadius;
+			public double informationMatrixOfVPRVicinity;
 			public double wifiFingerprintDeadBandRadius;
 			public double informationMatrixOfWiFiFingerprint;
 			public double informationMatrixOfWiFi;
@@ -89,7 +91,11 @@ public class ConfigurationReader {
 		
 		Log.d(moduleLogName, "InertialSensors:\n--- useModule=" + parameters.inertialSensors.useModule + "\n--- stepometer=" + parameters.inertialSensors.stepometer);
 		
-		Log.d(moduleLogName, "GraphManager:\n--- wifiFingerprintDeadBandRadius=" + parameters.graphManager.wifiFingerprintDeadBandRadius + 
+	
+		Log.d(moduleLogName, "GraphManager:" +
+				"\n--- vprVicinityDeadBandRadius=" + parameters.graphManager.vprVicinityDeadBandRadius + 
+				"\n--- informationMatrixOfVPRVicinity=" + parameters.graphManager.informationMatrixOfVPRVicinity + 
+				"\n--- wifiFingerprintDeadBandRadius=" + parameters.graphManager.wifiFingerprintDeadBandRadius + 
 				"\n--- informationMatrixOfWiFiFingerprint=" + parameters.graphManager.informationMatrixOfWiFiFingerprint +
 				"\n--- informationMatrixOfWiFi=" + parameters.graphManager.informationMatrixOfWiFi +
 				"\n--- optimizeFromFileIterationCount=" + parameters.graphManager.optimizeFromFileIterationCount);
@@ -168,18 +174,24 @@ public class ConfigurationReader {
 		parser.require(XmlPullParser.START_TAG, ns, "GraphManager");
 
 		// Reading attributes
+		String vprVicinityDeadBandRadiusString = parser.getAttributeValue(null, "vprVicinityDeadBandRadius");
+		String informationMatrixOfVPRVicinityString = parser.getAttributeValue(null, "informationMatrixOfVPRVicinity");
 		String wifiFingerprintDeadBandRadiusString = parser.getAttributeValue(null, "wifiFingerprintDeadBandRadius");
 		String informationMatrixOfWiFiFingerprintString = parser.getAttributeValue(null, "informationMatrixOfWiFiFingerprint");
 		String informationMatrixOfWiFiString = parser.getAttributeValue(null, "informationMatrixOfWiFi");
 		String optimizeFromFileIterationCountString = parser.getAttributeValue(null, "optimizeFromFileIterationCount");
 
 		// Logging those values
+		Log.d(moduleLogName, "vprVicinityDeadBandRadius = " + vprVicinityDeadBandRadiusString);
+		Log.d(moduleLogName, "informationMatrixOfVPRVicinity = " + informationMatrixOfVPRVicinityString);
 		Log.d(moduleLogName, "wifiFingerprintDeadBandRadius = " + wifiFingerprintDeadBandRadiusString);
 		Log.d(moduleLogName, "informationMatrixOfWiFiFingerprint = " + informationMatrixOfWiFiFingerprintString);
 		Log.d(moduleLogName, "informationMatrixOfWiFi = " + informationMatrixOfWiFiString);
 		Log.d(moduleLogName, "optimizeFromFileIterationCount = " + optimizeFromFileIterationCountString);
 
 		// Storing read values
+		parameters.graphManager.vprVicinityDeadBandRadius = Double.parseDouble(vprVicinityDeadBandRadiusString);
+		parameters.graphManager.informationMatrixOfVPRVicinity = Double.parseDouble(informationMatrixOfVPRVicinityString);
 		parameters.graphManager.wifiFingerprintDeadBandRadius = Double.parseDouble(wifiFingerprintDeadBandRadiusString);
 		parameters.graphManager.informationMatrixOfWiFiFingerprint = Double.parseDouble(informationMatrixOfWiFiFingerprintString);
 		parameters.graphManager.informationMatrixOfWiFi = Double.parseDouble(informationMatrixOfWiFiString);

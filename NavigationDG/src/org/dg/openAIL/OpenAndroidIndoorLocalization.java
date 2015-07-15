@@ -14,16 +14,21 @@ import java.util.Scanner;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import org.dg.camera.Preview;
 import org.dg.camera.VisualPlaceRecognition;
 import org.dg.graphManager.GraphManager;
 import org.dg.graphManager.wiFiMeasurement;
 import org.dg.inertialSensors.InertialSensors;
-import org.dg.wifi.WiFiPlaceRecognition.IdPair;
+import org.dg.main.ScreenSlidePageFragment;
+import org.dg.main.MainScreenSlideActivity.ScreenSlidePagerAdapter;
 import org.dg.wifi.MyScanResult;
 import org.dg.wifi.WifiScanner;
+import org.opencv.core.Mat;
 import org.xmlpull.v1.XmlPullParserException;
 
+import android.content.Context;
 import android.hardware.SensorManager;
+import android.net.VpnService;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiManager;
 import android.os.Environment;
@@ -32,9 +37,7 @@ import android.util.Log;
 // This is a class that is supposed to provide the interface for all available solutions
 public class OpenAndroidIndoorLocalization {
 	private static final String moduleLogName = "OpenAIL";
-	
-	
-	
+
 	// Parameters
 	static boolean WiFiFeatures = true;
 	ConfigurationReader.Parameters parameters;
@@ -46,7 +49,7 @@ public class OpenAndroidIndoorLocalization {
 	// WiFi
 	public WifiScanner wifiScanner;
 	int detectWiFiIssue;
-	
+
 	// Visual Place Recognition
 	public VisualPlaceRecognition visualPlaceRecognition;
 
@@ -56,48 +59,53 @@ public class OpenAndroidIndoorLocalization {
 	// Graph update
 	private Timer updateGraphTimer = new Timer();
 
+	// Preview
+	public Preview preview;
+
 	public OpenAndroidIndoorLocalization(SensorManager sensorManager,
 			WifiManager wifiManager) {
 		
-		// Create directory if it doesn't exist
-				File folder = new File(Environment.getExternalStorageDirectory()
-						+ "/OpenAIL/PriorData/");
 
-				if (!folder.exists()) {
-					folder.mkdir();
-				}
+		// Create directory if it doesn't exist
+		File folder = new File(Environment.getExternalStorageDirectory()
+				+ "/OpenAIL/PriorData/");
+
+		if (!folder.exists()) {
+			folder.mkdir();
+		}
 
 		// Reading settings
 		parameters = readParametersFromXML("settings.xml");
-		
+
 		// Init graph
 		graphManager = new GraphManager(parameters.graphManager);
 
 		// Init inertial sensors
-		if ( parameters.inertialSensors.useModule )
+		if (parameters.inertialSensors.useModule)
 			inertialSensors = new InertialSensors(sensorManager);
 
 		// Init WiFi
-		wifiScanner = new WifiScanner(wifiManager, parameters.wifiPlaceRecognition);
-		
+		wifiScanner = new WifiScanner(wifiManager,
+				parameters.wifiPlaceRecognition);
+
 	}
 
 	public void initAfterOpenCV() {
-		Log.d(moduleLogName, "Initializing OpenAIL submodules after OpenCV initialization");
-		
+		Log.d(moduleLogName,
+				"Initializing OpenAIL submodules after OpenCV initialization");
+
 		// Init Visual Place Recognition
 		visualPlaceRecognition = new VisualPlaceRecognition();
 	}
 
 	public void startGraph() {
 		graphManager.start();
-		
+
 		// Load WiFi place recognition database
-		if (parameters.wifiPlaceRecognition.usePriorDatabase)
-		{
+		if (parameters.wifiPlaceRecognition.usePriorDatabase) {
 			loadWiFiPlaceDatabase(parameters.wifiPlaceRecognition.priorDatabaseFile);
 		}
-		
+
 		wifiScanner.startNewPlaceRecognitionThread();
 
 		updateGraphTimer.scheduleAtFixedRate(new UpdateGraph(), 1000, 200);
@@ -111,7 +119,7 @@ public class OpenAndroidIndoorLocalization {
 
 		graphManager.stop();
 		graphManager.stopOptimizationThread();
-		//graphManager.optimize(100);
+		// graphManager.optimize(100);
 		// TESTING GET POSITION
 		graphManager.getVertexPosition(0);
 		graphManager.getPositionsOfVertices();
@@ -121,8 +129,7 @@ public class OpenAndroidIndoorLocalization {
 		// Reading database
 		String readFileName = String.format(Locale.getDefault(), Environment
 				.getExternalStorageDirectory().toString()
-				+ "/OpenAIL/PriorData/"
-				+ filename);
+				+ "/OpenAIL/PriorData/" + filename);
 
 		try {
 			Scanner placeDatabaseScanner = new Scanner(new BufferedReader(
@@ -136,36 +143,36 @@ public class OpenAndroidIndoorLocalization {
 				float Z = placeDatabaseScanner.nextFloat();
 				int wifiCount = placeDatabaseScanner.nextInt();
 
-				Log.d(moduleLogName, "WiFiDatabase 1st line: " + id + " " + X + " " + Y
-						+ " " + Z + " " + wifiCount);
+				Log.d(moduleLogName, "WiFiDatabase 1st line: " + id + " " + X
+						+ " " + Y + " " + Z + " " + wifiCount);
 				String dummy = placeDatabaseScanner.nextLine();
 
 				List<MyScanResult> wifiScan = new ArrayList<MyScanResult>();
 				for (int i = 0; i < wifiCount; i++) {
 					String line = placeDatabaseScanner.nextLine();
-					
-					
+
 					String[] values = line.split("\\t+");
 
 					String BSSID = values[0];
 					int level;
-					if ( values.length == 3)
+					if (values.length == 3)
 						level = Integer.parseInt(values[2]);
-					else 
+					else
 						level = Integer.parseInt(values[1]);
-					
+
 					MyScanResult scan = new MyScanResult(BSSID, level);
 					wifiScan.add(scan);
-					
-					Log.d(moduleLogName, "WiFiDatabase data: " + BSSID + " " + level);
+
+					Log.d(moduleLogName, "WiFiDatabase data: " + BSSID + " "
+							+ level);
 				}
 
 				// Adding to graph
-				graphManager.addWiFiPlaceRecognitionVertex(id, X, Y, Z);
+				graphManager.addVertexWithKnownPosition(id, X, Y, Z);
 
 				// Add new scan to datbase
 				wifiScanner.addScanToRecognition(id, wifiScan);
-				
+
 				id++;
 			}
 			placeDatabaseScanner.close();
@@ -176,15 +183,15 @@ public class OpenAndroidIndoorLocalization {
 		}
 	}
 
-	
 	/*
 	 * Method used to save last WiFi scan with wanted position (X,Y,Z) in a file
 	 * that can be used as prior map
 	 */
-	public void saveWiFiMapPoint(double posX, double posY, double posZ, String fileName) {
+	public void saveWiFiMapPoint(double posX, double posY, double posZ,
+			String fileName) {
 		// Getting the last WiFi scan
 		List<MyScanResult> wifiList = wifiScanner.getLastScan();
-		
+
 		// File to save results
 		String pathName = "";
 		pathName = String.format(Locale.getDefault(), Environment
@@ -200,28 +207,33 @@ public class OpenAndroidIndoorLocalization {
 			e1.printStackTrace();
 		}
 
-		// Save the initial line of scan (posX, posY, posZ, number of WiFi networks)
-		outStreamRawData.print(posX + " " + posY + " " + posZ + " " + wifiList.size()
-				+ "\n");
-		
+		// Save the initial line of scan (posX, posY, posZ, number of WiFi
+		// networks)
+		outStreamRawData.print(posX + " " + posY + " " + posZ + " "
+				+ wifiList.size() + "\n");
+
 		// Save BSSID (MAC), SSID (network name), lvl (in DBm)
 		for (int i = 0; i < wifiList.size(); i++) {
 			MyScanResult scanResult = wifiList.get(i);
-			outStreamRawData.print(scanResult.BSSID + "\t" + scanResult.networkName + "\t" + scanResult.level
-					+ "\n");
+			outStreamRawData.print(scanResult.BSSID + "\t"
+					+ scanResult.networkName + "\t" + scanResult.level + "\n");
 		}
-		
+
 		// Close stream
 		outStreamRawData.close();
 	}
-	
+
 	class UpdateGraph extends TimerTask {
 		public void run() {
+			Log.d(moduleLogName, "Starting query cycle");
 			
 			// get distance
+			Log.d(moduleLogName, "Processing stepometer ...");
 			double distance = inertialSensors.getGraphStepDistance();
 
+			
 			// Adding WiFi measurement
+			Log.d(moduleLogName, "Processing WiFi ...");
 			if (distance > 0.01) {
 				// get angle from our estimation
 				// TODO: RIGHT NOW WE USE ANDROID ORIENTATION
@@ -233,11 +245,22 @@ public class OpenAndroidIndoorLocalization {
 				graphManager.addStepometerMeasurement(distance, yawZ);
 			}
 
+			// WiFi read all found connections
+			List<IdPair<Integer, Integer>> recognizedPlaces = wifiScanner
+					.getAndClearRecognizedPlacesList();
+			
+			Log.d(moduleLogName, "The placeRecognition thread found "
+					+ recognizedPlaces.size() + " connections");
+			
+			// Add found results to the final graph
+			// graphManager.addMultipleWiFiFingerprints(placesIds);
+			graphManager.addMultipleWiFiFingerprints(recognizedPlaces);
+			
 			// Check if there is new measurement
 			if (wifiScanner.isNewMeasurement()) {
-				// All ok 
+				// All ok
 				detectWiFiIssue = 0;
-				
+
 				// New measurement had been read
 				wifiScanner.newMeasurement(false);
 
@@ -245,19 +268,8 @@ public class OpenAndroidIndoorLocalization {
 				int currentPoseId = graphManager.getCurrentPoseId();
 				wifiScanner.setGraphPoseId(currentPoseId);
 
-				// Find all matching places
-				
-				List<IdPair<Integer, Integer>> recognizedPlaces = wifiScanner
-						.getRecognizedPlacesList();
-				Log.d(moduleLogName, "The placeRecognition thread found "
-						+ recognizedPlaces.size() + " connections");
-
 				// Add new pose to search
 				wifiScanner.addLastScanToRecognition(currentPoseId);
-
-				// Add found results to the final graph
-				// graphManager.addMultipleWiFiFingerprints(placesIds);
-				graphManager.addMultipleWiFiFingerprints(recognizedPlaces);
 
 				// TODO!!!!!!
 				// TEMPORAILY DISABLED OPTIMIZATION WITH WIFI FEATURES (BUT
@@ -266,8 +278,8 @@ public class OpenAndroidIndoorLocalization {
 					// Adding WiFi measurements
 					List<wiFiMeasurement> wifiList = wifiScanner
 							.getGraphWiFiList();
-//					if (wifiList != null)
-//						graphManager.addMultipleWiFiMeasurements(wifiList);
+					// if (wifiList != null)
+					// graphManager.addMultipleWiFiMeasurements(wifiList);
 				}
 			} else if (wifiScanner.getRunningState()) {
 
@@ -281,11 +293,23 @@ public class OpenAndroidIndoorLocalization {
 				}
 
 			}
-
+			
+			// Save current image
+			Log.d(moduleLogName, "Processing camera ...");
+//			if ( preview != null)
+//			{
+//				Log.d(moduleLogName, "Getting and saving camera image");
+//				Mat image = preview.getCurPreviewImage();
+//				visualPlaceRecognition.savePlace(0, 0, 0, image);
+//			}
+//			
+			List<IdPair<Integer, Integer>> vprList = visualPlaceRecognition.getAndClearVPRMatchedList();
+			
+			
 		}
 
 	}
-	
+
 	/**
 	 * 
 	 */
@@ -293,12 +317,14 @@ public class OpenAndroidIndoorLocalization {
 		String configFileName = String.format(Locale.getDefault(), Environment
 				.getExternalStorageDirectory().toString()
 				+ "/OpenAIL"
-				+ "/" + fileName);
-		
+				+ "/"
+				+ fileName);
+
 		ConfigurationReader configReader = new ConfigurationReader();
-		
+
 		try {
-			ConfigurationReader.Parameters params = configReader.readParameters(configFileName);
+			ConfigurationReader.Parameters params = configReader
+					.readParameters(configFileName);
 			return params;
 		} catch (XmlPullParserException e) {
 			Log.e(moduleLogName, "Failed to parse the config file");

@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Locale;
 
 import org.dg.graphManager.wiFiMeasurement;
-import org.dg.wifi.WiFiPlaceRecognition.IdPair;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -196,8 +195,8 @@ public class WifiScanner extends BroadcastReceiver {
 			placeRecognition.addPlace(wifiScan, id, false);
 	}
 
-	public List<IdPair<Integer, Integer>> getRecognizedPlacesList() {
-		return placeRecognition.getRecognizedPlacesList();
+	public List<org.dg.openAIL.IdPair<Integer, Integer>> getAndClearRecognizedPlacesList() {
+		return placeRecognition.getAndClearRecognizedPlacesList();
 	}
 
 	public int getSizeOfPlaceDatabase() {

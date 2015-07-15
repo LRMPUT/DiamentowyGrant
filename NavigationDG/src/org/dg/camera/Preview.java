@@ -228,7 +228,7 @@ public class Preview extends ViewGroup implements SurfaceHolder.Callback, Previe
     	   
 			Camera.Size prevSize = parameters.getPreviewSize();
 			
-			Log.d(TAG, String.format("preview size = (%d, %d)", prevSize.width, prevSize.height));
+//			Log.d(TAG, String.format("preview size = (%d, %d)", prevSize.width, prevSize.height));
 			
 			Mat imageBGRA = new Mat();
 			Mat imageYUV = new Mat(prevSize.height + prevSize.height / 2, prevSize.width, CvType.CV_8UC1);

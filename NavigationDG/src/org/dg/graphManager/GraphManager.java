@@ -9,7 +9,6 @@ import java.io.InputStreamReader;
 import java.io.PrintStream;
 import java.util.List;
 
-import org.dg.wifi.WiFiPlaceRecognition.IdPair;
 
 import android.media.MediaScannerConnection;
 import android.os.Environment;
@@ -144,11 +143,23 @@ public class GraphManager {
 	}
 	
 	
-	public void addMultipleWiFiFingerprints(List<IdPair<Integer, Integer>> foundWiFiFingerprintLinks) {
+	public void addMultipleWiFiFingerprints(List<org.dg.openAIL.IdPair<Integer, Integer>> foundWiFiFingerprintLinks) {
 		String g2oString = "";
-		for (IdPair<Integer, Integer> placeIds : foundWiFiFingerprintLinks)
+		for (org.dg.openAIL.IdPair<Integer, Integer> placeIds : foundWiFiFingerprintLinks)
 		{
 			String edgeWiFiFingerprint = createWiFiFingerprintEdgeString(placeIds.getFirst(), placeIds.getSecond());
+			g2oString = g2oString + edgeWiFiFingerprint;
+		}
+		save2file(g2oString);
+		
+		NDKGraphAddVertexEdge(addrGraph, g2oString);
+	}
+	
+	public void addMultipleVPRMatches(List<org.dg.openAIL.IdPair<Integer, Integer>> foundVPRmatches) {
+		String g2oString = "";
+		for (org.dg.openAIL.IdPair<Integer, Integer> placeIds : foundVPRmatches)
+		{
+			String edgeWiFiFingerprint = createVPRVicinityEdgeString(placeIds.getFirst(), placeIds.getSecond());
 			g2oString = g2oString + edgeWiFiFingerprint;
 		}
 		save2file(g2oString);
@@ -182,6 +193,8 @@ public class GraphManager {
 		NDKGraphAddVertexEdge(addrGraph, edgeWiFi);
 	}
 	
+
+	
 	public int getCurrentPoseId()
 	{
 		return currentPoseId;
@@ -204,7 +217,7 @@ public class GraphManager {
 		
 	}
 	
-	public void addWiFiPlaceRecognitionVertex(int id, float X, float Y, float Z) {
+	public void addVertexWithKnownPosition(int id, float X, float Y, float Z) {
 		checkGraphExistance();
 		
 		String g2oString = "VERTEX_SE2 " + id + " " + X + " " + Y + " " + Z +"\n";
@@ -288,6 +301,11 @@ public class GraphManager {
 	
 	private String createWiFiFingerprintEdgeString(int id, int id2) {
 		String edgeWiFi ="EDGE_SE2:WIFI_FINGERPRINT " + id2 + " " + id + " " + parameters.wifiFingerprintDeadBandRadius +  " " + parameters.informationMatrixOfWiFiFingerprint + "\n";
+		return edgeWiFi;
+	}
+	
+	private String createVPRVicinityEdgeString(int id, int id2) {
+		String edgeWiFi ="EDGE_SE2:VPR_VICINITY " + id2 + " " + id + " " + parameters.vprVicinityDeadBandRadius +  " " + parameters.informationMatrixOfVPRVicinity + "\n";
 		return edgeWiFi;
 	}
 	
