@@ -78,15 +78,10 @@ public class MainScreenSlideActivity extends Activity implements
 	 * 
 	 * 
 	 */
-//	Preview preview;
+	Preview preview;
 	Camera camera;
 	
-	Camera.PreviewCallback previewCallback;
 	
-	ReentrantLock curPreviewImageLock = new ReentrantLock();
-	
-	Mat curPreviewImage = null;
-
 	// Orient in main update
 	private Timer orientAndWiFiScanUpdateTimer = new Timer();
 
@@ -574,7 +569,7 @@ public class MainScreenSlideActivity extends Activity implements
 
 	@Override
 	protected void onResume() {
-//		Log.d(TAG, "onResume");
+		Log.d(TAG, "onResume");
 		super.onResume();
 //		OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_2_4_9, this,
 //				mLoaderCallback);
@@ -628,69 +623,20 @@ public class MainScreenSlideActivity extends Activity implements
 		ScreenSlidePageFragment cameraFragment = (ScreenSlidePageFragment)((ScreenSlidePagerAdapter)mPagerAdapter).getItem(0);
 		cameraFragment.setCamera(camera);
 		
-		//preview callback to capture images from preview
-		previewCallback = new Camera.PreviewCallback()  
-	    { 
-		    public void onPreviewFrame(byte[] data, Camera camera) 
-		    {
-				Camera.Parameters params = camera.getParameters();
-				int imageFormat = params.getPreviewFormat();
-				 
-//				Log.d(TAG, "onPreviewFrame");
-				   
-				if (imageFormat == ImageFormat.NV21)
-				{
-//					Log.d(TAG, "imageFormat == ImageFormat.NV21");
-//					Log.d(TAG, String.format("data.length = %d", data.length));
-		    	   
-					Camera.Size prevSize = params.getPreviewSize();
-					
-//					Log.d(TAG, String.format("preview size = (%d, %d)", prevSize.width, prevSize.height));
-					
-					Mat imageBGRA = new Mat();
-					Mat imageYUV = new Mat(prevSize.height + prevSize.height / 2, prevSize.width, CvType.CV_8UC1);
-					imageYUV.put(0,  0, data);
-					//						Gray = mYuv.submat(0, getFrameHeight(), 0, getFrameWidth());
-					Imgproc.cvtColor(imageYUV, imageBGRA, Imgproc.COLOR_YUV420sp2BGR, 4);
-		    	   
-					curPreviewImageLock.lock();
-					
-					try {
-//					    Bitmap bmp = BitmapFactory.decodeByteArray(data , 0, data.length);
-//					    if(bmp != null){
-//						    Log.d(TAG, "bmp != null");
-//						    
-//					 	   Mat curPreviewImage = new Mat(bmp.getHeight(),bmp.getWidth(),CvType.CV_8UC3);
-//						   Bitmap myBitmap32 = bmp.copy(Bitmap.Config.ARGB_8888, true);
-//						   Utils.bitmapToMat(myBitmap32, curPreviewImage);
-//					    }
-						
-						curPreviewImage = imageBGRA;
-						
-					} finally {
-					//						Log.d(TAG, "onPreviewFrame finally");
-						curPreviewImageLock.unlock();
-					}
-		    	   
-		    	   
-
-		       }
-		   }
-
-	    };
-	    
-	    camera.setPreviewCallback(previewCallback);
+		preview = cameraFragment.preview;
+		camera.setPreviewCallback(preview);
+		
 	}
 
 	@Override
 	protected void onPause() {
-//		Log.d(TAG, "onPause");
+		Log.d(TAG, "onPause");
 		if (camera != null) {
-//			camera.stopPreview();
-			// preview.setCamera(null);
 			
 			//fragment with camera preview
 			ScreenSlidePageFragment cameraFragment = (ScreenSlidePageFragment)((ScreenSlidePagerAdapter)mPagerAdapter).getItem(0);
+			camera.stopPreview();
+			camera.setPreviewCallback(null);
 			cameraFragment.setCamera(null);
 			camera.release();
 			camera = null;
@@ -699,20 +645,8 @@ public class MainScreenSlideActivity extends Activity implements
 	}
 	
 	protected Mat getCurPreviewImage(){
-		Mat ret = null;
-		
-		curPreviewImageLock.lock();
-		
-		try {
-			if(curPreviewImage != null){
-				ret = curPreviewImage.clone();
-			}
-		} finally {
-//			Log.d(TAG, "getCurPreviewImage finally");
-			curPreviewImageLock.unlock();
-		}
-		
-		return ret;
+		ScreenSlidePageFragment cameraFragment = (ScreenSlidePageFragment)((ScreenSlidePagerAdapter)mPagerAdapter).getItem(0);
+		return cameraFragment.preview.getCurPreviewImage();
 	}
 	
 }
