@@ -216,13 +216,15 @@ public class VisualPlaceRecognition implements Runnable {
 	}
 	
 	public void savePlace(double x, double y, double z, Mat image){
-		String imagePath = String.format(Locale.getDefault(), Environment
+		
+		String path = String.format(Locale.getDefault(), Environment
 				.getExternalStorageDirectory().toString()
 				+ "/OpenAIL"
 				+ "/VPR"
 				+ "/images"
-				+ "/rec/"
-				+ String.format("img%04d.png", saveImageNextNum));
+				+ "/rec/");
+		
+		String imagePath = path + String.format("img%04d.png", saveImageNextNum);
 		
 		Log.d(moduleLogName, "Saving image to: " + imagePath);
 		Log.d(moduleLogName, String.format("image size = (%d, %d)", image.cols(), image.rows()));

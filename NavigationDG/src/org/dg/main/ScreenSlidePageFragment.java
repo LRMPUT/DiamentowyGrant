@@ -175,7 +175,7 @@ public class ScreenSlidePageFragment extends Fragment {
 			initButtonVisualPlaceRecognition(rootView, R.id.buttonSideView7);
 			
 			// Save WiFi Map
-			initButtonSaveWiFiMap(rootView, R.id.buttonSaveWiFiMap);
+			initButtonSaveMapPoint(rootView, R.id.buttonSaveMapPoint);
 			
 			// Save VPR
 			initButtonSaveVPR(rootView, R.id.buttonSaveVPR);
@@ -483,25 +483,28 @@ public class ScreenSlidePageFragment extends Fragment {
 		});
 	}
 	
-	// Save WiFi Map
-	private void initButtonSaveWiFiMap(
+	// Save map point
+	private void initButtonSaveMapPoint(
 			final ViewGroup rootView, int id) {
 		EditText x = (EditText) rootView.findViewById(R.id.editTextWiFiPosX);
 		EditText y = (EditText) rootView.findViewById(R.id.editTextWiFiPosY);
 		EditText z = (EditText) rootView.findViewById(R.id.editTextWiFiPosZ);
-		
 		x.setText("0.0");
 		y.setText("0.0");
 		z.setText("0.0");
 		
+		EditText mapName = (EditText) rootView.findViewById(R.id.editTextMapName);
+		mapName.setText("newMap");
+		
 		Button buttonStartOrientFromFile = (Button) rootView.findViewById(id);
-		buttonStartOrientFromFile.setText("Save WiFi place");
+		buttonStartOrientFromFile.setText("Save map point");
 		buttonStartOrientFromFile.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
 				EditText x = (EditText) rootView.findViewById(R.id.editTextWiFiPosX);
 				EditText y = (EditText) rootView.findViewById(R.id.editTextWiFiPosY);
 				EditText z = (EditText) rootView.findViewById(R.id.editTextWiFiPosZ);
-				onSomeClick(v, "Save WiFi place: " + x.getText() + " " + y.getText() + " " + z.getText());
+				EditText mapName = (EditText) rootView.findViewById(R.id.editTextMapName);
+				onSomeClick(v, "Save map point :&" + mapName.getText() + "&" + x.getText() + "&" + y.getText() + "&" + z.getText());
 			}
 		});
 	}

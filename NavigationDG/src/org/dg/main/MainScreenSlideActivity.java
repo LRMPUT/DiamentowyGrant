@@ -5,6 +5,8 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.text.NumberFormat;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -229,7 +231,7 @@ public class MainScreenSlideActivity extends Activity implements
 			{
 
 				if (!openAIL.graphManager.started()) {
-					openAIL.startGraph();
+					openAIL.startLocalization();
 				} else {
 					openAIL.stopAndOptimizeGraph();
 				}
@@ -301,30 +303,54 @@ public class MainScreenSlideActivity extends Activity implements
 		}
 		
 		// Save WiFi place
-		if (link.contains("Save WiFi place")) {
+		if (link.contains("Save map point")) {
 			
-			Scanner scanner = new Scanner(link);
-
-			// use US locale to be able to identify doubles in the string
-			scanner.useLocale(Locale.US);
-
-			int i = 0;
+			Log.d(TAG, "SMP TEST: " +link);
+			
+			String[] separated = link.split("&");
+			
+			Log.d(TAG, "SMP TEST 1: " + separated[0]);
+			Log.d(TAG, "SMP TEST 2: " + separated[1]);
+			Log.d(TAG, "SMP TEST 3: " + separated[2]);
+			Log.d(TAG, "SMP TEST 4: " + separated[3]);
+			Log.d(TAG, "SMP TEST 5: " + separated[4]);
+			
+			NumberFormat nf = NumberFormat.getInstance(Locale.US);
+			
 			double[] pos = new double[3];
-			while (scanner.hasNext()) {
-
-				// if the next is a double, print found and the double
-				if (scanner.hasNextDouble()) {
-					pos[i++] = scanner.nextDouble();
-				} else
-					scanner.next();
+			for(int i=0;i<3;i++)
+			{
+				try {
+					Number myNumber = nf.parse(separated[2+i]);
+					pos[i] = myNumber.doubleValue();
+				} catch (ParseException e) {
+					e.printStackTrace();
+				}	
 			}
 			
-			if ( i == 3)
-				Log.d(TAG, "Save WiFi position::" + pos[0] + "::" + pos[1] + "::" + pos[2] + "::");
-			else
-				Log.d(TAG, "Save WiFi position - could not find 3 numbers");
+//			Scanner scanner = new Scanner(link);
+
+//			// use US locale to be able to identify doubles in the string
+//			scanner.useLocale(Locale.US);
+//
+//			int i = 0;
+//			double[] pos = new double[3];
+//			while (scanner.hasNext()) {
+//
+//				// if the next is a double, print found and the double
+//				if (scanner.hasNextDouble()) {
+//					pos[i++] = scanner.nextDouble();
+//				} else
+//					scanner.next();
+//			}
 			
-			openAIL.saveWiFiMapPoint(pos[0], pos[1], pos[2], "newMap.wifidatabase");
+//			if ( i == 3)
+//			{
+				Log.d(TAG, "Save map point::" + pos[0] + "::" + pos[1] + "::" + pos[2] + "::");
+				openAIL.saveMapPoint(separated[1], pos[0], pos[1], pos[2]);
+//			}
+//			else
+//				Log.d(TAG, "Save map point - could not find 3 numbers");			
 		}
 		
 		// Save VPR place

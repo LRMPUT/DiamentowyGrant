@@ -15,11 +15,15 @@ public class ConfigurationReader {
 	private static final String moduleLogName = "ConfigurationReader";
 
 	public enum Modules {
-		INERTIALSENSORS, GRAPHMANAGER, WIFIPLACERECOGNITION, VISUALODOMETRY, VISUALPLACERECOGNITION,
+		MAINPROCESSING, INERTIALSENSORS, GRAPHMANAGER, WIFIPLACERECOGNITION, VISUALODOMETRY, VISUALPLACERECOGNITION,
 	}
 	
 	// Class to store all parameters used in OpenAIL
 	public class Parameters {
+		public class MainProcessing {
+			double frequencyOfNewDataQuery;
+		}	
+		
 		public class InertialSensors {
 			public boolean useModule;
 			public boolean stepometer;
@@ -46,6 +50,7 @@ public class ConfigurationReader {
 			public String priorDatabaseFile;
 		}
 
+		MainProcessing mainProcessing = new MainProcessing();
 		InertialSensors inertialSensors = new InertialSensors();
 		GraphManager graphManager = new GraphManager();
 		WiFiPlaceRecognition wifiPlaceRecognition = new WiFiPlaceRecognition();
@@ -89,8 +94,12 @@ public class ConfigurationReader {
 	
 	private void logAllParameters() {
 		
-		Log.d(moduleLogName, "InertialSensors:\n--- useModule=" + parameters.inertialSensors.useModule + "\n--- stepometer=" + parameters.inertialSensors.stepometer);
+		Log.d(moduleLogName, "MainProcessing:" +
+				"\n--- frequencyOfNewDataQuery=" + parameters.mainProcessing.frequencyOfNewDataQuery);
 		
+		Log.d(moduleLogName, "InertialSensors:" +
+				"\n--- useModule=" + parameters.inertialSensors.useModule + 
+				"\n--- stepometer=" + parameters.inertialSensors.stepometer);		
 	
 		Log.d(moduleLogName, "GraphManager:" +
 				"\n--- vprVicinityDeadBandRadius=" + parameters.graphManager.vprVicinityDeadBandRadius + 
@@ -100,7 +109,8 @@ public class ConfigurationReader {
 				"\n--- informationMatrixOfWiFi=" + parameters.graphManager.informationMatrixOfWiFi +
 				"\n--- optimizeFromFileIterationCount=" + parameters.graphManager.optimizeFromFileIterationCount);
 				
-		Log.d(moduleLogName, "WiFiPlaceRecognition:\n--- useModule=" + parameters.wifiPlaceRecognition.useModule +
+		Log.d(moduleLogName, "WiFiPlaceRecognition:" +
+				"\n--- useModule=" + parameters.wifiPlaceRecognition.useModule +
 				"\n--- maxPlaceDatabaseSize=" + parameters.wifiPlaceRecognition.maxPlaceDatabaseSize +
 				"\n--- maxQueueSize=" + parameters.wifiPlaceRecognition.maxQueueSize +
 				"\n--- fractionOfQueueAfterReduction=" + parameters.wifiPlaceRecognition.fractionOfQueueAfterReduction +
@@ -127,6 +137,9 @@ public class ConfigurationReader {
 			Modules currentModule = Modules.valueOf(name.toUpperCase());
 
 			switch (currentModule) {
+			case MAINPROCESSING:
+				readMainProcessing(parser);
+				break;
 			case INERTIALSENSORS:
 				readInertialSensors(parser);
 				break;
@@ -143,6 +156,27 @@ public class ConfigurationReader {
 
 		}
 	}
+	
+	// Parses the contents of an entry.
+	private void readMainProcessing(XmlPullParser parser)
+			throws XmlPullParserException, IOException {
+		Log.d(moduleLogName, "<MainProcessing>");
+		parser.require(XmlPullParser.START_TAG, ns, "MainProcessing");
+
+		// Reading attributes
+		String frequencyOfNewDataQueryString = parser.getAttributeValue(null, "frequencyOfNewDataQuery");
+
+		// Logging those values
+		Log.d(moduleLogName, "frequencyOfNewDataQuery = " + frequencyOfNewDataQueryString);
+
+		// Storing read values
+		parameters.mainProcessing.frequencyOfNewDataQuery =  Double.parseDouble(frequencyOfNewDataQueryString);
+
+		parser.nextTag();
+		parser.require(XmlPullParser.END_TAG, ns, "MainProcessing");
+		Log.d(moduleLogName, "</MainProcessing>");
+	}
+		
 
 	// Parses the contents of an entry.
 	private void readInertialSensors(XmlPullParser parser)

@@ -91,9 +91,14 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="numberDecimal" />
+            
+            <EditText
+                android:id="@+id/editTextMapName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"/>
 
             <Button
-                android:id="@+id/buttonSaveWiFiMap"
+                android:id="@+id/buttonSaveMapPoint"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Nothing" />

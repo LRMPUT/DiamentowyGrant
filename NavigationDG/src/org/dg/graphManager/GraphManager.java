@@ -7,8 +7,8 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.List;
-
 
 import android.media.MediaScannerConnection;
 import android.os.Environment;
@@ -206,15 +206,25 @@ public class GraphManager {
 		Log.d(moduleLogName, "Vertex estimate of wanted id: " + pos[0] + " " + pos[1] + " " + pos[2] + " " + pos[3]);
 	}
 	
-	public void getPositionsOfVertices() {
+	public List<Vertex> getPositionsOfVertices() {
+		
+		// The list of all vertices
+		List<Vertex> vertices = new ArrayList<Vertex>();
+		
+		// Getting the estimates
 		double [] pos = NDKGraphGetPositionOfAllVertices(addrGraph);
 		
-		Log.d(moduleLogName, "Listing whole graph");
+		// For all estimates
 		for (int i=0;i<pos.length;i+=4)
 		{
-			Log.d(moduleLogName, "Vertex estimate: " + pos[i] + " " + pos[i+1] + " " + pos[i+2] + " " + pos[i+3]);
+			// Cast id to int
+			Double idDouble = pos[i];
+			Vertex vertex = new Vertex(idDouble.intValue(), pos[i+1], pos[i+2], pos[i+3]);
+			// Add new vertex
+			vertices.add(vertex);
 		}
-		
+		// Return the list of vertices
+		return vertices;
 	}
 	
 	public void addVertexWithKnownPosition(int id, float X, float Y, float Z) {
