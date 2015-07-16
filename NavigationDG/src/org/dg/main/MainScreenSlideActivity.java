@@ -302,21 +302,13 @@ public class MainScreenSlideActivity extends Activity implements
 			openAIL.visualPlaceRecognition.callAndVerifyAllMethods();
 		}
 		
-		// Save WiFi place
+		// Save map place
 		if (link.contains("Save map point")) {
 			
-			Log.d(TAG, "SMP TEST: " +link);
-			
+			// Getting mapName, X, Y, Z which are separated by '&'
 			String[] separated = link.split("&");
 			
-			Log.d(TAG, "SMP TEST 1: " + separated[0]);
-			Log.d(TAG, "SMP TEST 2: " + separated[1]);
-			Log.d(TAG, "SMP TEST 3: " + separated[2]);
-			Log.d(TAG, "SMP TEST 4: " + separated[3]);
-			Log.d(TAG, "SMP TEST 5: " + separated[4]);
-			
 			NumberFormat nf = NumberFormat.getInstance(Locale.US);
-			
 			double[] pos = new double[3];
 			for(int i=0;i<3;i++)
 			{
@@ -330,6 +322,11 @@ public class MainScreenSlideActivity extends Activity implements
 			
 
 			Log.d(TAG, "Save map point::" + pos[0] + "::" + pos[1] + "::" + pos[2] + "::");
+			
+			// We need to update the preview
+			ScreenSlidePageFragment cameraFragment = (ScreenSlidePageFragment)((ScreenSlidePagerAdapter)mPagerAdapter).getItem(0);
+			openAIL.preview = cameraFragment.preview;
+			
 			openAIL.saveMapPoint(separated[1], pos[0], pos[1], pos[2]);
 			
 		}

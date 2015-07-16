@@ -21,15 +21,15 @@ import android.util.Log;
 public class PriorMapHandler {
 	private static final String moduleLogName = "PriorMapHandler";
 	
-	// Value used when storing map
+	// The id of currently saved position (starts at 10000 to distinguish anchor nodes from normal nodes)
 	int mapPointId;
 	
 	public PriorMapHandler() {
-		mapPointId = 0;
+		mapPointId = 10000;
 	}
 	
-	
 	/**
+	 * Loads prior map from the file 
 	 * @param mapName
 	 *            - name of the directory with the map (wifi scans, images,
 	 *            position) to be read
@@ -119,6 +119,32 @@ public class PriorMapHandler {
 	}
 
 	/**
+	 * Method used to store current position in a map. Saves image, wifi scan, angle and position (has to be provided by user)
+	 * @param mapName
+	 * @param posX
+	 * @param posY
+	 * @param posZ
+	 */
+	public void saveMapPoint(String mapName, MapPosition mapPosition) {
+		// Create directory to save new Map
+		String pathName = creatingSaveMapDirectory(mapName);
+
+		// Saving image
+		saveImageOfMapPoint(mapPosition.image, pathName);
+
+		//  Saving WiFis
+		saveWiFiScansOfMapPoint(mapPosition.scannedWiFiList, pathName);
+
+		// Saving pos
+		savePositionsOfMapPoint(mapPosition.X, mapPosition.Y, mapPosition.Z, mapPosition.angle, pathName);
+
+		// Increase Id for next point
+		mapPointId++;
+	}
+	
+	
+	
+	/**
 	 * Reads the Wifi list from map-compatible format
 	 * @param wifiScanScanner
 	 * @param wifiCount
@@ -147,30 +173,6 @@ public class PriorMapHandler {
 					+ level);
 		}
 		return scannedWiFisList;
-	}
-
-	/**
-	 * Method used to store current position in a map. Saves image, wifi scan, angle and position (has to be provided by user)
-	 * @param mapName
-	 * @param posX
-	 * @param posY
-	 * @param posZ
-	 */
-	public void saveMapPoint(String mapName, MapPosition mapPosition) {
-		// Create directory to save new Map
-		String pathName = creatingSaveMapDirectory(mapName);
-
-		// Saving image
-		saveImageOfMapPoint(mapPosition.image, pathName);
-
-		//  Saving WiFis
-		saveWiFiScansOfMapPoint(mapPosition.scannedWiFiList, pathName);
-
-		// Saving pos
-		savePositionsOfMapPoint(mapPosition.X, mapPosition.Y, mapPosition.Z, mapPosition.angle, pathName);
-
-		// Increase Id for next point
-		mapPointId++;
 	}
 
 	/**
