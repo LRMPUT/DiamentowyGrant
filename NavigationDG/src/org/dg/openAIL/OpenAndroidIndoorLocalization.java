@@ -40,7 +40,6 @@ public class OpenAndroidIndoorLocalization {
 	ConfigurationReader.Parameters parameters;
 
 	// Inertial sensors
-	public SensorManager sensorManager;
 	public InertialSensors inertialSensors;
 
 	// WiFi
@@ -58,19 +57,22 @@ public class OpenAndroidIndoorLocalization {
 
 	// Preview
 	public Preview preview;
-	
-	// Value used when storing map
-	int mapPointId;
+
+	// Prior map
+	public PriorMapHandler priorMapHandler;
 
 	public OpenAndroidIndoorLocalization(SensorManager sensorManager,
 			WifiManager wifiManager) {
-		
+
 		// Create directories if needed
 		createNeededDirectories();
 
 		// Reading settings
 		parameters = readParametersFromXML("settings.xml");
 
+		// Preparing prior map
+		priorMapHandler = new PriorMapHandler();
+		
 		// Init graph
 		graphManager = new GraphManager(parameters.graphManager);
 
@@ -81,9 +83,7 @@ public class OpenAndroidIndoorLocalization {
 		// Init WiFi
 		wifiScanner = new WifiScanner(wifiManager,
 				parameters.wifiPlaceRecognition);
-		
-		// The initial id of read map point
-		mapPointId = 10000;
+
 	}
 
 	/**
@@ -96,7 +96,7 @@ public class OpenAndroidIndoorLocalization {
 		if (!folder.exists()) {
 			folder.mkdir();
 		}
-		
+
 		folder = new File(Environment.getExternalStorageDirectory()
 				+ "/OpenAIL/PriorData/");
 
@@ -117,275 +117,76 @@ public class OpenAndroidIndoorLocalization {
 		// Creating new graph
 		graphManager.start();
 
-		// TODO: Read also images
-		// Load WiFi place recognition database
-		if (parameters.wifiPlaceRecognition.usePriorDatabase) {
-			loadWiFiPlaceDatabase(parameters.wifiPlaceRecognition.priorDatabaseFile);
+		// Load prior map
+		if (parameters.mainProcessing.usePriorMap) {
+			List<MapPosition> mapPositions = priorMapHandler.loadPriorMap(parameters.mainProcessing.priorMapName);
+			
+			// For all positions in a map
+			for (MapPosition mapPos: mapPositions) {
+				
+				// Add a node to the graph
+				graphManager.addVertexWithKnownPosition(mapPos.id, mapPos.X, mapPos.Y, mapPos.Z);
+
+				// Add new scan to WiFi Place Recognition 
+				//	(TODO: Could be extended to use X, Y, Z, angle)
+				wifiScanner.addScanToRecognition(mapPos.id, mapPos.scannedWiFiList);
+				
+				// Add new image to VPR 
+				//	(TODO: Could be extended to use X, Y, Z, angle)
+				visualPlaceRecognition.addPlace(mapPos.id, mapPos.image);
+			}
+			
 		}
 
 		// Start WiFi recognition
 		wifiScanner.startNewPlaceRecognitionThread();
 
 		// Start FABMAP recognition
-//		visualPlaceRecognition.start(_preview);
-		
+		// visualPlaceRecognition.start(_preview);
+
 		// Check for new information at fixed rate
 		long delay = (long) (1000.0 / parameters.mainProcessing.frequencyOfNewDataQuery);
 		updateGraphTimer.scheduleAtFixedRate(new UpdateGraph(), 0, delay);
-		
+
 		// Check if there is an issue with WiFi
 		detectWiFiIssue = 0;
-		//.graphManager.optimize(5);
+		// .graphManager.optimize(5);
 	}
 
-	public void stopAndOptimizeGraph() {
-		
+	public void stopLocalization() {
+
 		// Stop checking for new data
 		updateGraphTimer.cancel();
-		
+
 		// Stop WiFi recognition thread
 		wifiScanner.stopNewPlaceRecognitionThread();
 
 		// Stop VPR thread
-//		visualPlaceRecognition.stop()
-		
-		// Stop the optimization thread 
+		// visualPlaceRecognition.stop()
+
+		// Stop the optimization thread
 		graphManager.stop(); // TODO: Remove it!
 		graphManager.stopOptimizationThread();
-		
+
 		// Getting the estimates
 		List<Vertex> list = graphManager.getPositionsOfVertices();
 	}
 
-	private void loadWiFiPlaceDatabase(String filename) {
-		// Reading database
-		String readFileName = String.format(Locale.getDefault(), Environment
-				.getExternalStorageDirectory().toString()
-				+ "/OpenAIL/PriorData/" + filename);
-
-		try {
-			Scanner placeDatabaseScanner = new Scanner(new BufferedReader(
-					new FileReader(readFileName)));
-			placeDatabaseScanner.useLocale(Locale.US);
-
-			int id = 5000;
-			while (placeDatabaseScanner.hasNext()) {
-				float X = placeDatabaseScanner.nextFloat();
-				float Y = placeDatabaseScanner.nextFloat();
-				float Z = placeDatabaseScanner.nextFloat();
-				int wifiCount = placeDatabaseScanner.nextInt();
-
-				Log.d(moduleLogName, "WiFiDatabase 1st line: " + id + " " + X
-						+ " " + Y + " " + Z + " " + wifiCount);
-				String dummy = placeDatabaseScanner.nextLine();
-
-				List<MyScanResult> wifiScan = new ArrayList<MyScanResult>();
-				for (int i = 0; i < wifiCount; i++) {
-					String line = placeDatabaseScanner.nextLine();
-
-					String[] values = line.split("\\t+");
-
-					String BSSID = values[0];
-					int level;
-					if (values.length == 3)
-						level = Integer.parseInt(values[2]);
-					else
-						level = Integer.parseInt(values[1]);
-
-					MyScanResult scan = new MyScanResult(BSSID, level);
-					wifiScan.add(scan);
-
-					Log.d(moduleLogName, "WiFiDatabase data: " + BSSID + " "
-							+ level);
-				}
-
-				// Adding to graph
-				graphManager.addVertexWithKnownPosition(id, X, Y, Z);
-
-				// Add new scan to datbase
-				wifiScanner.addScanToRecognition(id, wifiScan);
-
-				id++;
-			}
-			placeDatabaseScanner.close();
-
-		} catch (FileNotFoundException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
-
 	
-	public void saveMapPoint(String mapName, double posX, double posY, double posZ)
-	{
-		// Create directory to save new Map
-		String pathName = creatingSaveMapDirectory(mapName);
-				
-		// Getting the orientation // We need to change direction of yawZ (to match stepometer)
-		float yawZ = -inertialSensors.getYawForStepometer();
-
-		// Getting the last WiFi scan
-		List<MyScanResult> wifiList = wifiScanner.getLastScan();
-	
-		// Getting the last image
-		Mat image = preview.getCurPreviewImage();
-		
-		//// Saving image
-		saveImageOfMapPoint(image, pathName);
-		
-		//// Saving WiFis
-		saveWiFiScansOfMapPoint(wifiList, pathName);
-		
-		//// Saving pos
-		savePositionsOfMapPoint(posX, posY, posZ, yawZ, pathName);		
-		
-		// Increase Id for next point
-		mapPointId++;
-	}
-
 	/**
-	 * @param mapName
-	 * @return
-	 */
-	private String creatingSaveMapDirectory(String mapName) {
-		// Setting the directory of output
-		String pathName = String.format(Locale.getDefault(), Environment
-				.getExternalStorageDirectory().toString()
-				+ "/OpenAIL/PriorData/" + mapName + "/");
-		
-		// Create directory if it doesn't exist
-		File folder = new File(pathName);
-		if (!folder.exists()) {
-			folder.mkdir();
-		}
-		return pathName;
-	}
-
-	/**
-	 * @param image
-	 * @param pathName
-	 */
-	private void saveImageOfMapPoint(Mat image, String pathName) {
-		// Creating directory if needed
-		File folder = new File(pathName + "images/");
-		if (!folder.exists()) {
-			folder.mkdir();
-		}
-
-		String imagePath = pathName + "images/" + String.format("%05d.png", mapPointId);		
-		Highgui.imwrite(imagePath, image);
-	}
-
-	/**
-	 * @param posX
-	 * @param posY
-	 * @param posZ
-	 * @param yawZ
-	 * @param pathName
-	 */
-	private void savePositionsOfMapPoint(double posX, double posY, double posZ,
-			float yawZ, String pathName) {
-		FileOutputStream foutStream;
-		PrintStream outStreamRawData;
-		outStreamRawData = null;
-		try {
-			foutStream = new FileOutputStream(pathName + "positions.list", true);
-			outStreamRawData = new PrintStream(foutStream);
-		} catch (FileNotFoundException e1) {
-			e1.printStackTrace();
-		}
-
-		// Save positions (placeId, X, Y, Z, Yaw)
-		outStreamRawData.print(mapPointId + " " + posX + " " + posY + " " + posZ + " " + yawZ + "\n");
-
-		// Close stream
-		outStreamRawData.close();
-	}
-
-	/**
-	 * @param wifiList
-	 * @param pathName
-	 */
-	private void saveWiFiScansOfMapPoint(List<MyScanResult> wifiList,
-			String pathName) {
-		
-		// Create directory if needed
-		File folder = new File(pathName + "wifiScans/");
-		if (!folder.exists()) {
-			folder.mkdir();
-		}
-		
-		FileOutputStream foutStream;
-		PrintStream outStreamRawData = null;
-		try {
-			foutStream = new FileOutputStream(pathName + "wifiScans/" + String.format("%05d.wifiscan", mapPointId), false);
-			outStreamRawData = new PrintStream(foutStream);
-		} catch (FileNotFoundException e1) {
-			e1.printStackTrace();
-		}
-
-		// Save the initial line of scan (placeId, number of WiFi networks)
-		outStreamRawData.print(mapPointId + " " + wifiList.size() + "\n");
-
-		// Save BSSID (MAC), SSID (network name), lvl (in DBm)
-		for (int i = 0; i < wifiList.size(); i++) {
-			MyScanResult scanResult = wifiList.get(i);
-			outStreamRawData.print(scanResult.BSSID + "\t"
-					+ scanResult.networkName + "\t" + scanResult.level + "\n");
-		}
-	}
-	
-	/*
-	 * Method used to save last WiFi scan with wanted position (X,Y,Z) in a file
-	 * that can be used as prior map
-	 */
-	public void saveWiFiMapPoint(double posX, double posY, double posZ,
-			String fileName) {
-		
-		// Getting the last WiFi scan
-		List<MyScanResult> wifiList = wifiScanner.getLastScan();
-
-		// File to save results
-		String pathName = String.format(Locale.getDefault(), Environment
-				.getExternalStorageDirectory().toString()
-				+ "/OpenAIL/PriorData/" + fileName);
-		FileOutputStream foutStream;
-		PrintStream outStreamRawData = null;
-		try {
-			foutStream = new FileOutputStream(pathName, true);
-			outStreamRawData = new PrintStream(foutStream);
-		} catch (FileNotFoundException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
-
-		// Save the initial line of scan (posX, posY, posZ, number of WiFi
-		// networks)
-		outStreamRawData.print(posX + " " + posY + " " + posZ + " "
-				+ wifiList.size() + "\n");
-
-		// Save BSSID (MAC), SSID (network name), lvl (in DBm)
-		for (int i = 0; i < wifiList.size(); i++) {
-			MyScanResult scanResult = wifiList.get(i);
-			outStreamRawData.print(scanResult.BSSID + "\t"
-					+ scanResult.networkName + "\t" + scanResult.level + "\n");
-		}
-
-		// Close stream
-		outStreamRawData.close();
-	}
-
+	* Class used to check if there is new sensor data to add to graph
+	* The mentioned method is performed with a frequency set in settings.xml
+	*/
 	class UpdateGraph extends TimerTask {
 		int iterationCounter = 0;
-		
+
 		public void run() {
 			Log.d(moduleLogName, "Starting query cycle");
-			
+
 			// get distance
 			Log.d(moduleLogName, "Processing stepometer ...");
 			double distance = inertialSensors.getGraphStepDistance();
 
-			
 			// Adding WiFi measurement
 			Log.d(moduleLogName, "Processing WiFi ...");
 			if (distance > 0.01) {
@@ -402,14 +203,14 @@ public class OpenAndroidIndoorLocalization {
 			// WiFi read all found connections
 			List<IdPair<Integer, Integer>> recognizedPlaces = wifiScanner
 					.getAndClearRecognizedPlacesList();
-			
+
 			Log.d(moduleLogName, "The placeRecognition thread found "
 					+ recognizedPlaces.size() + " connections");
-			
+
 			// Add found results to the final graph
 			// graphManager.addMultipleWiFiFingerprints(placesIds);
 			graphManager.addMultipleWiFiFingerprints(recognizedPlaces);
-			
+
 			// Check if there is new measurement
 			if (wifiScanner.isNewMeasurement()) {
 				// All ok
@@ -447,36 +248,61 @@ public class OpenAndroidIndoorLocalization {
 				}
 
 			}
-			
+
 			// Save current image
-			Log.d(moduleLogName, "Processing camera ...");
-			if ( preview != null && iterationCounter % 5 == 0)
-			{
-				Log.d(moduleLogName, "Getting and saving camera image");
-				Mat image = preview.getCurPreviewImage();
-				visualPlaceRecognition.savePlace(0, 0, 0, image);
-			}
-			
-			List<IdPair<Integer, Integer>> vprList = visualPlaceRecognition.getAndClearVPRMatchedList();
-			
-			
+//			Log.d(moduleLogName, "Processing camera ...");
+//			if (preview != null && iterationCounter % 5 == 0) {
+//				Log.d(moduleLogName, "Getting and saving camera image");
+//				Mat image = preview.getCurPreviewImage();
+//				visualPlaceRecognition.savePlace(0, 0, 0, image);
+//			}
+//
+//			List<IdPair<Integer, Integer>> vprList = visualPlaceRecognition
+//					.getAndClearVPRMatchedList();
+
 			iterationCounter++;
 		}
 
 	}
 
+	
 	/**
 	 * 
+	 */
+	public void saveMapPoint(String mapName, double X, double Y, double Z) {
+		
+		// Let's create a new map position
+		MapPosition mapPos = new MapPosition();
+		
+		// Fill position with provided data
+		mapPos.X = X;
+		mapPos.Y = Y;
+		mapPos.Z = Z;
+		
+		// Filling missing information with current data
+		//		minus angle to match the coordinate system of stepometer
+		mapPos.angle = -inertialSensors.getYawForStepometer();
+
+		// Getting the last WiFi scan
+		mapPos.scannedWiFiList = wifiScanner.getLastScan();
+
+		// Getting the last image
+		mapPos.image = preview.getCurPreviewImage();
+		
+		// Save this point to files
+		priorMapHandler.saveMapPoint(mapName, mapPos);
+	}
+	
+	/**
+	 *  Method used to read all of the parameters from settings.xml
 	 */
 	private ConfigurationReader.Parameters readParametersFromXML(String fileName) {
 		String configFileName = String.format(Locale.getDefault(), Environment
 				.getExternalStorageDirectory().toString()
-				+ "/OpenAIL"
-				+ "/"
+				+ "/OpenAIL/"
 				+ fileName);
 
 		ConfigurationReader configReader = new ConfigurationReader();
-
 		try {
 			ConfigurationReader.Parameters params = configReader
 					.readParameters(configFileName);

@@ -227,7 +227,7 @@ public class GraphManager {
 		return vertices;
 	}
 	
-	public void addVertexWithKnownPosition(int id, float X, float Y, float Z) {
+	public void addVertexWithKnownPosition(int id, double X, double Y, double Z) {
 		checkGraphExistance();
 		
 		String g2oString = "VERTEX_SE2 " + id + " " + X + " " + Y + " " + Z +"\n";

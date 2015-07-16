@@ -22,6 +22,8 @@ public class ConfigurationReader {
 	public class Parameters {
 		public class MainProcessing {
 			double frequencyOfNewDataQuery;
+			String priorMapName;
+			public boolean usePriorMap;
 		}	
 		
 		public class InertialSensors {
@@ -46,8 +48,6 @@ public class ConfigurationReader {
 			public int	minNumberOfSharedNetworks;
 			public double minPercentOfSharedNetworks;
 			public double maxAvgErrorThreshold;
-			public boolean usePriorDatabase;
-			public String priorDatabaseFile;
 		}
 
 		MainProcessing mainProcessing = new MainProcessing();
@@ -95,7 +95,9 @@ public class ConfigurationReader {
 	private void logAllParameters() {
 		
 		Log.d(moduleLogName, "MainProcessing:" +
-				"\n--- frequencyOfNewDataQuery=" + parameters.mainProcessing.frequencyOfNewDataQuery);
+				"\n--- frequencyOfNewDataQuery=" + parameters.mainProcessing.frequencyOfNewDataQuery + 
+				"\n--- priorMapName=" + parameters.mainProcessing.priorMapName + 
+				"\n--- usePriorMap=" + parameters.mainProcessing.usePriorMap);
 		
 		Log.d(moduleLogName, "InertialSensors:" +
 				"\n--- useModule=" + parameters.inertialSensors.useModule + 
@@ -116,9 +118,7 @@ public class ConfigurationReader {
 				"\n--- fractionOfQueueAfterReduction=" + parameters.wifiPlaceRecognition.fractionOfQueueAfterReduction +
 				"\n--- minNumberOfSharedNetworks=" + parameters.wifiPlaceRecognition.minNumberOfSharedNetworks +
 				"\n--- minPercentOfSharedNetworks=" + parameters.wifiPlaceRecognition.minPercentOfSharedNetworks +
-				"\n--- maxAvgErrorThreshold=" + parameters.wifiPlaceRecognition.maxAvgErrorThreshold + 
-				"\n--- usePriorDatabase=" + parameters.wifiPlaceRecognition.usePriorDatabase + 
-				"\n--- priorDatabaseFile=" + parameters.wifiPlaceRecognition.priorDatabaseFile);		
+				"\n--- maxAvgErrorThreshold=" + parameters.wifiPlaceRecognition.maxAvgErrorThreshold);		
 	}
 
 
@@ -162,16 +162,21 @@ public class ConfigurationReader {
 			throws XmlPullParserException, IOException {
 		Log.d(moduleLogName, "<MainProcessing>");
 		parser.require(XmlPullParser.START_TAG, ns, "MainProcessing");
-
+	
 		// Reading attributes
 		String frequencyOfNewDataQueryString = parser.getAttributeValue(null, "frequencyOfNewDataQuery");
-
+		parameters.mainProcessing.priorMapName = parser.getAttributeValue(null, "priorMapName");
+		String usePriorMapString = parser.getAttributeValue(null, "usePriorMap");
+		
 		// Logging those values
 		Log.d(moduleLogName, "frequencyOfNewDataQuery = " + frequencyOfNewDataQueryString);
+		Log.d(moduleLogName, "priorMapName = " + parameters.mainProcessing.priorMapName);
+		Log.d(moduleLogName, "usePriorMap = " + parameters.mainProcessing.usePriorMap);
 
 		// Storing read values
 		parameters.mainProcessing.frequencyOfNewDataQuery =  Double.parseDouble(frequencyOfNewDataQueryString);
-
+		parameters.mainProcessing.usePriorMap = usePriorMapString.equals("True");
+		
 		parser.nextTag();
 		parser.require(XmlPullParser.END_TAG, ns, "MainProcessing");
 		Log.d(moduleLogName, "</MainProcessing>");
@@ -249,8 +254,6 @@ public class ConfigurationReader {
 		String minNumberOfSharedNetworksString = parser.getAttributeValue(null, "minNumberOfSharedNetworks");
 		String minPercentOfSharedNetworksString = parser.getAttributeValue(null, "minPercentOfSharedNetworks");
 		String maxAvgErrorThresholdString = parser.getAttributeValue(null, "maxAvgErrorThreshold");
-		String usePriorDatabaseString = parser.getAttributeValue(null, "usePriorDatabase");
-		parameters.wifiPlaceRecognition.priorDatabaseFile = parser.getAttributeValue(null, "priorDatabaseFile");
 		
 		// Logging those values
 		Log.d(moduleLogName, "useModule = " + useModuleString);
@@ -260,9 +263,7 @@ public class ConfigurationReader {
 		Log.d(moduleLogName, "minNumberOfSharedNetworks = " + minNumberOfSharedNetworksString);
 		Log.d(moduleLogName, "minPercentOfSharedNetworks = " + minPercentOfSharedNetworksString);
 		Log.d(moduleLogName, "maxAvgErrorThreshold = " + maxAvgErrorThresholdString);
-		Log.d(moduleLogName, "usePriorDatabase = " + parameters.wifiPlaceRecognition.usePriorDatabase);
-		Log.d(moduleLogName, "priorDatabaseFile = " + parameters.wifiPlaceRecognition.priorDatabaseFile);
-	
+		
 		// Storing read values
 		parameters.wifiPlaceRecognition.useModule = useModuleString.equals("True");
 		parameters.wifiPlaceRecognition.maxPlaceDatabaseSize = Integer.parseInt(maxPlaceDatabaseSizeString);
@@ -271,7 +272,6 @@ public class ConfigurationReader {
 		parameters.wifiPlaceRecognition.minNumberOfSharedNetworks = Integer.parseInt(minNumberOfSharedNetworksString);
 		parameters.wifiPlaceRecognition.minPercentOfSharedNetworks = Double.parseDouble(minPercentOfSharedNetworksString);
 		parameters.wifiPlaceRecognition.maxAvgErrorThreshold = Double.parseDouble(maxAvgErrorThresholdString);
-		parameters.wifiPlaceRecognition.usePriorDatabase = usePriorDatabaseString.equals("True");
 				
 		parser.nextTag();
 		parser.require(XmlPullParser.END_TAG, ns, "WiFiPlaceRecognition");

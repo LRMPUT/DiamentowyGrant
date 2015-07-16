@@ -233,7 +233,7 @@ public class MainScreenSlideActivity extends Activity implements
 				if (!openAIL.graphManager.started()) {
 					openAIL.startLocalization();
 				} else {
-					openAIL.stopAndOptimizeGraph();
+					openAIL.stopLocalization();
 				}
 
 			}
@@ -328,29 +328,10 @@ public class MainScreenSlideActivity extends Activity implements
 				}	
 			}
 			
-//			Scanner scanner = new Scanner(link);
 
-//			// use US locale to be able to identify doubles in the string
-//			scanner.useLocale(Locale.US);
-//
-//			int i = 0;
-//			double[] pos = new double[3];
-//			while (scanner.hasNext()) {
-//
-//				// if the next is a double, print found and the double
-//				if (scanner.hasNextDouble()) {
-//					pos[i++] = scanner.nextDouble();
-//				} else
-//					scanner.next();
-//			}
+			Log.d(TAG, "Save map point::" + pos[0] + "::" + pos[1] + "::" + pos[2] + "::");
+			openAIL.saveMapPoint(separated[1], pos[0], pos[1], pos[2]);
 			
-//			if ( i == 3)
-//			{
-				Log.d(TAG, "Save map point::" + pos[0] + "::" + pos[1] + "::" + pos[2] + "::");
-				openAIL.saveMapPoint(separated[1], pos[0], pos[1], pos[2]);
-//			}
-//			else
-//				Log.d(TAG, "Save map point - could not find 3 numbers");			
 		}
 		
 		// Save VPR place

@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?> 
 
 <OpenAIL>
-	<MainProcessing frequencyOfNewDataQuery="5"/>
+	<MainProcessing 	frequencyOfNewDataQuery="5" 
+								priorMapName="newMap"
+								usePriorMap="True"/>
 
 	<InertialSensors useModule="True" stepometer="True"/>
 	
@@ -18,9 +20,7 @@
 										fractionOfQueueAfterReduction="0.3" 
 										minNumberOfSharedNetworks="7"
 										minPercentOfSharedNetworks="0.75"
-										maxAvgErrorThreshold="8"
-										usePriorDatabase="True"
-										priorDatabaseFile="CM11.wifidatabase"/> 
+										maxAvgErrorThreshold="8" /> 
 										
 	<VisualOdometry useModule="True"/>
 	<VisualPlaceRecognition useModule="True"/>
