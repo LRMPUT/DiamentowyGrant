@@ -78,7 +78,7 @@ public class OpenAndroidIndoorLocalization {
 
 		// Init inertial sensors
 		if (parameters.inertialSensors.useModule)
-			inertialSensors = new InertialSensors(sensorManager);
+			inertialSensors = new InertialSensors(sensorManager, parameters.inertialSensors);
 
 		// Init WiFi
 		wifiScanner = new WifiScanner(wifiManager,

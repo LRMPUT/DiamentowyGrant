@@ -5,8 +5,21 @@
 								priorMapName="newMap"
 								usePriorMap="True"/>
 
-	<InertialSensors useModule="True" stepometer="True"/>
-	
+	<InertialSensors useModule="True" stepometer="True">
+		<Record 
+						accelerometer="True"
+						gyroscope="False"
+						magnetometer="False"
+						barometer="False"
+						accelerometerWithoutGravity="False"
+						orientationAndroid="True"
+						orientationAndroidEuler="False"
+						orientationAEKF="True"
+						orientationAEKFEuler="False"
+						orientationCF="False"
+						orientationCFEuler="False"		/>
+	</InertialSensors>
+
 	<GraphManager	vprVicinityDeadBandRadius="10.0"
 								informationMatrixOfVPRVicinity="2.0"
 								wifiFingerprintDeadBandRadius="6.0"

@@ -27,8 +27,17 @@ public class ConfigurationReader {
 		}	
 		
 		public class InertialSensors {
+			public class Record {
+				public boolean accelerometer, gyroscope, magnetometer,
+						barometer, accelerometerWithoutGravity;
+				public boolean orientationAndroid, orientationAndroidEuler,
+						orientationAEKF, orientationAEKFEuler, orientationCF,
+						orientationCFEuler;
+			}
+
 			public boolean useModule;
 			public boolean stepometer;
+			public Record record = new Record();
 		}
 		
 		public class GraphManager {
@@ -101,7 +110,21 @@ public class ConfigurationReader {
 		
 		Log.d(moduleLogName, "InertialSensors:" +
 				"\n--- useModule=" + parameters.inertialSensors.useModule + 
-				"\n--- stepometer=" + parameters.inertialSensors.stepometer);		
+				"\n--- stepometer=" + parameters.inertialSensors.stepometer);	
+
+		Log.d(moduleLogName, "--- Record:" +
+				"\n------ accelerometer=" + parameters.inertialSensors.record.accelerometer + 
+				"\n------ gyroscope=" + parameters.inertialSensors.record.gyroscope + 
+				"\n------ magnetometer=" + parameters.inertialSensors.record.magnetometer + 
+				"\n------ barometer=" + parameters.inertialSensors.record.barometer + 
+				"\n------ accelerometerWithoutGravity=" + parameters.inertialSensors.record.accelerometerWithoutGravity + 
+				
+				"\n------ orientationAndroid=" + parameters.inertialSensors.record.orientationAndroid + 
+				"\n------ orientationAndroidEuler=" + parameters.inertialSensors.record.orientationAndroidEuler + 
+				"\n------ orientationAEKF=" + parameters.inertialSensors.record.orientationAEKF + 
+				"\n------ orientationAEKFEuler=" + parameters.inertialSensors.record.orientationAEKFEuler + 
+				"\n------ orientationCF=" + parameters.inertialSensors.record.orientationCF + 
+				"\n------ orientationCFEuler=" + parameters.inertialSensors.record.orientationCFEuler);
 	
 		Log.d(moduleLogName, "GraphManager:" +
 				"\n--- vprVicinityDeadBandRadius=" + parameters.graphManager.vprVicinityDeadBandRadius + 
@@ -201,7 +224,63 @@ public class ConfigurationReader {
 		parameters.inertialSensors.useModule = useModuleString.equals("True");
 		parameters.inertialSensors.stepometer = useModuleString.equals("True");
 		
-		parser.nextTag();
+		// Reading record parameters
+		while (parser.next() != XmlPullParser.END_TAG) {
+			
+			if (parser.getEventType() != XmlPullParser.START_TAG) {
+				continue;
+			}
+			
+			Log.d(moduleLogName, "</Record>");
+			parser.require(XmlPullParser.START_TAG, ns, "Record");
+			
+			// Reading attributes
+			String accelerometerString = parser.getAttributeValue(null, "accelerometer");
+			String gyroscopeString = parser.getAttributeValue(null, "gyroscope");
+			String magnetometerString = parser.getAttributeValue(null, "magnetometer");
+			String barometerString = parser.getAttributeValue(null, "barometer");
+			String accelerometerWithoutGravityString = parser.getAttributeValue(null, "accelerometerWithoutGravity");
+			
+			String orientationAndroidString = parser.getAttributeValue(null, "orientationAndroid");
+			String orientationAndroidEulerString = parser.getAttributeValue(null, "orientationAndroidEuler");
+			String orientationAEKFString = parser.getAttributeValue(null, "orientationAEKF");
+			String orientationAEKFEulerString = parser.getAttributeValue(null, "orientationAEKFEuler");
+			String orientationCFString = parser.getAttributeValue(null, "orientationCF");
+			String orientationCFEulerString = parser.getAttributeValue(null, "orientationCFEuler");
+			
+			// Logging those values
+			Log.d(moduleLogName, "accelerometer = " + accelerometerString);
+			Log.d(moduleLogName, "gyroscope = " + gyroscopeString);
+			Log.d(moduleLogName, "magnetometer = " + magnetometerString);
+			Log.d(moduleLogName, "barometer = " + barometerString);
+			Log.d(moduleLogName, "accelerometerWithoutGravity = " + accelerometerWithoutGravityString);
+			
+			Log.d(moduleLogName, "orientationAndroid = " + orientationAndroidString);
+			Log.d(moduleLogName, "orientationAndroidEuler = " + orientationAndroidEulerString);
+			Log.d(moduleLogName, "orientationAEKF = " + orientationAEKFString);
+			Log.d(moduleLogName, "orientationAEKFEuler = " + orientationAEKFEulerString);
+			Log.d(moduleLogName, "orientationCF = " + orientationCFString);
+			Log.d(moduleLogName, "orientationCFEuler = " + orientationCFEulerString);
+			
+			// Storing read values
+			parameters.inertialSensors.record.accelerometer = accelerometerString.equals("True");
+			parameters.inertialSensors.record.gyroscope = gyroscopeString.equals("True");
+			parameters.inertialSensors.record.magnetometer = magnetometerString.equals("True");
+			parameters.inertialSensors.record.barometer = barometerString.equals("True");
+			parameters.inertialSensors.record.accelerometerWithoutGravity = accelerometerWithoutGravityString.equals("True");
+			
+			parameters.inertialSensors.record.orientationAndroid = orientationAndroidString.equals("True");
+			parameters.inertialSensors.record.orientationAndroidEuler = orientationAndroidEulerString.equals("True");
+			parameters.inertialSensors.record.orientationAEKF = orientationAEKFString.equals("True");
+			parameters.inertialSensors.record.orientationAEKFEuler = orientationAEKFEulerString.equals("True");
+			parameters.inertialSensors.record.orientationCF = orientationCFString.equals("True");
+			parameters.inertialSensors.record.orientationCFEuler = orientationCFEulerString.equals("True");
+			
+			parser.nextTag();
+			parser.require(XmlPullParser.END_TAG, ns, "Record");
+			Log.d(moduleLogName, "</Record>");
+		}
+		
 		parser.require(XmlPullParser.END_TAG, ns, "InertialSensors");
 		Log.d(moduleLogName, "</InertialSensors>");
 	}

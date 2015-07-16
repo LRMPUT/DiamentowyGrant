@@ -69,7 +69,7 @@ public class GraphManager {
 			}
 
 			File dir = new File(String.format(
-					Environment.getExternalStorageDirectory() + "/OpenAIL/Log/"));
+					Environment.getExternalStorageDirectory() + "/OpenAIL/GraphLog/"));
 			if (!dir.exists()) {
 				dir.mkdirs();
 			}
@@ -114,7 +114,7 @@ public class GraphManager {
 		addrGraph = NDKGraphCreate();
 
 		Log.d(moduleLogName, "Calling test from file");
-		String path2 = Environment.getExternalStorageDirectory().getAbsolutePath() + "/DG/testGraph/";
+		String path2 = Environment.getExternalStorageDirectory().getAbsolutePath() + "/OpenAIL/GraphLog/";
 		String filePath = path2 + fileName;
 		
 		
@@ -255,7 +255,7 @@ public class GraphManager {
 	
 	public void optimize(final int iterationCount) {
 		checkGraphExistance();
-		final String path = Environment.getExternalStorageDirectory().getAbsolutePath() + "/OpenAIL/Log/";
+		final String path = Environment.getExternalStorageDirectory().getAbsolutePath() + "/OpenAIL/GraphLog/";
 		continueOptimization = true;
 		
 		optimizationThread = new Thread() {

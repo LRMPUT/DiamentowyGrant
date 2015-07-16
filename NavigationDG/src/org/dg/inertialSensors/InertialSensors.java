@@ -8,6 +8,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 
+import org.dg.openAIL.ConfigurationReader.Parameters;
+
 import android.content.MutableContextWrapper;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -76,9 +78,14 @@ public class InertialSensors {
 	// Barometer
 	float lastBarometerValue = 0;
 	BarometerProcessing barometer;
+	
+	// Parameters
+	Parameters.InertialSensors parameters;
 
-	public InertialSensors(SensorManager _sensorManager) {
+	public InertialSensors(SensorManager _sensorManager, Parameters.InertialSensors _parameters) {
 		sensorManager = _sensorManager;
+		parameters = _parameters;
+		
 		isStarted = false;
 		acc = new float[3];
 		mag = new float[3];
@@ -100,13 +107,30 @@ public class InertialSensors {
 		// Complementary filter
 		complementaryFilterEstimation = new ComplementaryFilter(0.999325f);
 		
-		// Choose which filters to save
+		/// Choose which filters to save
 		activeStreams = new boolean[11];
-		activeStreams[activeStream.ORIENTATION_AEKF.ordinal()] = true;
-		activeStreams[activeStream.ORIENTATION_AEKF_EULER.ordinal()] = true;
-		activeStreams[activeStream.ORIENTATION_ANDROID.ordinal()] = true;
-		activeStreams[activeStream.ORIENTATION_ANDROID_EULER.ordinal()] = true;
-		activeStreams[activeStream.GYROSCOPE.ordinal()] = true;
+		
+		// Basic sensors
+		activeStreams[activeStream.ACCELEROMETER.ordinal()] = parameters.record.accelerometer;
+		activeStreams[activeStream.GYROSCOPE.ordinal()] = parameters.record.gyroscope;
+		activeStreams[activeStream.MAGNETOMETER.ordinal()] = parameters.record.magnetometer;
+		activeStreams[activeStream.ACCELEROMETER_WITHOUT_GRAVITY.ordinal()] = parameters.record.accelerometerWithoutGravity;
+		activeStreams[activeStream.PRESSURE.ordinal()] = parameters.record.barometer;
+		
+		// Android estimation
+		activeStreams[activeStream.ORIENTATION_ANDROID.ordinal()] = parameters.record.orientationAndroid;
+		activeStreams[activeStream.ORIENTATION_ANDROID_EULER.ordinal()] = parameters.record.orientationAndroidEuler;
+		
+		// AEKF
+		activeStreams[activeStream.ORIENTATION_AEKF.ordinal()] = parameters.record.orientationAEKF;
+		activeStreams[activeStream.ORIENTATION_AEKF_EULER.ordinal()] = parameters.record.orientationAEKFEuler;
+		
+		// CF
+		activeStreams[activeStream.ORIENTATION_COMPLEMENTARY.ordinal()] = parameters.record.orientationCF;
+		activeStreams[activeStream.ORIENTATION_COMPLEMENTARY_EULER.ordinal()] = parameters.record.orientationCFEuler;
+		
+		
+		
 		
 	}
 
@@ -385,14 +409,14 @@ public class InertialSensors {
 		pressureStream = null;
 
 		File folder = new File(Environment.getExternalStorageDirectory()
-				+ "/DG");
+				+ "/OpenAIL");
 
 		if (!folder.exists()) {
 			folder.mkdir();
 		}
 
 		File dir = new File(String.format(
-				Environment.getExternalStorageDirectory() + "/DG/inertial"));
+				Environment.getExternalStorageDirectory() + "/OpenAIL/inertialSensors"));
 		if (!dir.exists()) {
 			dir.mkdirs();
 		}
