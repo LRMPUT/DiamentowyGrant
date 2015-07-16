@@ -67,7 +67,7 @@ public class WifiScanner extends BroadcastReceiver {
 				wifiPlaceRecognitionParameters);
 
 		File folder = new File(Environment.getExternalStorageDirectory()
-				+ "/OpenAIL/Log");
+				+ "/OpenAIL/WiFi");
 
 		if (!folder.exists()) {
 			folder.mkdir();
@@ -77,7 +77,7 @@ public class WifiScanner extends BroadcastReceiver {
 		String fileName = "";
 		fileName = String.format(Locale.getDefault(), Environment
 				.getExternalStorageDirectory().toString()
-				+ "/OpenAIL/Log/rawMeasurements.wifi", id);
+				+ "/OpenAIL/WiFi/rawMeasurements.wifi", id);
 
 		// RawMeasurements
 		FileOutputStream foutStream;

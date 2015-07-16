@@ -58,7 +58,7 @@ public class WiFiPlaceRecognition implements Runnable {
 
 		// Getting place to save data
 		File folder = new File(Environment.getExternalStorageDirectory()
-				+ "/OpenAIL/Log");
+				+ "/OpenAIL/WiFi");
 
 		if (!folder.exists()) {
 			folder.mkdir();
@@ -68,7 +68,7 @@ public class WiFiPlaceRecognition implements Runnable {
 		String fileName = "";
 		fileName = String.format(Locale.getDefault(), Environment
 				.getExternalStorageDirectory().toString()
-				+ "/OpenAIL/Log/WiFiPlaceRecognition.list");
+				+ "/OpenAIL/WiFi/WiFiPlaceRecognition.list");
 
 		// RawMeasurements
 		FileOutputStream foutStream;
