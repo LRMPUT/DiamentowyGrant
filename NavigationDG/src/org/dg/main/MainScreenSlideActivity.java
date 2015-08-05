@@ -21,6 +21,7 @@ import org.dg.camera.Preview;
 import org.dg.camera.VisualPlaceRecognition;
 import org.dg.inertialSensors.InertialSensors;
 import org.dg.inertialSensors.ProcessRecorded;
+import org.dg.openAIL.MapPosition;
 import org.dg.openAIL.OpenAndroidIndoorLocalization;
 import org.dg.wifi.WifiScanner;
 import org.opencv.android.BaseLoaderCallback;
@@ -53,6 +54,7 @@ import android.support.v4.app.NavUtils;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.util.Log;
+import android.util.Pair;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.Surface;
@@ -94,7 +96,7 @@ public class MainScreenSlideActivity extends Activity implements
 	/**
 	 * The number of pages (wizard steps) to show in this demo.
 	 */
-	private static final int NUM_PAGES = 3;
+	private static final int NUM_PAGES = 4;
 
 	/**
 	 * The pager widget, which handles animation and allows swiping horizontally
@@ -119,7 +121,7 @@ public class MainScreenSlideActivity extends Activity implements
 						"Loaded all libraries", Toast.LENGTH_LONG).show();
 				
 				
-				openAIL.initAfterOpenCV();
+				openAIL.initAfterOpenCV();				
 			}
 				break;
 			default: {
@@ -228,20 +230,29 @@ public class MainScreenSlideActivity extends Activity implements
 
 		// Side View 2 - Start/Optimize Graph
 		if (link.contains("Start graph") || link.contains("Optimize graph")) {
-			{
 
-				if (!openAIL.graphManager.started()) {
-					openAIL.startLocalization();
-				} else {
-					openAIL.stopLocalization();
-				}
-
+			if (!openAIL.graphManager.started()) {
+				
+				// Get the view to draw trajectory
+				ScreenSlidePageFragment visualizationFragment = (ScreenSlidePageFragment)((ScreenSlidePagerAdapter)mPagerAdapter).getItem(3);
+				LocalizationView localizationView = visualizationFragment.getLocalizationView();
+				openAIL.setLocalizationView(localizationView);
+				
+				openAIL.startLocalization();
+			} else {
+				openAIL.stopLocalization();
 			}
+
 		}
-		
+
 		// Side View 3 - Optimize graph from file
 		if (link.contains("Graph from file")) {
-			openAIL.graphManager.optimizeGraphInFile("lastCreatedGraph.g2o");
+			// Get the view to draw trajectory
+			ScreenSlidePageFragment visualizationFragment = (ScreenSlidePageFragment)((ScreenSlidePagerAdapter)mPagerAdapter).getItem(3);
+			LocalizationView localizationView = visualizationFragment.getLocalizationView();
+			openAIL.setLocalizationView(localizationView);
+			
+			openAIL.optimizeGraphInFile("lastCreatedGraph.g2o");
 		}
 		
 		// Side View 4 - Add magnetic place to recognition
@@ -394,11 +405,12 @@ public class MainScreenSlideActivity extends Activity implements
 		fragments.add(ScreenSlidePageFragment.create(0));
 		fragments.add(ScreenSlidePageFragment.create(1));
 		fragments.add(ScreenSlidePageFragment.create(2));
+		fragments.add(ScreenSlidePageFragment.create(3));
 		
 
 		// Instantiate a ViewPager and a PagerAdapter.
 		mPager = (ViewPager) findViewById(R.id.pager);
-		mPager.setOffscreenPageLimit(3);
+		mPager.setOffscreenPageLimit(NUM_PAGES);
 		mPagerAdapter = new ScreenSlidePagerAdapter(getFragmentManager(),
 				fragments);
 		mPager.setAdapter(mPagerAdapter);
@@ -427,7 +439,7 @@ public class MainScreenSlideActivity extends Activity implements
 		// Init WiFi
 		WifiManager wifiManager;
 		wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
-
+		
 		// Init library
 		openAIL = new OpenAndroidIndoorLocalization(sensorManager, wifiManager);
 		
@@ -633,6 +645,8 @@ public class MainScreenSlideActivity extends Activity implements
 		
 		preview = cameraFragment.preview;
 		camera.setPreviewCallback(preview);
+		
+
 		
 	}
 

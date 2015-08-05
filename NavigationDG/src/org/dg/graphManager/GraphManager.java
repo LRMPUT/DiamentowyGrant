@@ -36,6 +36,7 @@ public class GraphManager {
 	int currentPoseId = 0;
 	boolean started = false;
 	boolean continueOptimization = true;
+	public boolean changeInOptimizedData = false;
 	
 	// Thread used in optimization 
 	Thread optimizationThread;
@@ -83,6 +84,9 @@ public class GraphManager {
 			graphStream = null;
 			e.printStackTrace();
 		}
+		
+		
+		startOptimizeOnlineThread();
 	}
 	
 	public void stop() {
@@ -260,10 +264,10 @@ public class GraphManager {
 		
 		optimizationThread = new Thread() {
 		public void run() {
-			
-			while ( continueOptimization )
+			int iterationCounter = iterationCount;
+			while ( continueOptimization && iterationCounter > 0)
 			{
-				int res = NDKGraphOptimize(addrGraph, iterationCount, path);
+				int res = NDKGraphOptimize(addrGraph, 1, path);
 				if (res == 0)
 				{
 					try {
@@ -272,12 +276,47 @@ public class GraphManager {
 						e.printStackTrace();
 					}
 				}
+				iterationCounter--;
 			}
 			Log.d(moduleLogName, "Optimization ended");
 		
 			//NDKGraphDestroy(addrGraph);
 			//Log.d("Main::Activity", "Destroyed graph");
 			
+			} ;
+		};
+		optimizationThread.start();
+		
+		try {
+			Thread.sleep(400,0);
+			optimizationThread.join();
+		} catch (InterruptedException e) {
+			Log.d(moduleLogName, "optimizationThread.joint() - failed");
+		}
+	}
+	
+	public void startOptimizeOnlineThread() {
+		checkGraphExistance();
+		final String path = Environment.getExternalStorageDirectory().getAbsolutePath() + "/OpenAIL/GraphLog/";
+		continueOptimization = true;
+		
+		optimizationThread = new Thread() {
+		public void run() {
+			while ( continueOptimization )
+			{
+				int res = NDKGraphOptimize(addrGraph, 1, path);
+				if (res == 0)
+				{
+					try {
+						Thread.sleep(200);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
+				changeInOptimizedData = true;
+				Log.d(moduleLogName, "OptimizationOnline: iteration ended");
+			}
+			Log.d(moduleLogName, "OptimizationOnline ended");
 			} ;
 		};
 		optimizationThread.start();

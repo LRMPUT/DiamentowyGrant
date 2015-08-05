@@ -1,5 +1,8 @@
 package org.dg.main;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.dg.camera.CameraSaver;
 import org.dg.camera.Preview;
 import org.dg.main.MainActivity.UpdateGraph;
@@ -11,6 +14,7 @@ import android.hardware.Camera;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
+import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.SurfaceView;
 import android.view.View;
@@ -63,6 +67,10 @@ public class ScreenSlidePageFragment extends Fragment {
 	 */
 	public Preview preview = null;
 	
+	/**
+	 * 
+	 */
+	LocalizationView localizationView;
 
 	Camera camera = null;
 
@@ -96,6 +104,8 @@ public class ScreenSlidePageFragment extends Fragment {
 		// Inflate the layout containing a title and body text.
 		final ViewGroup rootView;
 		if (mPageNumber == 0) {
+			Log.d("TEST", "Created camera view");
+			
 	    	Log.d(TAG, String.format("mPageNumber = %d", mPageNumber));
 	    	
 			rootView = (ViewGroup) inflater.inflate(
@@ -181,10 +191,47 @@ public class ScreenSlidePageFragment extends Fragment {
 			initButtonSaveVPR(rootView, R.id.buttonSaveVPR);
 			
 
-		} else if (mPageNumber == 2 || true) {
+		} else if (mPageNumber == 2 ) {
 			rootView = (ViewGroup) inflater.inflate(
 					R.layout.fragment_screen_slide_page2, container, false);
+		} else if (mPageNumber == 3 || true) {
+			Log.d("TEST", "Created localization view");
+			
+			rootView = (ViewGroup) inflater.inflate(
+					R.layout.fragment_screen_slide_page_visualization, container, false);
+			
+			localizationView = (LocalizationView) rootView.findViewById(R.id.SurfaceViewLocalization);
+			
+//            // Add some data for testing
+//			List<Pair<Double, Double>> wifiScanLocations = new ArrayList<Pair<Double, Double>>();
+//			
+//            Pair<Double, Double> x = new Pair<Double, Double>(10.0, 10.0);
+//            wifiScanLocations.add(x);
+//            
+////            
+//            x = new Pair<Double, Double>(-10.0, -10.0);
+//            wifiScanLocations.add(x);
+//            
+//            x = new Pair<Double, Double>(10.0, -10.0);
+//            wifiScanLocations.add(x);
+//            
+//            x = new Pair<Double, Double>(-10.0, 10.0);
+//            wifiScanLocations.add(x);
+//            
+//			localizationView.setWiFiScanLocations(wifiScanLocations);
+//			
+//			List<Pair<Double, Double>> userLocations = new ArrayList<Pair<Double, Double>>();
+//			
+//			x = new Pair<Double, Double>(0.0, 0.0);
+//	        userLocations.add(x);
+//	        x = new Pair<Double, Double>(0.5, 0.5);
+//	        userLocations.add(x);
+//	        x = new Pair<Double, Double>(-0.5, 0.5);
+//	        userLocations.add(x);
+//	            
+//			localizationView.setUserLocations(userLocations);
 		}
+
 
 		// Create those handlers
 		mHandlerOrient = new Handler();
@@ -539,6 +586,13 @@ public class ScreenSlidePageFragment extends Fragment {
 		return mPageNumber;
 	}
 
+	/*
+	 * Returns the localizationView for updating purposes
+	 */
+	public LocalizationView getLocalizationView() {
+		return localizationView;
+	}
+	
 	// ...
 	// Define the listener of the interface type
 	// listener is the activity itself

@@ -18,6 +18,8 @@ GraphManager::GraphManager() {
 
 	optimizer.setVerbose(true);
 	optimizer.setAlgorithm(optimizationAlgorithm);
+
+	int res = optimizer.initializeOptimization();
 }
 
 int GraphManager::optimize(int iterationCount) {
@@ -30,7 +32,8 @@ int GraphManager::optimize(int iterationCount) {
 	}
 
 	// TODO: Not sure if it is supposed to be here
-	int res = optimizer.initializeOptimization();
+	//int res = optimizer.initializeOptimization();
+	int res = 1;
 	//optimizer.computeInitialGuess();
 
 	res = optimizer.optimize(iterationCount);
@@ -38,55 +41,58 @@ int GraphManager::optimize(int iterationCount) {
 	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK: Chi2 [%f]",
 						optimizer.chi2());
 
-
-
 	std::set<g2o::OptimizableGraph::Vertex*,
-				g2o::OptimizableGraph::VertexIDCompare> verticesToCopy;
-		for (g2o::HyperGraph::EdgeSet::const_iterator it =
-				optimizer.edges().begin(); it != optimizer.edges().end(); ++it) {
-			g2o::OptimizableGraph::Edge* e =
-					static_cast<g2o::OptimizableGraph::Edge*>(*it);
-			if (e->level() == 0) {
-				for (std::vector<g2o::HyperGraph::Vertex*>::const_iterator it =
-						e->vertices().begin(); it != e->vertices().end(); ++it) {
-					g2o::OptimizableGraph::Vertex* v =
-							static_cast<g2o::OptimizableGraph::Vertex*>(*it);
-					//__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK: Vertex id: %d and fixed: %d", v->id(), v->fixed());
-					if (!v->fixed())
-						verticesToCopy.insert(
-								static_cast<g2o::OptimizableGraph::Vertex*>(*it));
-				}
+			g2o::OptimizableGraph::VertexIDCompare> verticesToCopy;
+	for (g2o::HyperGraph::EdgeSet::const_iterator it =
+			optimizer.edges().begin(); it != optimizer.edges().end(); ++it) {
+		g2o::OptimizableGraph::Edge* e =
+				static_cast<g2o::OptimizableGraph::Edge*>(*it);
+		if (e->level() == 0) {
+			for (std::vector<g2o::HyperGraph::Vertex*>::const_iterator it =
+					e->vertices().begin(); it != e->vertices().end(); ++it) {
+				g2o::OptimizableGraph::Vertex* v =
+						static_cast<g2o::OptimizableGraph::Vertex*>(*it);
+				//__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK: Vertex id: %d and fixed: %d", v->id(), v->fixed());
+				if (!v->fixed())
+					verticesToCopy.insert(
+							static_cast<g2o::OptimizableGraph::Vertex*>(*it));
 			}
 		}
-
-		for (std::set<g2o::OptimizableGraph::Vertex*,
-				g2o::OptimizableGraph::VertexIDCompare>::const_iterator it =
-				verticesToCopy.begin(); it != verticesToCopy.end(); ++it) {
-			g2o::OptimizableGraph::Vertex* v = *it;
-			std::vector<double> estimate;
-			v->getEstimateData(estimate);
-
-			int index = findIndexInVertices(v->id());
-
-			if (index < 0) {
-				__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK: Wanted to update the estimates, but there is no vertex with wanted id");
-			}
-			if(	vertices[ index ]->type == ail::Vertex::Type::VERTEX2D) {
-				ail::Vertex2D* vertex = static_cast<ail::Vertex2D*> (vertices[index]);
-				vertex->pos[0] = estimate[0];
-				vertex->pos[1] = estimate[1];
-			}
-			else if (vertices[ index ]->type == ail::Vertex::Type::VERTEXSE2) {
-				ail::VertexSE2* vertex = static_cast<ail::VertexSE2*> (vertices[index]);
-				vertex->pos[0] = estimate[0];
-				vertex->pos[1] = estimate[1];
-				vertex->orient = estimate[2];
-			}
-
-			//__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK: Vertex id: %d\tEstimates: %f %f %f", v->id(), estimate[0], estimate[1], estimate[2]);
-		}
-
+	}
 	pthread_mutex_unlock(&graphMtx);
+
+	pthread_mutex_lock(&verticesMtx);
+
+	for (std::set<g2o::OptimizableGraph::Vertex*,
+			g2o::OptimizableGraph::VertexIDCompare>::const_iterator it =
+			verticesToCopy.begin(); it != verticesToCopy.end(); ++it) {
+		g2o::OptimizableGraph::Vertex* v = *it;
+		std::vector<double> estimate;
+		v->getEstimateData(estimate);
+
+		int index = findIndexInVertices(v->id());
+
+		if (index < 0) {
+			__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG,
+					"NDK: Wanted to update the estimates, but there is no vertex with wanted id");
+		}
+		if (vertices[index]->type == ail::Vertex::Type::VERTEX2D) {
+			ail::Vertex2D* vertex = static_cast<ail::Vertex2D*>(vertices[index]);
+			vertex->pos[0] = estimate[0];
+			vertex->pos[1] = estimate[1];
+		} else if (vertices[index]->type == ail::Vertex::Type::VERTEXSE2) {
+			ail::VertexSE2* vertex =
+					static_cast<ail::VertexSE2*>(vertices[index]);
+			vertex->pos[0] = estimate[0];
+			vertex->pos[1] = estimate[1];
+			vertex->orient = estimate[2];
+		}
+
+		//__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK: Vertex id: %d\tEstimates: %f %f %f", v->id(), estimate[0], estimate[1], estimate[2]);
+	}
+	pthread_mutex_unlock(&verticesMtx);
+
+
 	return res;
 }
 
@@ -136,6 +142,8 @@ void GraphManager::addToGraph(string dataToProcess) {
 std::vector<double> GraphManager::getVertexPosition(int id) {
 	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK: Called getVertexPosition");
 
+	pthread_mutex_lock(&verticesMtx);
+
 	std::vector<double> estimate;
 	for (int i=0;i<vertices.size();i++) {
 		if (vertices[i]->vertexId == id)
@@ -154,13 +162,16 @@ std::vector<double> GraphManager::getVertexPosition(int id) {
 			}
 		}
 	}
+	pthread_mutex_unlock(&verticesMtx);
 	return estimate;
 }
 
 // Get information about position of all vertices
 std::vector<double> GraphManager::getPositionOfAllVertices() {
 	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG,
-			"NDK: Called getPositionOfAllVertices");
+			"NDK: Called getPositionOfAllVertices - size: %d", vertices.size());
+
+	pthread_mutex_lock(&verticesMtx);
 
 	std::vector<double> estimate;
 	for (int i = 0; i < vertices.size(); i++) {
@@ -170,14 +181,26 @@ std::vector<double> GraphManager::getPositionOfAllVertices() {
 			estimate.push_back(vertex->pos[0]);
 			estimate.push_back(vertex->pos[1]);
 			estimate.push_back(0);
+
+			__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG,
+								"NDK: (id, x, y) = (%d, %f, %f)", vertices[i]->vertexId, vertex->pos[0], vertex->pos[1]);
+
 		} else if (vertices[i]->type == ail::Vertex::Type::VERTEXSE2) {
 			ail::VertexSE2* vertex = static_cast<ail::VertexSE2*>(vertices[i]);
 			estimate.push_back(vertex->pos[0]);
 			estimate.push_back(vertex->pos[1]);
 			estimate.push_back(vertex->orient);
+
+			__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG,
+											"NDK: (id, x, y) = (%d, %f, %f)", vertices[i]->vertexId, vertex->pos[0], vertex->pos[1]);
 		}
 
 	}
+
+	pthread_mutex_unlock(&verticesMtx);
+
+	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG,
+				"NDK: After getPositionOfAllVertices");
 	return estimate;
 }
 
@@ -202,7 +225,7 @@ int GraphManager::addVertex(stringstream &data, int type) {
 	data >> id;
 	ailVertex->vertexId = id;
 
-	if (id == 0 || (id >= 5000 && id < 10000)) {
+	if (id == 0 || (id >= 10000)) {
 		__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG,
 				"NDK: setFixed(TRUE)!");
 		v->setFixed(true);

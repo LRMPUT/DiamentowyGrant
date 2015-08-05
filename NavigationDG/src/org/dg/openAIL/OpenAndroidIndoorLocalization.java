@@ -20,6 +20,8 @@ import org.dg.graphManager.GraphManager;
 import org.dg.graphManager.Vertex;
 import org.dg.graphManager.wiFiMeasurement;
 import org.dg.inertialSensors.InertialSensors;
+import org.dg.main.LocalizationView;
+import org.dg.main.R;
 import org.dg.wifi.MyScanResult;
 import org.dg.wifi.WifiScanner;
 import org.opencv.core.Mat;
@@ -30,6 +32,7 @@ import android.hardware.SensorManager;
 import android.net.wifi.WifiManager;
 import android.os.Environment;
 import android.util.Log;
+import android.util.Pair;
 
 // This is a class that is supposed to provide the interface for all available solutions
 public class OpenAndroidIndoorLocalization {
@@ -60,10 +63,13 @@ public class OpenAndroidIndoorLocalization {
 
 	// Prior map
 	public PriorMapHandler priorMapHandler;
+	
+	// View to draw localization
+	LocalizationView localizationView;
 
 	public OpenAndroidIndoorLocalization(SensorManager sensorManager,
 			WifiManager wifiManager) {
-
+		
 		// Create directories if needed
 		createNeededDirectories();
 
@@ -121,11 +127,16 @@ public class OpenAndroidIndoorLocalization {
 		if (parameters.mainProcessing.usePriorMap) {
 			List<MapPosition> mapPositions = priorMapHandler.loadPriorMap(parameters.mainProcessing.priorMapName);
 			
-			// For all positions in a map
+			// For all positions in a map add to graph and initially add to visualization
+			List<Pair<Double, Double>> wifiScanLocations = new ArrayList<Pair<Double, Double>>();
 			for (MapPosition mapPos: mapPositions) {
 				
 				// Add a node to the graph
 				graphManager.addVertexWithKnownPosition(mapPos.id, mapPos.X, mapPos.Y, mapPos.Z);
+				
+				// Add a position for initial Visualization
+				Pair<Double, Double> tmpPair = new Pair<Double, Double>(mapPos.X, mapPos.Y);
+				wifiScanLocations.add(tmpPair);
 
 				// Add new scan to WiFi Place Recognition 
 				//	(TODO: Could be extended to use X, Y, Z, angle)
@@ -133,9 +144,9 @@ public class OpenAndroidIndoorLocalization {
 				
 				// Add new image to VPR 
 				//	(TODO: Could be extended to use X, Y, Z, angle)
-				visualPlaceRecognition.addPlace(mapPos.id, mapPos.image);
+				//visualPlaceRecognition.addPlace(mapPos.id, mapPos.image);
 			}
-			
+			localizationView.setWiFiScanLocations(wifiScanLocations);
 		}
 
 		// Start WiFi recognition
@@ -150,7 +161,6 @@ public class OpenAndroidIndoorLocalization {
 
 		// Check if there is an issue with WiFi
 		detectWiFiIssue = 0;
-		// .graphManager.optimize(5);
 	}
 
 	public void stopLocalization() {
@@ -172,6 +182,42 @@ public class OpenAndroidIndoorLocalization {
 		List<Vertex> list = graphManager.getPositionsOfVertices();
 	}
 
+	public void optimizeGraphInFile(String name)
+	{
+		graphManager.optimizeGraphInFile("lastCreatedGraph.g2o");
+		
+		List<Vertex> listOfVertices = graphManager.getPositionsOfVertices();
+		List<Pair<Double, Double>> userLocations = new ArrayList<Pair<Double, Double>>();
+		
+		for (Vertex v : listOfVertices) {
+			Log.d(moduleLogName, "Vertex " + v.id + " - pos = (" + v.X + ", " + v.Y + ", " + v.Z + ")");
+			if ( v.id < 10000 )
+				userLocations.add(new Pair<Double,Double>(v.X, v.Y));
+		}
+		
+		localizationView.setUserLocations(userLocations);
+		
+		// For all positions in a map add to graph and initially add to visualization
+		List<Pair<Double, Double>> wifiScanLocations = new ArrayList<Pair<Double, Double>>();
+		if (parameters.mainProcessing.usePriorMap) {
+			List<MapPosition> mapPositions = priorMapHandler.loadPriorMap(parameters.mainProcessing.priorMapName);
+			
+			// For all positions in a map
+			for (MapPosition mapPos: mapPositions) {
+				// Add a position for initial Visualization
+				Pair<Double, Double> tmpPair = new Pair<Double, Double>(mapPos.X, mapPos.Y);
+				wifiScanLocations.add(tmpPair);
+			}
+			// Add to the visualization
+			localizationView.setWiFiScanLocations(wifiScanLocations);
+		}
+		
+	}
+	
+	public void setLocalizationView(LocalizationView _localizationView) {
+		// Save localization view for drawing
+		localizationView = _localizationView;
+	}
 	
 	/**
 	* Class used to check if there is new sensor data to add to graph
@@ -192,10 +238,11 @@ public class OpenAndroidIndoorLocalization {
 			if (distance > 0.01) {
 				// get angle from our estimation
 				// TODO: RIGHT NOW WE USE ANDROID ORIENTATION
-				float yawZ = inertialSensors.getYawForStepometer();
+				float yawZ = -inertialSensors.getYawForStepometer();
 
 				// We need to change yawZ into radians and change direction
-				yawZ = (float) (-yawZ * Math.PI / 180.0f);
+//				yawZ = (float) (-yawZ * Math.PI / 180.0f);
+				yawZ = (float) (yawZ * Math.PI / 180.0f);
 
 				graphManager.addStepometerMeasurement(distance, yawZ);
 			}
@@ -259,7 +306,26 @@ public class OpenAndroidIndoorLocalization {
 //
 //			List<IdPair<Integer, Integer>> vprList = visualPlaceRecognition
 //					.getAndClearVPRMatchedList();
-
+			
+			// TODO: Get current estimate of vertices
+			if (graphManager.changeInOptimizedData)
+			{
+				graphManager.changeInOptimizedData = false;
+				
+				Log.d(moduleLogName,
+						"Adding user positions to visualization");
+				List<Vertex> listOfVertices = graphManager.getPositionsOfVertices();
+				List<Pair<Double, Double>> userLocations = new ArrayList<Pair<Double, Double>>();	
+				for (Vertex v : listOfVertices) {
+					Log.d(moduleLogName, "Vertex " + v.id + " - pos = (" + v.X + ", " + v.Y + ", " + v.Z + ")");
+					if ( v.id < 10000 )
+						userLocations.add(new Pair<Double,Double>(v.X, v.Y));
+				}
+				
+				localizationView.setUserLocations(userLocations);
+			}
+			
+			
 			iterationCounter++;
 		}
 
@@ -270,6 +336,7 @@ public class OpenAndroidIndoorLocalization {
 	 * 
 	 */
 	public void saveMapPoint(String mapName, double X, double Y, double Z) {
+		Log.d(moduleLogName, "Called saveMapPoint with: " + mapName + " " + X + " " + Y + " " + Z);
 		
 		// Let's create a new map position
 		MapPosition mapPos = new MapPosition();
@@ -280,8 +347,9 @@ public class OpenAndroidIndoorLocalization {
 		mapPos.Z = Z;
 		
 		// Filling missing information with current data
-		//		minus angle to match the coordinate system of stepometer
-		mapPos.angle = -inertialSensors.getYawForStepometer();
+		
+		// Angle in global coordinate system
+		mapPos.angle = inertialSensors.getGlobalYaw();
 
 		// Getting the last WiFi scan
 		mapPos.scannedWiFiList = wifiScanner.getLastScan();

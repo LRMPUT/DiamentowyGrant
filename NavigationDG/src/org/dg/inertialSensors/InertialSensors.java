@@ -204,6 +204,19 @@ public class InertialSensors {
 		}
 		return 0.0f;
 	}
+	
+	public float getGlobalYaw() {
+		try {
+			yawMtx.acquire();
+			float yawZ = orientAndroid[2];
+			yawMtx.release();
+			return yawZ;
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return 0.0f;
+	}
 		
 	
 	// Magnetic recognition

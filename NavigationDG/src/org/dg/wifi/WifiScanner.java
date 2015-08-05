@@ -8,6 +8,7 @@ import java.nio.channels.AlreadyConnectedException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.Semaphore;
 
 import org.dg.graphManager.wiFiMeasurement;
 
@@ -35,6 +36,7 @@ public class WifiScanner extends BroadcastReceiver {
 
 	// Last results
 	List<ScanResult> previousWiFiList = new ArrayList<ScanResult>();
+	private final Semaphore previousScanMtx = new Semaphore(1, true);
 
 	// Graph result
 	List<wiFiMeasurement> graphWiFiList = new ArrayList<wiFiMeasurement>();
@@ -173,19 +175,32 @@ public class WifiScanner extends BroadcastReceiver {
 	public List<MyScanResult> getLastScan()
 	{
 		List<MyScanResult> myList = new ArrayList<MyScanResult>();
-		for (ScanResult sr : previousWiFiList) {
-			myList.add(new MyScanResult(sr.BSSID, sr.level, sr.SSID));
+		try {
+			previousScanMtx.acquire();
+			for (ScanResult sr : previousWiFiList) {
+				myList.add(new MyScanResult(sr.BSSID, sr.level, sr.SSID));
+			}
+			previousScanMtx.release();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
 		}
+		
 		return myList;
 	}
 	
 	public void addLastScanToRecognition(int id) {
-		if (previousWiFiList.size() > 0) {
-			List<MyScanResult> myList = new ArrayList<MyScanResult>();
-			for (ScanResult sr : previousWiFiList) {
-				myList.add(new MyScanResult(sr.BSSID, sr.level));
+		try {
+			previousScanMtx.acquire();
+			if (previousWiFiList.size() > 0) {
+				List<MyScanResult> myList = new ArrayList<MyScanResult>();
+				for (ScanResult sr : previousWiFiList) {
+					myList.add(new MyScanResult(sr.BSSID, sr.level));
+				}
+				placeRecognition.addPlace(myList, id, true);
 			}
-			placeRecognition.addPlace(myList, id, true);
+			previousScanMtx.release();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
 		}
 
 	}
@@ -276,16 +291,24 @@ public class WifiScanner extends BroadcastReceiver {
 			graphWiFiListReady = true;
 
 			// Save measurement
+			previousScanMtx.acquire();
 			previousWiFiList = wifiList;
+			previousScanMtx.release();
 
 			newMeasurement = true;
+			
+			Toast toast = Toast.makeText(arg0.getApplicationContext(),
+					"WiFi scan finished", Toast.LENGTH_SHORT);
+			toast.show();
 		} catch (Exception e) {
 			Log.d("WiFi", "Scanning failed: " + e.getMessage() + "\n");
+			
+			Toast toast = Toast.makeText(arg0.getApplicationContext(),
+					"WiFi scan FAILED", Toast.LENGTH_SHORT);
+			toast.show();
 		}
 
-		Toast toast = Toast.makeText(arg0.getApplicationContext(),
-				"WiFi scan finished", Toast.LENGTH_SHORT);
-		toast.show();
+		
 
 		// Prepare for next measurement
 		waitingForScan = false;

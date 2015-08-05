@@ -131,4 +131,7 @@ private:
 
 	// Lock to graph
 	pthread_mutex_t graphMtx;
+
+	// Lock to current estimate - vertices
+	pthread_mutex_t verticesMtx;
 };
