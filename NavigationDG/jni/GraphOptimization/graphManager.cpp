@@ -6,6 +6,10 @@ GraphManager::GraphManager() {
 		__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "Mutex init failed!");
 	}
 
+	if (pthread_mutex_init(&verticesMtx, NULL)) {
+		__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "Mutex init failed!");
+	}
+
 	prevUserPositionTheta = prevUserPositionX = prevUserPositionY = 0.0;
 
 	BlockSolverX::LinearSolverType* linearSolver = new LinearSolverPCG<
@@ -28,12 +32,13 @@ int GraphManager::optimize(int iterationCount) {
 	if ( optimizer.edges().size() == 0 )
 	{
 		pthread_mutex_unlock(&graphMtx);
+		__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "Graph is empty");
 		return 0;
 	}
 
 	// TODO: Not sure if it is supposed to be here
-	//int res = optimizer.initializeOptimization();
-	int res = 1;
+	int res = optimizer.initializeOptimization();
+	//int res = 1;
 	//optimizer.computeInitialGuess();
 
 	res = optimizer.optimize(iterationCount);
@@ -61,7 +66,11 @@ int GraphManager::optimize(int iterationCount) {
 	}
 	pthread_mutex_unlock(&graphMtx);
 
+	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "optimize: Waiting for vertices Mtx");
+
 	pthread_mutex_lock(&verticesMtx);
+
+	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "optimize: we have vertices Mtx");
 
 	for (std::set<g2o::OptimizableGraph::Vertex*,
 			g2o::OptimizableGraph::VertexIDCompare>::const_iterator it =
@@ -69,6 +78,9 @@ int GraphManager::optimize(int iterationCount) {
 		g2o::OptimizableGraph::Vertex* v = *it;
 		std::vector<double> estimate;
 		v->getEstimateData(estimate);
+
+		__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "optimize: processing vertex");
+
 
 		int index = findIndexInVertices(v->id());
 
@@ -91,7 +103,7 @@ int GraphManager::optimize(int iterationCount) {
 		//__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK: Vertex id: %d\tEstimates: %f %f %f", v->id(), estimate[0], estimate[1], estimate[2]);
 	}
 	pthread_mutex_unlock(&verticesMtx);
-
+	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "optimize: Released vertices Mtx");
 
 	return res;
 }
@@ -142,6 +154,7 @@ void GraphManager::addToGraph(string dataToProcess) {
 std::vector<double> GraphManager::getVertexPosition(int id) {
 	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK: Called getVertexPosition");
 
+	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "getVertexPosition: Waiting for vertices Mtx");
 	pthread_mutex_lock(&verticesMtx);
 
 	std::vector<double> estimate;
@@ -163,6 +176,7 @@ std::vector<double> GraphManager::getVertexPosition(int id) {
 		}
 	}
 	pthread_mutex_unlock(&verticesMtx);
+	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "getVertexPosition: Released vertices Mtx");
 	return estimate;
 }
 
@@ -171,6 +185,7 @@ std::vector<double> GraphManager::getPositionOfAllVertices() {
 	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG,
 			"NDK: Called getPositionOfAllVertices - size: %d", vertices.size());
 
+	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "getPositonsOfAllVertices: Waiting for vertices Mtx");
 	pthread_mutex_lock(&verticesMtx);
 
 	std::vector<double> estimate;
@@ -198,6 +213,8 @@ std::vector<double> GraphManager::getPositionOfAllVertices() {
 	}
 
 	pthread_mutex_unlock(&verticesMtx);
+	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "getPositionsOfAllVertices: Released vertices Mtx");
+
 
 	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG,
 				"NDK: After getPositionOfAllVertices");

@@ -179,14 +179,14 @@ public class OpenAndroidIndoorLocalization {
 		graphManager.stopOptimizationThread();
 
 		// Getting the estimates
-		List<Vertex> list = graphManager.getPositionsOfVertices();
+//		List<Vertex> list = graphManager.getVerticesEstimates();
 	}
 
 	public void optimizeGraphInFile(String name)
 	{
 		graphManager.optimizeGraphInFile("lastCreatedGraph.g2o");
 		
-		List<Vertex> listOfVertices = graphManager.getPositionsOfVertices();
+		List<Vertex> listOfVertices = graphManager.getVerticesEstimates();
 		List<Pair<Double, Double>> userLocations = new ArrayList<Pair<Double, Double>>();
 		
 		for (Vertex v : listOfVertices) {
@@ -314,7 +314,9 @@ public class OpenAndroidIndoorLocalization {
 				
 				Log.d(moduleLogName,
 						"Adding user positions to visualization");
-				List<Vertex> listOfVertices = graphManager.getPositionsOfVertices();
+				// List<Vertex> listOfVertices = graphManager.getVerticesEstimates();
+				
+				 List<Vertex> listOfVertices = graphManager.getPositionsOfVertices();
 				List<Pair<Double, Double>> userLocations = new ArrayList<Pair<Double, Double>>();	
 				for (Vertex v : listOfVertices) {
 					Log.d(moduleLogName, "Vertex " + v.id + " - pos = (" + v.X + ", " + v.Y + ", " + v.Z + ")");

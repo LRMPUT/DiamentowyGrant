@@ -47,6 +47,10 @@ public class GraphManager {
 	// File to save current graph
 	PrintStream graphStream = null;
 	
+	// Current estimate
+	private static final Object currentEstimateMtx = new Object();
+	List<Vertex> currentEstimate;
+	
 	// CONSTRUCTORS / DESTRUCTORS
 	public GraphManager(org.dg.openAIL.ConfigurationReader.Parameters.GraphManager _parameters) {
 		parameters = _parameters;
@@ -231,6 +235,12 @@ public class GraphManager {
 		return vertices;
 	}
 	
+	public List<Vertex> getVerticesEstimates() {
+		synchronized (currentEstimateMtx) {
+			return currentEstimate;
+		}
+	}
+	
 	public void addVertexWithKnownPosition(int id, double X, double Y, double Z) {
 		checkGraphExistance();
 		
@@ -277,6 +287,16 @@ public class GraphManager {
 					}
 				}
 				iterationCounter--;
+				
+				Log.d(moduleLogName, "Before getPositionsOfVertices");
+				
+				synchronized(currentEstimateMtx)
+				{
+					currentEstimate = getPositionsOfVertices();
+					changeInOptimizedData = true;
+				}
+				
+				Log.d(moduleLogName, "Iteration ended");
 			}
 			Log.d(moduleLogName, "Optimization ended");
 		
@@ -305,6 +325,9 @@ public class GraphManager {
 			while ( continueOptimization )
 			{
 				int res = NDKGraphOptimize(addrGraph, 1, path);
+				
+				Log.d(moduleLogName, "OptimizationOnline: returned from NDK");
+				
 				if (res == 0)
 				{
 					try {
@@ -313,7 +336,11 @@ public class GraphManager {
 						e.printStackTrace();
 					}
 				}
-				changeInOptimizedData = true;
+//				synchronized(currentEstimateMtx)
+//				{
+//					currentEstimate = getPositionsOfVertices();
+//					changeInOptimizedData = true;
+//				}
 				Log.d(moduleLogName, "OptimizationOnline: iteration ended");
 			}
 			Log.d(moduleLogName, "OptimizationOnline ended");
