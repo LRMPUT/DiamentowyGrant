@@ -314,9 +314,8 @@ public class OpenAndroidIndoorLocalization {
 				
 				Log.d(moduleLogName,
 						"Adding user positions to visualization");
-				// List<Vertex> listOfVertices = graphManager.getVerticesEstimates();
-				
-				 List<Vertex> listOfVertices = graphManager.getPositionsOfVertices();
+				 List<Vertex> listOfVertices = graphManager.getVerticesEstimates();
+				//List<Vertex> listOfVertices = graphManager.getPositionsOfVertices();
 				List<Pair<Double, Double>> userLocations = new ArrayList<Pair<Double, Double>>();	
 				for (Vertex v : listOfVertices) {
 					Log.d(moduleLogName, "Vertex " + v.id + " - pos = (" + v.X + ", " + v.Y + ", " + v.Z + ")");

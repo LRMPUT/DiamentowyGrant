@@ -336,11 +336,11 @@ public class GraphManager {
 						e.printStackTrace();
 					}
 				}
-//				synchronized(currentEstimateMtx)
-//				{
-//					currentEstimate = getPositionsOfVertices();
-//					changeInOptimizedData = true;
-//				}
+				synchronized(currentEstimateMtx)
+				{
+					currentEstimate = getPositionsOfVertices();
+					changeInOptimizedData = true;
+				}
 				Log.d(moduleLogName, "OptimizationOnline: iteration ended");
 			}
 			Log.d(moduleLogName, "OptimizationOnline ended");
