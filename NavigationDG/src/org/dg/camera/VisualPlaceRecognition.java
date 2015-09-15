@@ -131,8 +131,8 @@ public class VisualPlaceRecognition {
 			+ "/VPR/settings.yml");
 			
 			// Call training of fabmap library
-//			addrFabMapEnv = createAndTrainFabmapNDK(fabmapSettingsPath, trainingSetSize);
-			addrFabMapEnv = createAndLoadFabmapNDK(fabmapSettingsPath);
+			addrFabMapEnv = createAndTrainFabmapNDK(fabmapSettingsPath, trainingSetSize);
+//			addrFabMapEnv = createAndLoadFabmapNDK(fabmapSettingsPath);
 		}
 		
 		// Read testimages
