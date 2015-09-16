@@ -1,19 +1,33 @@
 package org.dg.camera;
 
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.List;
+import java.util.Locale;
+import java.util.concurrent.locks.ReentrantLock;
+
+import org.opencv.core.CvType;
+import org.opencv.core.Mat;
+import org.opencv.imgproc.Imgproc;
 
 import android.content.Context;
+import android.graphics.ImageFormat;
+import android.graphics.Rect;
+import android.graphics.YuvImage;
 import android.hardware.Camera;
+import android.hardware.Camera.PreviewCallback;
 import android.hardware.Camera.Size;
+import android.os.Environment;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
 
-public class Preview extends ViewGroup implements SurfaceHolder.Callback {
+public class Preview extends ViewGroup implements SurfaceHolder.Callback, PreviewCallback  {
     private final String TAG = "Camera::Preview";
 
     SurfaceView mSurfaceView;
@@ -21,6 +35,11 @@ public class Preview extends ViewGroup implements SurfaceHolder.Callback {
     Size mPreviewSize;
     List<Size> mSupportedPreviewSizes;
     Camera mCamera = null; 
+    
+    ReentrantLock curPreviewImageLock = new ReentrantLock();
+	
+	Mat curPreviewImage = null;
+
 
     public Preview(Context context, SurfaceView sv) {
         super(context);
@@ -81,7 +100,7 @@ public class Preview extends ViewGroup implements SurfaceHolder.Callback {
 
         if (mSupportedPreviewSizes != null) {
             mPreviewSize = getOptimalPreviewSize(mSupportedPreviewSizes, width, height);
-//        	Log.d(TAG, String.format("mPreviewSize = (%d, %d)", mPreviewSize.width, mPreviewSize.height));
+        	Log.d(TAG, String.format("mPreviewSize = (%d, %d)", mPreviewSize.width, mPreviewSize.height));
         }
     }
 
@@ -141,7 +160,7 @@ public class Preview extends ViewGroup implements SurfaceHolder.Callback {
 
 
     private Size getOptimalPreviewSize(List<Size> sizes, int w, int h) {
-        final double ASPECT_TOLERANCE = 0.1;
+        final double ASPECT_TOLERANCE = 0.3;
         double targetRatio = (double) w / h;
         if (sizes == null) return null;
 
@@ -172,9 +191,10 @@ public class Preview extends ViewGroup implements SurfaceHolder.Callback {
         }
         return optimalSize;
     }
+    
 
     public void surfaceChanged(SurfaceHolder holder, int format, int w, int h) {
-//    	Log.d(TAG, "surfaceChanged");
+    	Log.d(TAG, "surfaceChanged");
     	if(mCamera != null) {
 //        	Log.d(TAG, "mCamera != null");
         	
@@ -183,12 +203,70 @@ public class Preview extends ViewGroup implements SurfaceHolder.Callback {
             
     		Camera.Parameters parameters = mCamera.getParameters();
     		parameters.setPreviewSize(640, 480);
+    		
+    //		parameters.setPreviewSize(mPreviewSize.width, mPreviewSize.height);
 //    		parameters.setPreviewSize(mPreviewSize.width, mPreviewSize.height);
     		requestLayout();
 
     		mCamera.setParameters(parameters);
+    		mCamera.setPreviewCallback(this);
     		mCamera.startPreview();
+    		
     	}
     }
+    
+    @Override
+	public void onPreviewFrame(byte[] data, Camera camera) {
+		// TODO Auto-generated method stub
+    	Camera.Parameters parameters = mCamera.getParameters();
+    	
+		int imageFormat = parameters.getPreviewFormat(); 		   
+		if (imageFormat == ImageFormat.NV21)
+		{
+//			Log.d(TAG, "imageFormat == ImageFormat.NV21");
+//			Log.d(TAG, String.format("data.length = %d", data.length));
+    	   
+			Camera.Size prevSize = parameters.getPreviewSize();
+			
+//			Log.d(TAG, String.format("preview size = (%d, %d)", prevSize.width, prevSize.height));
+			
+			Mat imageBGRA = new Mat();
+			Mat imageYUV = new Mat(prevSize.height + prevSize.height / 2, prevSize.width, CvType.CV_8UC1);
+			imageYUV.put(0,  0, data);
+			
+			Imgproc.cvtColor(imageYUV, imageBGRA, Imgproc.COLOR_YUV420sp2BGR, 4);
+    	   
+			curPreviewImageLock.lock();
+			
+			try {
+
+				curPreviewImage = imageBGRA;
+				
+			} finally {
+			//						Log.d(TAG, "onPreviewFrame finally");
+				curPreviewImageLock.unlock();
+			}
+    	   
+       }
+
+	}
+    
+    public Mat  getCurPreviewImage() {
+		Mat ret = null;
+		
+		curPreviewImageLock.lock();
+		
+		try {
+			if(curPreviewImage != null){
+				ret = curPreviewImage.clone();
+			}
+		} finally {
+//			Log.d(TAG, "getCurPreviewImage finally");
+			curPreviewImageLock.unlock();
+		}
+		
+		return ret;
+    }
+	
 
 }

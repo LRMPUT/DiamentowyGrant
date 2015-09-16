@@ -7,9 +7,8 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.List;
-
-import org.dg.wifi.WiFiPlaceRecognition.IdPair;
 
 import android.media.MediaScannerConnection;
 import android.os.Environment;
@@ -37,6 +36,7 @@ public class GraphManager {
 	int currentPoseId = 0;
 	boolean started = false;
 	boolean continueOptimization = true;
+	public boolean changeInOptimizedData = false;
 	
 	// Thread used in optimization 
 	Thread optimizationThread;
@@ -46,6 +46,10 @@ public class GraphManager {
 	
 	// File to save current graph
 	PrintStream graphStream = null;
+	
+	// Current estimate
+	private static final Object currentEstimateMtx = new Object();
+	List<Vertex> currentEstimate;
 	
 	// CONSTRUCTORS / DESTRUCTORS
 	public GraphManager(org.dg.openAIL.ConfigurationReader.Parameters.GraphManager _parameters) {
@@ -70,7 +74,7 @@ public class GraphManager {
 			}
 
 			File dir = new File(String.format(
-					Environment.getExternalStorageDirectory() + "/OpenAIL/Log/"));
+					Environment.getExternalStorageDirectory() + "/OpenAIL/GraphLog/"));
 			if (!dir.exists()) {
 				dir.mkdirs();
 			}
@@ -84,6 +88,9 @@ public class GraphManager {
 			graphStream = null;
 			e.printStackTrace();
 		}
+		
+		
+		startOptimizeOnlineThread();
 	}
 	
 	public void stop() {
@@ -115,7 +122,7 @@ public class GraphManager {
 		addrGraph = NDKGraphCreate();
 
 		Log.d(moduleLogName, "Calling test from file");
-		String path2 = Environment.getExternalStorageDirectory().getAbsolutePath() + "/DG/testGraph/";
+		String path2 = Environment.getExternalStorageDirectory().getAbsolutePath() + "/OpenAIL/GraphLog/";
 		String filePath = path2 + fileName;
 		
 		
@@ -144,11 +151,23 @@ public class GraphManager {
 	}
 	
 	
-	public void addMultipleWiFiFingerprints(List<IdPair<Integer, Integer>> foundWiFiFingerprintLinks) {
+	public void addMultipleWiFiFingerprints(List<org.dg.openAIL.IdPair<Integer, Integer>> foundWiFiFingerprintLinks) {
 		String g2oString = "";
-		for (IdPair<Integer, Integer> placeIds : foundWiFiFingerprintLinks)
+		for (org.dg.openAIL.IdPair<Integer, Integer> placeIds : foundWiFiFingerprintLinks)
 		{
 			String edgeWiFiFingerprint = createWiFiFingerprintEdgeString(placeIds.getFirst(), placeIds.getSecond());
+			g2oString = g2oString + edgeWiFiFingerprint;
+		}
+		save2file(g2oString);
+		
+		NDKGraphAddVertexEdge(addrGraph, g2oString);
+	}
+	
+	public void addMultipleVPRMatches(List<org.dg.openAIL.IdPair<Integer, Integer>> foundVPRmatches) {
+		String g2oString = "";
+		for (org.dg.openAIL.IdPair<Integer, Integer> placeIds : foundVPRmatches)
+		{
+			String edgeWiFiFingerprint = createVPRVicinityEdgeString(placeIds.getFirst(), placeIds.getSecond());
 			g2oString = g2oString + edgeWiFiFingerprint;
 		}
 		save2file(g2oString);
@@ -182,6 +201,8 @@ public class GraphManager {
 		NDKGraphAddVertexEdge(addrGraph, edgeWiFi);
 	}
 	
+
+	
 	public int getCurrentPoseId()
 	{
 		return currentPoseId;
@@ -193,18 +214,34 @@ public class GraphManager {
 		Log.d(moduleLogName, "Vertex estimate of wanted id: " + pos[0] + " " + pos[1] + " " + pos[2] + " " + pos[3]);
 	}
 	
-	public void getPositionsOfVertices() {
+	public List<Vertex> getPositionsOfVertices() {
+		
+		// The list of all vertices
+		List<Vertex> vertices = new ArrayList<Vertex>();
+		
+		// Getting the estimates
 		double [] pos = NDKGraphGetPositionOfAllVertices(addrGraph);
 		
-		Log.d(moduleLogName, "Listing whole graph");
+		// For all estimates
 		for (int i=0;i<pos.length;i+=4)
 		{
-			Log.d(moduleLogName, "Vertex estimate: " + pos[i] + " " + pos[i+1] + " " + pos[i+2] + " " + pos[i+3]);
+			// Cast id to int
+			Double idDouble = pos[i];
+			Vertex vertex = new Vertex(idDouble.intValue(), pos[i+1], pos[i+2], pos[i+3]);
+			// Add new vertex
+			vertices.add(vertex);
 		}
-		
+		// Return the list of vertices
+		return vertices;
 	}
 	
-	public void addWiFiPlaceRecognitionVertex(int id, float X, float Y, float Z) {
+	public List<Vertex> getVerticesEstimates() {
+		synchronized (currentEstimateMtx) {
+			return currentEstimate;
+		}
+	}
+	
+	public void addVertexWithKnownPosition(int id, double X, double Y, double Z) {
 		checkGraphExistance();
 		
 		String g2oString = "VERTEX_SE2 " + id + " " + X + " " + Y + " " + Z +"\n";
@@ -232,15 +269,15 @@ public class GraphManager {
 	
 	public void optimize(final int iterationCount) {
 		checkGraphExistance();
-		final String path = Environment.getExternalStorageDirectory().getAbsolutePath() + "/OpenAIL/Log/";
+		final String path = Environment.getExternalStorageDirectory().getAbsolutePath() + "/OpenAIL/GraphLog/";
 		continueOptimization = true;
 		
 		optimizationThread = new Thread() {
 		public void run() {
-			
-			while ( continueOptimization )
+			int iterationCounter = iterationCount;
+			while ( continueOptimization && iterationCounter > 0)
 			{
-				int res = NDKGraphOptimize(addrGraph, iterationCount, path);
+				int res = NDKGraphOptimize(addrGraph, 1, path);
 				if (res == 0)
 				{
 					try {
@@ -249,12 +286,64 @@ public class GraphManager {
 						e.printStackTrace();
 					}
 				}
+				iterationCounter--;
+				
+				Log.d(moduleLogName, "Before getPositionsOfVertices");
+				
+				synchronized(currentEstimateMtx)
+				{
+					currentEstimate = getPositionsOfVertices();
+					changeInOptimizedData = true;
+				}
+				
+				Log.d(moduleLogName, "Iteration ended");
 			}
 			Log.d(moduleLogName, "Optimization ended");
 		
 			//NDKGraphDestroy(addrGraph);
 			//Log.d("Main::Activity", "Destroyed graph");
 			
+			} ;
+		};
+		optimizationThread.start();
+		
+		try {
+			Thread.sleep(400,0);
+			optimizationThread.join();
+		} catch (InterruptedException e) {
+			Log.d(moduleLogName, "optimizationThread.joint() - failed");
+		}
+	}
+	
+	public void startOptimizeOnlineThread() {
+		checkGraphExistance();
+		final String path = Environment.getExternalStorageDirectory().getAbsolutePath() + "/OpenAIL/GraphLog/";
+		continueOptimization = true;
+		
+		optimizationThread = new Thread() {
+		public void run() {
+			while ( continueOptimization )
+			{
+				int res = NDKGraphOptimize(addrGraph, 1, path);
+				
+				Log.d(moduleLogName, "OptimizationOnline: returned from NDK");
+				
+				if (res == 0)
+				{
+					try {
+						Thread.sleep(200);
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
+				synchronized(currentEstimateMtx)
+				{
+					currentEstimate = getPositionsOfVertices();
+					changeInOptimizedData = true;
+				}
+				Log.d(moduleLogName, "OptimizationOnline: iteration ended");
+			}
+			Log.d(moduleLogName, "OptimizationOnline ended");
 			} ;
 		};
 		optimizationThread.start();
@@ -288,6 +377,11 @@ public class GraphManager {
 	
 	private String createWiFiFingerprintEdgeString(int id, int id2) {
 		String edgeWiFi ="EDGE_SE2:WIFI_FINGERPRINT " + id2 + " " + id + " " + parameters.wifiFingerprintDeadBandRadius +  " " + parameters.informationMatrixOfWiFiFingerprint + "\n";
+		return edgeWiFi;
+	}
+	
+	private String createVPRVicinityEdgeString(int id, int id2) {
+		String edgeWiFi ="EDGE_SE2:VPR_VICINITY " + id2 + " " + id + " " + parameters.vprVicinityDeadBandRadius +  " " + parameters.informationMatrixOfVPRVicinity + "\n";
 		return edgeWiFi;
 	}
 	

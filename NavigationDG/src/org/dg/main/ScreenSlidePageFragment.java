@@ -1,5 +1,8 @@
 package org.dg.main;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.dg.camera.CameraSaver;
 import org.dg.camera.Preview;
 import org.dg.main.MainActivity.UpdateGraph;
@@ -11,6 +14,7 @@ import android.hardware.Camera;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
+import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.SurfaceView;
 import android.view.View;
@@ -61,8 +65,12 @@ public class ScreenSlidePageFragment extends Fragment {
 	/**
 	 * 
 	 */
-	Preview preview = null;
+	public Preview preview = null;
 	
+	/**
+	 * 
+	 */
+	LocalizationView localizationView;
 
 	Camera camera = null;
 
@@ -96,7 +104,9 @@ public class ScreenSlidePageFragment extends Fragment {
 		// Inflate the layout containing a title and body text.
 		final ViewGroup rootView;
 		if (mPageNumber == 0) {
-//	    	Log.d(TAG, String.format("mPageNumber = %d", mPageNumber));
+			Log.d("TEST", "Created camera view");
+			
+	    	Log.d(TAG, String.format("mPageNumber = %d", mPageNumber));
 	    	
 			rootView = (ViewGroup) inflater.inflate(
 					R.layout.fragment_screen_slide_page0, container, false);
@@ -175,16 +185,53 @@ public class ScreenSlidePageFragment extends Fragment {
 			initButtonVisualPlaceRecognition(rootView, R.id.buttonSideView7);
 			
 			// Save WiFi Map
-			initButtonSaveWiFiMap(rootView, R.id.buttonSaveWiFiMap);
+			initButtonSaveMapPoint(rootView, R.id.buttonSaveMapPoint);
 			
 			// Save VPR
 			initButtonSaveVPR(rootView, R.id.buttonSaveVPR);
 			
 
-		} else if (mPageNumber == 2 || true) {
+		} else if (mPageNumber == 2 ) {
 			rootView = (ViewGroup) inflater.inflate(
 					R.layout.fragment_screen_slide_page2, container, false);
+		} else if (mPageNumber == 3 || true) {
+			Log.d("TEST", "Created localization view");
+			
+			rootView = (ViewGroup) inflater.inflate(
+					R.layout.fragment_screen_slide_page_visualization, container, false);
+			
+			localizationView = (LocalizationView) rootView.findViewById(R.id.SurfaceViewLocalization);
+			
+//            // Add some data for testing
+//			List<Pair<Double, Double>> wifiScanLocations = new ArrayList<Pair<Double, Double>>();
+//			
+//            Pair<Double, Double> x = new Pair<Double, Double>(10.0, 10.0);
+//            wifiScanLocations.add(x);
+//            
+////            
+//            x = new Pair<Double, Double>(-10.0, -10.0);
+//            wifiScanLocations.add(x);
+//            
+//            x = new Pair<Double, Double>(10.0, -10.0);
+//            wifiScanLocations.add(x);
+//            
+//            x = new Pair<Double, Double>(-10.0, 10.0);
+//            wifiScanLocations.add(x);
+//            
+//			localizationView.setWiFiScanLocations(wifiScanLocations);
+//			
+//			List<Pair<Double, Double>> userLocations = new ArrayList<Pair<Double, Double>>();
+//			
+//			x = new Pair<Double, Double>(0.0, 0.0);
+//	        userLocations.add(x);
+//	        x = new Pair<Double, Double>(0.5, 0.5);
+//	        userLocations.add(x);
+//	        x = new Pair<Double, Double>(-0.5, 0.5);
+//	        userLocations.add(x);
+//	            
+//			localizationView.setUserLocations(userLocations);
 		}
+
 
 		// Create those handlers
 		mHandlerOrient = new Handler();
@@ -483,25 +530,28 @@ public class ScreenSlidePageFragment extends Fragment {
 		});
 	}
 	
-	// Save WiFi Map
-	private void initButtonSaveWiFiMap(
+	// Save map point
+	private void initButtonSaveMapPoint(
 			final ViewGroup rootView, int id) {
 		EditText x = (EditText) rootView.findViewById(R.id.editTextWiFiPosX);
 		EditText y = (EditText) rootView.findViewById(R.id.editTextWiFiPosY);
 		EditText z = (EditText) rootView.findViewById(R.id.editTextWiFiPosZ);
-		
 		x.setText("0.0");
 		y.setText("0.0");
 		z.setText("0.0");
 		
+		EditText mapName = (EditText) rootView.findViewById(R.id.editTextMapName);
+		mapName.setText("newMap");
+		
 		Button buttonStartOrientFromFile = (Button) rootView.findViewById(id);
-		buttonStartOrientFromFile.setText("Save WiFi place");
+		buttonStartOrientFromFile.setText("Save map point");
 		buttonStartOrientFromFile.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
 				EditText x = (EditText) rootView.findViewById(R.id.editTextWiFiPosX);
 				EditText y = (EditText) rootView.findViewById(R.id.editTextWiFiPosY);
 				EditText z = (EditText) rootView.findViewById(R.id.editTextWiFiPosZ);
-				onSomeClick(v, "Save WiFi place: " + x.getText() + " " + y.getText() + " " + z.getText());
+				EditText mapName = (EditText) rootView.findViewById(R.id.editTextMapName);
+				onSomeClick(v, "Save map point :&" + mapName.getText() + "&" + x.getText() + "&" + y.getText() + "&" + z.getText());
 			}
 		});
 	}
@@ -536,6 +586,13 @@ public class ScreenSlidePageFragment extends Fragment {
 		return mPageNumber;
 	}
 
+	/*
+	 * Returns the localizationView for updating purposes
+	 */
+	public LocalizationView getLocalizationView() {
+		return localizationView;
+	}
+	
 	// ...
 	// Define the listener of the interface type
 	// listener is the activity itself
@@ -619,11 +676,11 @@ public class ScreenSlidePageFragment extends Fragment {
 						R.id.textViewOrient3);
 
 				mTextViewRollX.setText("Roll (X): "
-						+ String.format("%.2f", orient[0]) + '�');
+						+ String.format("%.2f", orient[0]) + " deg");
 				mTextViewPitchY.setText("Pitch (Y): "
-						+ String.format("%.2f", orient[1]) + '�');
+						+ String.format("%.2f", orient[1]) + " deg");
 				mTextViewYawZ.setText("Yaw (Z): "
-						+ String.format("%.2f", orient[2]) + '�');
+						+ String.format("%.2f", orient[2]) + " deg");
 
 				// ORIENTATION COMPLEMENTARY X, Y, Z
 				TextView mTextViewCompRollX = (TextView) getView()
@@ -634,11 +691,11 @@ public class ScreenSlidePageFragment extends Fragment {
 						R.id.textViewOrientComp3);
 
 				mTextViewCompRollX.setText("Comp Roll (X): "
-						+ String.format("%.2f", compOrient[0]) + '�');
+						+ String.format("%.2f", compOrient[0]) + " deg");
 				mTextViewCompPitchY.setText("Comp Pitch (Y): "
-						+ String.format("%.2f", compOrient[1]) + '�');
+						+ String.format("%.2f", compOrient[1]) + " deg");
 				mTextViewCompYawZ.setText("Comp Yaw (Z): "
-						+ String.format("%.2f", compOrient[2]) + '�');
+						+ String.format("%.2f", compOrient[2]) + " deg");
 
 				TextView mTextViewNetworkCount = (TextView) getView()
 						.findViewById(R.id.textViewWiFi1);

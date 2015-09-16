@@ -1,8 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?> 
+
 <OpenAIL>
-	<InertialSensors useModule="True" stepometer="True"/>
-	
-	<GraphManager	wifiFingerprintDeadBandRadius="6.0"
+	<MainProcessing 	frequencyOfNewDataQuery="5" 
+								priorMapName="newMap"
+								usePriorMap="True"/>
+
+	<InertialSensors useModule="True" stepometer="True">
+		<Record 
+						accelerometer="True"
+						gyroscope="False"
+						magnetometer="False"
+						barometer="False"
+						accelerometerWithoutGravity="False"
+						orientationAndroid="True"
+						orientationAndroidEuler="False"
+						orientationAEKF="True"
+						orientationAEKFEuler="False"
+						orientationCF="False"
+						orientationCFEuler="False"		/>
+	</InertialSensors>
+
+	<GraphManager	vprVicinityDeadBandRadius="10.0"
+								informationMatrixOfVPRVicinity="2.0"
+								wifiFingerprintDeadBandRadius="6.0"
 								informationMatrixOfWiFiFingerprint="1.0"
 								informationMatrixOfWiFi="1.0"
 								optimizeFromFileIterationCount="100"/>	
@@ -13,9 +33,8 @@
 										fractionOfQueueAfterReduction="0.3" 
 										minNumberOfSharedNetworks="7"
 										minPercentOfSharedNetworks="0.75"
-										maxAvgErrorThreshold="8"
-										usePriorDatabase="True"
-										priorDatabaseFile="CM.wifidatabase"/> 
+										maxAvgErrorThreshold="8" /> 
+										
 	<VisualOdometry useModule="True"/>
 	<VisualPlaceRecognition useModule="True"/>
 </OpenAIL>

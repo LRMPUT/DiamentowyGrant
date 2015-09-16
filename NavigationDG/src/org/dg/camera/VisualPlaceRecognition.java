@@ -3,16 +3,20 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.opencv.core.Mat;
 import org.opencv.highgui.Highgui;
 import org.opencv.imgproc.Imgproc;
 
+import android.hardware.Camera.PictureCallback;
 import android.os.Environment;
 import android.util.Log;
 
-public class VisualPlaceRecognition {
+public class VisualPlaceRecognition implements Runnable {
 	
 	private static final String moduleLogName = "VisualPlaceRecognitionJava";
 	
@@ -21,7 +25,7 @@ public class VisualPlaceRecognition {
 		System.loadLibrary("VisualPlaceRecognitionModule");
 		} catch (UnsatisfiedLinkError e)
 		{
-			Log.d(moduleLogName, "Native code library failed to load.\n" + e);
+			Log.d(moduleLogName, "VPR Native code library failed to load.\n" + e);
 		}
 	}
 	
@@ -43,6 +47,22 @@ public class VisualPlaceRecognition {
 	// Test images
 	Mat[] testImages;
 	
+	// Processing thread
+	Thread vprThread;
+	boolean performVPR;
+	
+	// Preview to get current image
+	Preview preview;
+	
+	// Add images to test
+	ReentrantLock placesToAddLock = new ReentrantLock();
+	ReentrantLock matchedListLock = new ReentrantLock();
+	
+	List<Mat> placesToAdd;
+	List<Integer> fabmapIDs;
+	
+	List<org.dg.openAIL.IdPair<Integer,Integer>> vprMatchedList;
+	
 	int saveImageNextNum = 0;
 	
 	public VisualPlaceRecognition() {
@@ -50,7 +70,28 @@ public class VisualPlaceRecognition {
 		//Initialize FabMapEnv pointer to NULL
 		addrFabMapEnv = 0;
 	}
+
+	public void start(Preview _preview) {
+		
+		placesToAdd = new ArrayList<Mat>();
+		fabmapIDs = new ArrayList<Integer>();
+		vprMatchedList = new ArrayList<org.dg.openAIL.IdPair<Integer, Integer>>();
+		
+		preview = _preview;
+		performVPR = true;
+		vprThread = new Thread(this, "VPR thread");
+		vprThread.start();
+	}
 	
+	public void stop() {
+		performVPR = false;
+		try {
+			vprThread.join();
+		} catch (InterruptedException e) {
+			Log.d(moduleLogName, "Failed to join recognizePlacesThread");
+		}
+	}
+
 	// TODO: Just for test
 	public void callAndVerifyAllMethods() {
 		trainVisualPlaceRecognition();
@@ -125,39 +166,44 @@ public class VisualPlaceRecognition {
 		Log.d(moduleLogName, "training FabMap");
 		// Fabmap settings path
 		{
-			String fabmapSettingsPath = String.format(Locale.getDefault(), Environment
-			.getExternalStorageDirectory().toString()
-			+ "/OpenAIL"
-			+ "/VPR/settings.yml");
-			
-			// Call training of fabmap library
-			addrFabMapEnv = createAndTrainFabmapNDK(fabmapSettingsPath, trainingSetSize);
-//			addrFabMapEnv = createAndLoadFabmapNDK(fabmapSettingsPath);
+			createAndLoadFabmap();
 		}
 		
 		// Read testimages
 		int testSetSize;
-		{
-			String fabmapTestPath = String.format(Locale.getDefault(), Environment
-					.getExternalStorageDirectory().toString()
-					+ "/OpenAIL"
-					+ "/VPR/test/");
-			
-			File fTest = new File(fabmapTestPath);        
-			File fileTest[] = fTest.listFiles();
-			Log.d(moduleLogName, "Test size: " + fileTest.length);
-			testImages = new Mat[fileTest.length];
-			
-			for (int i=0; i < fileTest.length; i++)
-			{
-			    Log.d(moduleLogName, "Test filename:" + fileTest[i].getName());
-			    testImages[i] = Highgui.imread(fabmapTestPath + fileTest[i].getName(), 0);
-			}
-			testSetSize = fileTest.length;
+
+		String fabmapTestPath = String.format(Locale.getDefault(), Environment
+				.getExternalStorageDirectory().toString()
+				+ "/OpenAIL"
+				+ "/VPR/test/");
+
+		File fTest = new File(fabmapTestPath);
+		File fileTest[] = fTest.listFiles();
+		Log.d(moduleLogName, "Test size: " + fileTest.length);
+		testImages = new Mat[fileTest.length];
+
+		for (int i = 0; i < fileTest.length; i++) {
+			Log.d(moduleLogName, "Test filename:" + fileTest[i].getName());
+			testImages[i] = Highgui.imread(
+					fabmapTestPath + fileTest[i].getName(), 0);
 		}
+		testSetSize = fileTest.length;
 
 		Log.d(moduleLogName, "adding test images");
 		addTestSetFabmapNDK(addrFabMapEnv, testSetSize);
+	}
+	/**
+	 * 
+	 */
+	private void createAndLoadFabmap() {
+		String fabmapSettingsPath = String.format(Locale.getDefault(), Environment
+		.getExternalStorageDirectory().toString()
+		+ "/OpenAIL"
+		+ "/VPR/settings.yml");
+		
+		// Call training of fabmap library
+		//addrFabMapEnv = createAndTrainFabmapNDK(fabmapSettingsPath, trainingSetSize);
+		addrFabMapEnv = createAndLoadFabmapNDK(fabmapSettingsPath);
 	}
 	
 	// Method used to try to match new image from camera to existing dataset of images
@@ -170,13 +216,15 @@ public class VisualPlaceRecognition {
 	}
 	
 	public void savePlace(double x, double y, double z, Mat image){
-		String imagePath = String.format(Locale.getDefault(), Environment
+		
+		String path = String.format(Locale.getDefault(), Environment
 				.getExternalStorageDirectory().toString()
 				+ "/OpenAIL"
 				+ "/VPR"
 				+ "/images"
-				+ "/rec/"
-				+ String.format("img%04d.png", saveImageNextNum));
+				+ "/rec/");
+		
+		String imagePath = path + String.format("img%04d.png", saveImageNextNum);
 		
 		Log.d(moduleLogName, "Saving image to: " + imagePath);
 		Log.d(moduleLogName, String.format("image size = (%d, %d)", image.cols(), image.rows()));
@@ -185,5 +233,71 @@ public class VisualPlaceRecognition {
 		
 		saveImageNextNum++;
 	}
+	
+	
+	public void addPlace(int id, Mat image) {
+		placesToAddLock.lock();
+		fabmapIDs.add(id);
+		placesToAdd.add(image);
+		placesToAddLock.unlock();
+	}
+	
+	@Override
+	public void run() {
+		
+		// Load train database (train has to been perform before)
+		createAndLoadFabmap();
+		
+		// Load test images
+		
+		while(performVPR) {
+			// Get new image
+			Mat img = preview.getCurPreviewImage();
+			
+			// Try to recognize that image
+			int fabmapID = recognizePlace(img);
+			
+			// Add to a list of possible matches
+			if (fabmapID > 0) {
+				matchedListLock.lock();
+				// TODO: Jakie jest current ID?
+				
+				matchedListLock.unlock();
+			}			
+			
+			// Add images to test (if any)
+			placesToAddLock.lock();
+			while(placesToAdd.size() != 0)
+			{
+				// Add place to recognition in NDK
+				// ....
+				
+				placesToAdd.remove(0);
+			}
+			placesToAddLock.unlock();
+		}
+		
+	}
 
+	
+	public List<org.dg.openAIL.IdPair<Integer, Integer>> getAndClearVPRMatchedList() {
+		
+		try {
+			matchedListLock.lock();
+			List<org.dg.openAIL.IdPair<Integer, Integer>> returnList = new ArrayList<org.dg.openAIL.IdPair<Integer, Integer>>(vprMatchedList.size());
+			for(org.dg.openAIL.IdPair<Integer, Integer> item: vprMatchedList) 
+				returnList.add( new org.dg.openAIL.IdPair<Integer, Integer>(item) );
+			vprMatchedList.clear();
+			
+			matchedListLock.unlock();
+			return returnList;
+		} catch (Exception e) {
+			Log.d(moduleLogName, "Failed to acquire recognizedList Mtx in getRecognizedPlaces");
+		}
+		return new ArrayList<org.dg.openAIL.IdPair<Integer, Integer>>();
+		
+		
+		
+		
+	}
 }

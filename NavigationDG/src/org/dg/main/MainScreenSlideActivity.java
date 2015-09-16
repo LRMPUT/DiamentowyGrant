@@ -5,6 +5,8 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.text.NumberFormat;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -19,6 +21,7 @@ import org.dg.camera.Preview;
 import org.dg.camera.VisualPlaceRecognition;
 import org.dg.inertialSensors.InertialSensors;
 import org.dg.inertialSensors.ProcessRecorded;
+import org.dg.openAIL.MapPosition;
 import org.dg.openAIL.OpenAndroidIndoorLocalization;
 import org.dg.wifi.WifiScanner;
 import org.opencv.android.BaseLoaderCallback;
@@ -51,6 +54,7 @@ import android.support.v4.app.NavUtils;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.util.Log;
+import android.util.Pair;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.Surface;
@@ -78,15 +82,10 @@ public class MainScreenSlideActivity extends Activity implements
 	 * 
 	 * 
 	 */
-//	Preview preview;
+	Preview preview;
 	Camera camera;
 	
-	Camera.PreviewCallback previewCallback;
 	
-	ReentrantLock curPreviewImageLock = new ReentrantLock();
-	
-	Mat curPreviewImage = null;
-
 	// Orient in main update
 	private Timer orientAndWiFiScanUpdateTimer = new Timer();
 
@@ -97,7 +96,7 @@ public class MainScreenSlideActivity extends Activity implements
 	/**
 	 * The number of pages (wizard steps) to show in this demo.
 	 */
-	private static final int NUM_PAGES = 3;
+	private static final int NUM_PAGES = 4;
 
 	/**
 	 * The pager widget, which handles animation and allows swiping horizontally
@@ -122,7 +121,7 @@ public class MainScreenSlideActivity extends Activity implements
 						"Loaded all libraries", Toast.LENGTH_LONG).show();
 				
 				
-				openAIL.initAfterOpenCV();
+				openAIL.initAfterOpenCV();				
 			}
 				break;
 			default: {
@@ -231,20 +230,29 @@ public class MainScreenSlideActivity extends Activity implements
 
 		// Side View 2 - Start/Optimize Graph
 		if (link.contains("Start graph") || link.contains("Optimize graph")) {
-			{
 
-				if (!openAIL.graphManager.started()) {
-					openAIL.startGraph();
-				} else {
-					openAIL.stopAndOptimizeGraph();
-				}
-
+			if (!openAIL.graphManager.started()) {
+				
+				// Get the view to draw trajectory
+				ScreenSlidePageFragment visualizationFragment = (ScreenSlidePageFragment)((ScreenSlidePagerAdapter)mPagerAdapter).getItem(3);
+				LocalizationView localizationView = visualizationFragment.getLocalizationView();
+				openAIL.setLocalizationView(localizationView);
+				
+				openAIL.startLocalization();
+			} else {
+				openAIL.stopLocalization();
 			}
+
 		}
-		
+
 		// Side View 3 - Optimize graph from file
 		if (link.contains("Graph from file")) {
-			openAIL.graphManager.optimizeGraphInFile("lastCreatedGraph.g2o");
+			// Get the view to draw trajectory
+			ScreenSlidePageFragment visualizationFragment = (ScreenSlidePageFragment)((ScreenSlidePagerAdapter)mPagerAdapter).getItem(3);
+			LocalizationView localizationView = visualizationFragment.getLocalizationView();
+			openAIL.setLocalizationView(localizationView);
+			
+			openAIL.optimizeGraphInFile("lastCreatedGraph.g2o");
 		}
 		
 		// Side View 4 - Add magnetic place to recognition
@@ -305,31 +313,33 @@ public class MainScreenSlideActivity extends Activity implements
 			openAIL.visualPlaceRecognition.callAndVerifyAllMethods();
 		}
 		
-		// Save WiFi place
-		if (link.contains("Save WiFi place")) {
+		// Save map place
+		if (link.contains("Save map point")) {
 			
-			Scanner scanner = new Scanner(link);
-
-			// use US locale to be able to identify doubles in the string
-			scanner.useLocale(Locale.US);
-
-			int i = 0;
+			// Getting mapName, X, Y, Z which are separated by '&'
+			String[] separated = link.split("&");
+			
+			NumberFormat nf = NumberFormat.getInstance(Locale.US);
 			double[] pos = new double[3];
-			while (scanner.hasNext()) {
-
-				// if the next is a double, print found and the double
-				if (scanner.hasNextDouble()) {
-					pos[i++] = scanner.nextDouble();
-				} else
-					scanner.next();
+			for(int i=0;i<3;i++)
+			{
+				try {
+					Number myNumber = nf.parse(separated[2+i]);
+					pos[i] = myNumber.doubleValue();
+				} catch (ParseException e) {
+					e.printStackTrace();
+				}	
 			}
 			
-			if ( i == 3)
-				Log.d(TAG, "Save WiFi position::" + pos[0] + "::" + pos[1] + "::" + pos[2] + "::");
-			else
-				Log.d(TAG, "Save WiFi position - could not find 3 numbers");
+
+			Log.d(TAG, "Save map point::" + pos[0] + "::" + pos[1] + "::" + pos[2] + "::");
 			
-			openAIL.saveWiFiMapPoint(pos[0], pos[1], pos[2], "newMap.wifidatabase");
+			// We need to update the preview
+			ScreenSlidePageFragment cameraFragment = (ScreenSlidePageFragment)((ScreenSlidePagerAdapter)mPagerAdapter).getItem(0);
+			openAIL.preview = cameraFragment.preview;
+			
+			openAIL.saveMapPoint(separated[1], pos[0], pos[1], pos[2]);
+			
 		}
 		
 		// Save VPR place
@@ -369,6 +379,8 @@ public class MainScreenSlideActivity extends Activity implements
 			
 			if(image != null){
 				openAIL.visualPlaceRecognition.savePlace(pos[0], pos[1], pos[2], image);
+				Toast.makeText(this, "Saved image",
+						Toast.LENGTH_LONG).show();
 			}
 			else{
 				Log.e(TAG, "Save VPR position - image == null");
@@ -393,9 +405,12 @@ public class MainScreenSlideActivity extends Activity implements
 		fragments.add(ScreenSlidePageFragment.create(0));
 		fragments.add(ScreenSlidePageFragment.create(1));
 		fragments.add(ScreenSlidePageFragment.create(2));
+		fragments.add(ScreenSlidePageFragment.create(3));
+		
 
 		// Instantiate a ViewPager and a PagerAdapter.
 		mPager = (ViewPager) findViewById(R.id.pager);
+		mPager.setOffscreenPageLimit(NUM_PAGES);
 		mPagerAdapter = new ScreenSlidePagerAdapter(getFragmentManager(),
 				fragments);
 		mPager.setAdapter(mPagerAdapter);
@@ -424,7 +439,7 @@ public class MainScreenSlideActivity extends Activity implements
 		// Init WiFi
 		WifiManager wifiManager;
 		wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
-
+		
 		// Init library
 		openAIL = new OpenAndroidIndoorLocalization(sensorManager, wifiManager);
 		
@@ -551,7 +566,7 @@ public class MainScreenSlideActivity extends Activity implements
 	 * A simple pager adapter that represents 5 {@link ScreenSlidePageFragment}
 	 * objects, in sequence.
 	 */
-	private class ScreenSlidePagerAdapter extends FragmentStatePagerAdapter {
+	public class ScreenSlidePagerAdapter extends FragmentStatePagerAdapter {
 		private List<ScreenSlidePageFragment> fragments;
 
 		public ScreenSlidePagerAdapter(FragmentManager fm,
@@ -574,7 +589,7 @@ public class MainScreenSlideActivity extends Activity implements
 
 	@Override
 	protected void onResume() {
-//		Log.d(TAG, "onResume");
+		Log.d(TAG, "onResume");
 		super.onResume();
 //		OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_2_4_9, this,
 //				mLoaderCallback);
@@ -612,7 +627,7 @@ public class MainScreenSlideActivity extends Activity implements
 	        result = (info.orientation - degrees + 360) % 360;
 	    }
 	    camera.setDisplayOrientation(result);
-		
+	    
 	    // Settings the focus to some fixed value
 		Camera.Parameters parameters = camera.getParameters();		
 		List<String> modes = parameters.getSupportedFocusModes();
@@ -628,69 +643,22 @@ public class MainScreenSlideActivity extends Activity implements
 		ScreenSlidePageFragment cameraFragment = (ScreenSlidePageFragment)((ScreenSlidePagerAdapter)mPagerAdapter).getItem(0);
 		cameraFragment.setCamera(camera);
 		
-		//preview callback to capture images from preview
-		previewCallback = new Camera.PreviewCallback()  
-	    { 
-		    public void onPreviewFrame(byte[] data, Camera camera) 
-		    {
-				Camera.Parameters params = camera.getParameters();
-				int imageFormat = params.getPreviewFormat();
-				 
-//				Log.d(TAG, "onPreviewFrame");
-				   
-				if (imageFormat == ImageFormat.NV21)
-				{
-//					Log.d(TAG, "imageFormat == ImageFormat.NV21");
-//					Log.d(TAG, String.format("data.length = %d", data.length));
-		    	   
-					Camera.Size prevSize = params.getPreviewSize();
-					
-//					Log.d(TAG, String.format("preview size = (%d, %d)", prevSize.width, prevSize.height));
-					
-					Mat imageBGRA = new Mat();
-					Mat imageYUV = new Mat(prevSize.height + prevSize.height / 2, prevSize.width, CvType.CV_8UC1);
-					imageYUV.put(0,  0, data);
-					//						Gray = mYuv.submat(0, getFrameHeight(), 0, getFrameWidth());
-					Imgproc.cvtColor(imageYUV, imageBGRA, Imgproc.COLOR_YUV420sp2BGR, 4);
-		    	   
-					curPreviewImageLock.lock();
-					
-					try {
-//					    Bitmap bmp = BitmapFactory.decodeByteArray(data , 0, data.length);
-//					    if(bmp != null){
-//						    Log.d(TAG, "bmp != null");
-//						    
-//					 	   Mat curPreviewImage = new Mat(bmp.getHeight(),bmp.getWidth(),CvType.CV_8UC3);
-//						   Bitmap myBitmap32 = bmp.copy(Bitmap.Config.ARGB_8888, true);
-//						   Utils.bitmapToMat(myBitmap32, curPreviewImage);
-//					    }
-						
-						curPreviewImage = imageBGRA;
-						
-					} finally {
-					//						Log.d(TAG, "onPreviewFrame finally");
-						curPreviewImageLock.unlock();
-					}
-		    	   
-		    	   
+		preview = cameraFragment.preview;
+		camera.setPreviewCallback(preview);
+		
 
-		       }
-		   }
-
-	    };
-	    
-	    camera.setPreviewCallback(previewCallback);
+		
 	}
 
 	@Override
 	protected void onPause() {
-//		Log.d(TAG, "onPause");
+		Log.d(TAG, "onPause");
 		if (camera != null) {
-//			camera.stopPreview();
-			// preview.setCamera(null);
 			
 			//fragment with camera preview
 			ScreenSlidePageFragment cameraFragment = (ScreenSlidePageFragment)((ScreenSlidePagerAdapter)mPagerAdapter).getItem(0);
+			camera.stopPreview();
+			camera.setPreviewCallback(null);
 			cameraFragment.setCamera(null);
 			camera.release();
 			camera = null;
@@ -699,20 +667,10 @@ public class MainScreenSlideActivity extends Activity implements
 	}
 	
 	protected Mat getCurPreviewImage(){
-		Mat ret = null;
-		
-		curPreviewImageLock.lock();
-		
-		try {
-			if(curPreviewImage != null){
-				ret = curPreviewImage.clone();
-			}
-		} finally {
-//			Log.d(TAG, "getCurPreviewImage finally");
-			curPreviewImageLock.unlock();
-		}
-		
-		return ret;
+		ScreenSlidePageFragment cameraFragment = (ScreenSlidePageFragment)((ScreenSlidePagerAdapter)mPagerAdapter).getItem(0);
+
+		openAIL.preview = cameraFragment.preview;
+		return cameraFragment.preview.getCurPreviewImage();
 	}
 	
 }

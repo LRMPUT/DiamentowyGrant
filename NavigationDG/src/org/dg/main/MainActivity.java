@@ -145,7 +145,7 @@ public class MainActivity extends Activity {
 				
 		
 		// Init library
-		openAIL = new OpenAndroidIndoorLocalization(sensorManager, wifiManager);
+//		openAIL = new OpenAndroidIndoorLocalization(sensorManager, wifiManager);
 
 		// Register 
 		registerReceiver(openAIL.wifiScanner, new IntentFilter(
