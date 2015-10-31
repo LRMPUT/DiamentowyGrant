@@ -161,6 +161,13 @@ public class OpenAndroidIndoorLocalization {
 
 		// Check if there is an issue with WiFi
 		detectWiFiIssue = 0;
+		
+		// Save first image for FABMAP
+		if (preview != null) {
+			Log.d(moduleLogName, "Mobicase version: preview OK");
+			Mat image = preview.getCurPreviewImage();
+			visualPlaceRecognition.savePlace(0, 0, 0, image);
+		}
 	}
 
 	public void stopLocalization() {
@@ -225,6 +232,7 @@ public class OpenAndroidIndoorLocalization {
 	*/
 	class UpdateGraph extends TimerTask {
 		int iterationCounter = 0;
+		int lastImageSaveIterationCounter = 0;
 
 		public void run() {
 			Log.d(moduleLogName, "Starting query cycle");
@@ -233,9 +241,9 @@ public class OpenAndroidIndoorLocalization {
 			Log.d(moduleLogName, "Processing stepometer ...");
 			double distance = inertialSensors.getGraphStepDistance();
 
-			// Adding WiFi measurement
-			Log.d(moduleLogName, "Processing WiFi ...");
 			if (distance > 0.01) {
+				Log.d(moduleLogName, "Detected some motion from stepometer!");
+
 				// get angle from our estimation
 				// TODO: RIGHT NOW WE USE ANDROID ORIENTATION
 				float yawZ = -inertialSensors.getYawForStepometer();
@@ -246,18 +254,41 @@ public class OpenAndroidIndoorLocalization {
 
 				graphManager.addStepometerMeasurement(distance, yawZ);
 			}
+			
+			
+			// We take picture if the variance is ok
+			float accVariance = inertialSensors.getAccVariance();
+			
+			if (iterationCounter - lastImageSaveIterationCounter >= parameters.mainProcessing.imageCaptureStep
+					&& accVariance < parameters.mainProcessing.imageCaptureVarianceThreshold)
+			{
+				Log.d(moduleLogName, "Mobicase version: saving image when in motion");
+				if (preview != null) {
+					Log.d(moduleLogName, "Mobicase version: preview OK");
+					Mat image = preview.getCurPreviewImage();
+					
+					int poseId = graphManager.getCurrentPoseId();
+					visualPlaceRecognition.savePlace(0, 0, 0, image, poseId);
+				}
+				else
+					Log.d(moduleLogName, "Mobicase version: preview FAILED");
+				
+				lastImageSaveIterationCounter = iterationCounter;
+			}
 
 			// WiFi read all found connections
+			Log.d(moduleLogName, "Processing WiFi ...");
+
 			List<IdPair<Integer, Integer>> recognizedPlaces = wifiScanner
 					.getAndClearRecognizedPlacesList();
 
 			Log.d(moduleLogName, "The placeRecognition thread found "
 					+ recognizedPlaces.size() + " connections");
-
+						
 			// Add found results to the final graph
 			// graphManager.addMultipleWiFiFingerprints(placesIds);
 			graphManager.addMultipleWiFiFingerprints(recognizedPlaces);
-
+			
 			// Check if there is new measurement
 			if (wifiScanner.isNewMeasurement()) {
 				// All ok
@@ -288,7 +319,7 @@ public class OpenAndroidIndoorLocalization {
 				detectWiFiIssue++;
 
 				// Bad scan received - need to restart
-				if (detectWiFiIssue > 40) {
+				if (detectWiFiIssue > 20) {
 					Log.d(moduleLogName,
 							"Restarting WiFi due to continuous scan issue");
 					wifiScanner.startScanning();
@@ -314,11 +345,10 @@ public class OpenAndroidIndoorLocalization {
 				
 				Log.d(moduleLogName,
 						"Adding user positions to visualization");
-				 List<Vertex> listOfVertices = graphManager.getVerticesEstimates();
-				//List<Vertex> listOfVertices = graphManager.getPositionsOfVertices();
+				List<Vertex> listOfVertices = graphManager.getVerticesEstimates();
 				List<Pair<Double, Double>> userLocations = new ArrayList<Pair<Double, Double>>();	
 				for (Vertex v : listOfVertices) {
-					Log.d(moduleLogName, "Vertex " + v.id + " - pos = (" + v.X + ", " + v.Y + ", " + v.Z + ")");
+				//	Log.d(moduleLogName, "Vertex " + v.id + " - pos = (" + v.X + ", " + v.Y + ", " + v.Z + ")");
 					if ( v.id < 10000 )
 						userLocations.add(new Pair<Double,Double>(v.X, v.Y));
 				}
@@ -336,13 +366,14 @@ public class OpenAndroidIndoorLocalization {
 	/**
 	 * 
 	 */
-	public void saveMapPoint(String mapName, double X, double Y, double Z) {
-		Log.d(moduleLogName, "Called saveMapPoint with: " + mapName + " " + X + " " + Y + " " + Z);
+	public void saveMapPoint(String mapName, int id, double X, double Y, double Z) {
+		Log.d(moduleLogName, "Called saveMapPoint with: " + mapName + " id: " + id + " " + X + " " + Y + " " + Z);
 		
 		// Let's create a new map position
 		MapPosition mapPos = new MapPosition();
 		
 		// Fill position with provided data
+		mapPos.id = id;
 		mapPos.X = X;
 		mapPos.Y = Y;
 		mapPos.Z = Z;

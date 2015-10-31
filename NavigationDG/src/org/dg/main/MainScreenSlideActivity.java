@@ -233,6 +233,10 @@ public class MainScreenSlideActivity extends Activity implements
 
 			if (!openAIL.graphManager.started()) {
 				
+				// We need to update the preview
+				ScreenSlidePageFragment cameraFragment = (ScreenSlidePageFragment)((ScreenSlidePagerAdapter)mPagerAdapter).getItem(0);
+				openAIL.preview = cameraFragment.preview;
+				
 				// Get the view to draw trajectory
 				ScreenSlidePageFragment visualizationFragment = (ScreenSlidePageFragment)((ScreenSlidePagerAdapter)mPagerAdapter).getItem(3);
 				LocalizationView localizationView = visualizationFragment.getLocalizationView();
@@ -324,7 +328,7 @@ public class MainScreenSlideActivity extends Activity implements
 			for(int i=0;i<3;i++)
 			{
 				try {
-					Number myNumber = nf.parse(separated[2+i]);
+					Number myNumber = nf.parse(separated[3+i]);
 					pos[i] = myNumber.doubleValue();
 				} catch (ParseException e) {
 					e.printStackTrace();
@@ -338,7 +342,8 @@ public class MainScreenSlideActivity extends Activity implements
 			ScreenSlidePageFragment cameraFragment = (ScreenSlidePageFragment)((ScreenSlidePagerAdapter)mPagerAdapter).getItem(0);
 			openAIL.preview = cameraFragment.preview;
 			
-			openAIL.saveMapPoint(separated[1], pos[0], pos[1], pos[2]);
+			int mapPointId = Integer.parseInt(separated[2]);
+			openAIL.saveMapPoint(separated[1], mapPointId, pos[0], pos[1], pos[2]);
 			
 		}
 		
@@ -527,13 +532,14 @@ public class MainScreenSlideActivity extends Activity implements
 			int currentFloor = openAIL.inertialSensors.getCurrentFloor();
 			float estimatedHeight = openAIL.inertialSensors
 					.getEstimatedHeight();
+			float accVariance = openAIL.inertialSensors.getAccVariance();
 
 			// Passing to fragment for update
 			int id = mPager.getCurrentItem();
 			ScreenSlidePageFragment x = (ScreenSlidePageFragment) ((ScreenSlidePagerAdapter) mPagerAdapter)
 					.getItem(id);
 			x.updateGUIData(orient, compOrient, strongestWiFiNetwork, WiFiCount, foundFreq,
-					stepCount, stepDistance, currentFloor, estimatedHeight);
+					stepCount, stepDistance, currentFloor, estimatedHeight, accVariance);
 
 		}
 
@@ -629,15 +635,15 @@ public class MainScreenSlideActivity extends Activity implements
 	    camera.setDisplayOrientation(result);
 	    
 	    // Settings the focus to some fixed value
-		Camera.Parameters parameters = camera.getParameters();		
-		List<String> modes = parameters.getSupportedFocusModes();
-		if ( modes.contains(Camera.Parameters.FOCUS_MODE_FIXED)) {
-			parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_FIXED);
-		}
-		else if ( modes.contains(Camera.Parameters.FOCUS_MODE_INFINITY)) {
-			parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_INFINITY);
-		}
-		camera.setParameters(parameters);
+//		Camera.Parameters parameters = camera.getParameters();		
+//		List<String> modes = parameters.getSupportedFocusModes();
+//		if ( modes.contains(Camera.Parameters.FOCUS_MODE_FIXED)) {
+//			parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_FIXED);
+//		}
+//		else if ( modes.contains(Camera.Parameters.FOCUS_MODE_INFINITY)) {
+//			parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_INFINITY);
+//		}
+//		camera.setParameters(parameters);
 		
 		//fragment with camera preview
 		ScreenSlidePageFragment cameraFragment = (ScreenSlidePageFragment)((ScreenSlidePagerAdapter)mPagerAdapter).getItem(0);

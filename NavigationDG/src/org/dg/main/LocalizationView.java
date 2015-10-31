@@ -146,7 +146,7 @@ public class LocalizationView extends SurfaceView implements SurfaceHolder.Callb
 		private void recomputeDrawingScale() {
 			// Find the interval of changes for X and Y
 			double minX = 0.0, maxX = 0.0, minY = 0.0, maxY = 0.0;
-			scale = 1.0f;
+			
 			boolean start = true;
 			synchronized (wifiScanLocations) {
 				for (Pair<Double, Double> p : wifiScanLocations) {
@@ -180,8 +180,8 @@ public class LocalizationView extends SurfaceView implements SurfaceHolder.Callb
 //				}
 //			}
 
-			Log.d(TAG, "X: " + minX + " " + maxX);
-			Log.d(TAG, "Y: " + minY + " " + maxY);
+			Log.d(TAG, "visX in metres: " + minX + " " + maxX);
+			Log.d(TAG, "visY in metres: " + minY + " " + maxY);
 
 			// Computing the scale of drawing
 //			float scaleX = mCanvasWidth / (float) (maxX - minX);
@@ -189,15 +189,29 @@ public class LocalizationView extends SurfaceView implements SurfaceHolder.Callb
 
 			//scale = (float) (Math.min(scaleX, scaleY) / 1.4);
 			
-			float unknownX = (float) ((maxX - minX) /  (664.0-248.0) * 1049.0);
-			float unknownY = (float) ((maxY - minY) / (2360.0-509.0) * 3049.0);
+			//float unknownX = (float) ((maxX - minX) /  (664.0-248.0) * 1049.0);
+//			float unknownX = (float) ((maxX - minX) /  (877.0-248.0) * 1049.0);
+//			float unknownY = (float) ((maxY - minY) / (2360.0-509.0) * 3049.0);
+//			
+//			float scaleX = Math.abs(mCanvasWidth / (float) (unknownX));
+//			float scaleY = Math.abs(mCanvasHeight / (float) (unknownY));
+//			scale = (float) (Math.min(scaleX, scaleY));
+//			
+//			centerX = (float) ((maxX + minX) / 2) + 67.0f/1049.0f * unknownX;
+//			centerY = (float) ((maxY + minY) / 2) + 90.0f/3049.0f * unknownY; //- 39.0f/1049.0f * unknownY;
 			
-			float scaleX = Math.abs(mCanvasWidth / (float) (unknownX));
-			float scaleY = Math.abs(mCanvasHeight / (float) (unknownY));
+			// Computing metres to px conversion
+			float metres2pixelsVisXScale = (float) ((maxX - minX) /  (877.0-248.0) );
+			float metres2pixelsVisYScale = (float) ((maxY - minY) / (2360.0-509.0) );
+			
+			// Taking into account than on screen we can have less pixels than in the image
+			float scaleX = Math.abs(mCanvasWidth / (float) (metres2pixelsVisXScale) / 1049.0f);
+			float scaleY = Math.abs(mCanvasHeight / (float) (metres2pixelsVisYScale) / 3049.0f);
 			scale = (float) (Math.min(scaleX, scaleY));
 			
-			centerX = (float) ((maxX + minX) / 2) + 67.0f/1049.0f * unknownX;
-			centerY = (float) ((maxY + minY) / 2) + 90.0f/3049.0f * unknownY; //- 39.0f/1049.0f * unknownY;
+			// Value in metres at center
+			centerX = -(670.1f - 1049.0f/2)*metres2pixelsVisXScale;
+			centerY = (1430.0f -  3049.0f/2)* metres2pixelsVisYScale; //- 39.0f/1049.0f * unknownY;
 				
 		}
 		
@@ -231,6 +245,7 @@ public class LocalizationView extends SurfaceView implements SurfaceHolder.Callb
 		
 		private void doDraw(Canvas canvas) {
 			Log.d(TAG, "Called draw - wifiLocations: " + wifiScanLocations.size() + " userLocations: " + userLocations.size());
+			Log.d(TAG, "Centers: " + centerX + " & " + centerY + " scale: " + scale);
 			
 			canvas.drawColor(Color.BLACK);
 			

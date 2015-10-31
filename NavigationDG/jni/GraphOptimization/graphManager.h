@@ -111,12 +111,6 @@ private:
 	// WiFi Edge
 	int addEdgeWiFi(stringstream &data);
 
-	// WiFi Fingerprint edge
-	int addEdgeWiFiFingerprint(stringstream &data);
-
-	// Visual Place Recognition vicinity edge
-	int addEdgeVPRVicinity(stringstream &data);
-
 	// Stepometer
 	int addEdgeStepometer(stringstream &data);
 

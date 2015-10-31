@@ -217,6 +217,13 @@ public class VisualPlaceRecognition implements Runnable {
 	
 	public void savePlace(double x, double y, double z, Mat image){
 		
+		savePlace(x, y, z, image, saveImageNextNum);
+				
+		saveImageNextNum++;
+	}
+	
+	public void savePlace(double x, double y, double z, Mat image, int id){
+		
 		String path = String.format(Locale.getDefault(), Environment
 				.getExternalStorageDirectory().toString()
 				+ "/OpenAIL"
@@ -224,14 +231,14 @@ public class VisualPlaceRecognition implements Runnable {
 				+ "/images"
 				+ "/rec/");
 		
-		String imagePath = path + String.format("img%04d.png", saveImageNextNum);
+		String imagePath = path + String.format("img%04d.png", id);
 		
 		Log.d(moduleLogName, "Saving image to: " + imagePath);
 		Log.d(moduleLogName, String.format("image size = (%d, %d)", image.cols(), image.rows()));
 		
 		Highgui.imwrite(imagePath, image);
 		
-		saveImageNextNum++;
+		
 	}
 	
 	

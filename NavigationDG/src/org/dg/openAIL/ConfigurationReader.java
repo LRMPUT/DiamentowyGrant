@@ -24,6 +24,8 @@ public class ConfigurationReader {
 			double frequencyOfNewDataQuery;
 			String priorMapName;
 			public boolean usePriorMap;
+			int imageCaptureStep;
+			double imageCaptureVarianceThreshold;
 		}	
 		
 		public class InertialSensors {
@@ -37,6 +39,7 @@ public class ConfigurationReader {
 
 			public boolean useModule;
 			public boolean stepometer;
+			public double priorMapStepometerBias;
 			public Record record = new Record();
 		}
 		
@@ -106,11 +109,14 @@ public class ConfigurationReader {
 		Log.d(moduleLogName, "MainProcessing:" +
 				"\n--- frequencyOfNewDataQuery=" + parameters.mainProcessing.frequencyOfNewDataQuery + 
 				"\n--- priorMapName=" + parameters.mainProcessing.priorMapName + 
-				"\n--- usePriorMap=" + parameters.mainProcessing.usePriorMap);
+				"\n--- usePriorMap=" + parameters.mainProcessing.usePriorMap +
+				"\n--- imageCaptureStep=" + parameters.mainProcessing.imageCaptureStep +
+				"\n--- imageCaptureVarianceThreshold=" + parameters.mainProcessing.imageCaptureVarianceThreshold);
 		
 		Log.d(moduleLogName, "InertialSensors:" +
 				"\n--- useModule=" + parameters.inertialSensors.useModule + 
-				"\n--- stepometer=" + parameters.inertialSensors.stepometer);	
+				"\n--- stepometer=" + parameters.inertialSensors.stepometer +
+				"\n--- priorMapStepometerBias=" + parameters.inertialSensors.priorMapStepometerBias);	
 
 		Log.d(moduleLogName, "--- Record:" +
 				"\n------ accelerometer=" + parameters.inertialSensors.record.accelerometer + 
@@ -190,15 +196,21 @@ public class ConfigurationReader {
 		String frequencyOfNewDataQueryString = parser.getAttributeValue(null, "frequencyOfNewDataQuery");
 		parameters.mainProcessing.priorMapName = parser.getAttributeValue(null, "priorMapName");
 		String usePriorMapString = parser.getAttributeValue(null, "usePriorMap");
+		String imageCaptureStepString = parser.getAttributeValue(null, "imageCaptureStep");
+		String imageCaptureVarianceThresholdString = parser.getAttributeValue(null, "imageCaptureVarianceThreshold");
 		
 		// Logging those values
 		Log.d(moduleLogName, "frequencyOfNewDataQuery = " + frequencyOfNewDataQueryString);
 		Log.d(moduleLogName, "priorMapName = " + parameters.mainProcessing.priorMapName);
-		Log.d(moduleLogName, "usePriorMap = " + parameters.mainProcessing.usePriorMap);
+		Log.d(moduleLogName, "usePriorMap = " + usePriorMapString);
+		Log.d(moduleLogName, "imageCaptureStep = " + imageCaptureStepString);
+		Log.d(moduleLogName, "imageCaptureVarianceThreshold = " + imageCaptureVarianceThresholdString);
 
 		// Storing read values
 		parameters.mainProcessing.frequencyOfNewDataQuery =  Double.parseDouble(frequencyOfNewDataQueryString);
 		parameters.mainProcessing.usePriorMap = usePriorMapString.equals("True");
+		parameters.mainProcessing.imageCaptureStep = Integer.parseInt(imageCaptureStepString);
+		parameters.mainProcessing.imageCaptureVarianceThreshold =  Double.parseDouble(imageCaptureVarianceThresholdString);
 		
 		parser.nextTag();
 		parser.require(XmlPullParser.END_TAG, ns, "MainProcessing");
@@ -215,14 +227,17 @@ public class ConfigurationReader {
 		// Reading attributes
 		String useModuleString = parser.getAttributeValue(null, "useModule");
 		String stepometerString = parser.getAttributeValue(null, "stepometer");
+		String priorMapStepometerBiasString = parser.getAttributeValue(null, "priorMapStepometerBias");
 		
 		// Logging those values
 		Log.d(moduleLogName, "useModule = " + useModuleString);
 		Log.d(moduleLogName, "stepometer = " + stepometerString);
-		
+		Log.d(moduleLogName, "priorMapStepometerBias = " + priorMapStepometerBiasString);
+				
 		// Storing read values
 		parameters.inertialSensors.useModule = useModuleString.equals("True");
 		parameters.inertialSensors.stepometer = useModuleString.equals("True");
+		parameters.inertialSensors.priorMapStepometerBias =  Double.parseDouble(priorMapStepometerBiasString);
 		
 		// Reading record parameters
 		while (parser.next() != XmlPullParser.END_TAG) {

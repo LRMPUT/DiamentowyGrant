@@ -536,9 +536,11 @@ public class ScreenSlidePageFragment extends Fragment {
 		EditText x = (EditText) rootView.findViewById(R.id.editTextWiFiPosX);
 		EditText y = (EditText) rootView.findViewById(R.id.editTextWiFiPosY);
 		EditText z = (EditText) rootView.findViewById(R.id.editTextWiFiPosZ);
+		EditText idText = (EditText) rootView.findViewById(R.id.editTextMapPosID);
 		x.setText("0.0");
 		y.setText("0.0");
 		z.setText("0.0");
+		idText.setText("10000");
 		
 		EditText mapName = (EditText) rootView.findViewById(R.id.editTextMapName);
 		mapName.setText("newMap");
@@ -551,7 +553,11 @@ public class ScreenSlidePageFragment extends Fragment {
 				EditText y = (EditText) rootView.findViewById(R.id.editTextWiFiPosY);
 				EditText z = (EditText) rootView.findViewById(R.id.editTextWiFiPosZ);
 				EditText mapName = (EditText) rootView.findViewById(R.id.editTextMapName);
-				onSomeClick(v, "Save map point :&" + mapName.getText() + "&" + x.getText() + "&" + y.getText() + "&" + z.getText());
+				EditText id = (EditText) rootView.findViewById(R.id.editTextMapPosID);
+				onSomeClick(v, "Save map point :&" + mapName.getText() + "&" + id.getText() + "&" + x.getText() + "&" + y.getText() + "&" + z.getText());
+				
+				int idNum = Integer.parseInt(id.getText().toString());
+				id.setText(String.format("%d", idNum+1)); 
 			}
 		});
 	}
@@ -624,10 +630,10 @@ public class ScreenSlidePageFragment extends Fragment {
 	public void updateGUIData(float[] _orient, float[] _compOrient,
 			String _strongestWiFi, int _wiFiCount, float _foundFreq,
 			float _stepCount, float _stepDistance, int _currentFloor,
-			float _estimatedHeight) {
+			float _estimatedHeight, float _accVariance) {
 		UpdateMeasurementsInGUI obj = new UpdateMeasurementsInGUI(_orient,
 				_compOrient, _strongestWiFi, _wiFiCount, _foundFreq,
-				_stepCount, _stepDistance, _currentFloor, _estimatedHeight);
+				_stepCount, _stepDistance, _currentFloor, _estimatedHeight, _accVariance);
 		mHandlerOrient.post(obj);
 	}
 
@@ -647,11 +653,12 @@ public class ScreenSlidePageFragment extends Fragment {
 		float stepCount, stepDistance;
 		int currentFloor;
 		float estimatedHeight;
+		float accVariance;
 
 		public UpdateMeasurementsInGUI(float[] _orient, float[] _compOrient,
 				String _strongestWiFi, int _wiFiCount, float _foundFreq,
 				float _stepCount, float _stepDistance, int _currentFloor,
-				float _estimatedHeight) {
+				float _estimatedHeight, float _accVariance) {
 			orient = _orient.clone();
 			compOrient = _compOrient.clone();
 			strongestWiFi = _strongestWiFi;
@@ -661,6 +668,7 @@ public class ScreenSlidePageFragment extends Fragment {
 			stepDistance = _stepDistance;
 			currentFloor = _currentFloor;
 			estimatedHeight = _estimatedHeight;
+			accVariance = _accVariance;
 		}
 
 		public void run() {
@@ -713,6 +721,8 @@ public class ScreenSlidePageFragment extends Fragment {
 						.findViewById(R.id.textViewStepometer2);
 				TextView mTextViewStepDistance = (TextView) getView()
 						.findViewById(R.id.textViewStepometer3);
+				TextView mTextViewAccVariance = (TextView) getView()
+						.findViewById(R.id.textViewStepometer4);
 
 				mTextViewFoundFrequency.setText("Found freq: "
 						+ String.format("%.2f", foundFreq) + " Hz");
@@ -720,6 +730,8 @@ public class ScreenSlidePageFragment extends Fragment {
 						+ String.format("%.2f", stepCount));
 				mTextViewStepDistance.setText("Distance: "
 						+ String.format("%.2f", stepDistance) + " m");
+				mTextViewAccVariance.setText("Acc var: "
+						+ String.format("%.2f", accVariance) );
 
 				TextView mTextViewCurrentFloor = (TextView) getView()
 						.findViewById(R.id.textViewBarometer1);

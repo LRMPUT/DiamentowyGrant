@@ -46,6 +46,9 @@ public class InertialSensors {
 	
 	int id = 0;
 	float acc[], mag[], accwog[], gyro[], orient[], orientComp[], orientAndroid[], lastAndroidQuat[];
+	
+	// Window to compute 
+	float accVariance = 0;
 
 	// isRunning
 	boolean isStarted;
@@ -67,6 +70,10 @@ public class InertialSensors {
 	float lastYawZ = 0.0f;
 	boolean firstYawCall = true;
 	Stepometer stepometer;
+	
+	// Acc variance
+	int accVarianceRunningCounter = 0;
+	final int accVarianceWindowSize = 100;
 	
 	// Magnetic recognition
 	private final Semaphore magneticWindowMtx = new Semaphore(1, true);
@@ -127,10 +134,7 @@ public class InertialSensors {
 		
 		// CF
 		activeStreams[activeStream.ORIENTATION_COMPLEMENTARY.ordinal()] = parameters.record.orientationCF;
-		activeStreams[activeStream.ORIENTATION_COMPLEMENTARY_EULER.ordinal()] = parameters.record.orientationCFEuler;
-		
-		
-		
+		activeStreams[activeStream.ORIENTATION_COMPLEMENTARY_EULER.ordinal()] = parameters.record.orientationCFEuler;	
 		
 	}
 
@@ -185,17 +189,23 @@ public class InertialSensors {
 		return stepometer.getDetectedNumberOfSteps();
 	}
 	
+	/**
+	 * Returns Yaw (Z-axis) in degrees
+	 */
 	public float getYawForStepometer() {
 		try {
 			yawMtx.acquire();
 			float yawZ = orientAndroid[2];
 			yawMtx.release();
+			
+			// In any case we compute the difference in orientations
 			float deltaYaw = yawZ - lastYawZ;
 			lastYawZ = yawZ;
 			
+			// In first case, the diff is equal to global orientation corrected by map bias
 			if ( firstYawCall) {
 				firstYawCall = false;
-				return 0.0f;
+				return deltaYaw + (float) parameters.priorMapStepometerBias;
 			}
 			return deltaYaw;
 		} catch (InterruptedException e) {
@@ -216,6 +226,10 @@ public class InertialSensors {
 			e.printStackTrace();
 		}
 		return 0.0f;
+	}
+	
+	public float getAccVariance() {
+		return accVariance;
 	}
 		
 	
@@ -790,6 +804,17 @@ public class InertialSensors {
 			float accVal = (float) Math.sqrt(acc[0] * acc[0] + acc[1]
 					* acc[1] + acc[2] * acc[2]);
 			accWindow.add(Float.valueOf(accVal));
+			
+			// Computer acc variance
+			if ( accVarianceRunningCounter > accVarianceWindowSize)
+			{
+				if ( accWindow.size() > accVarianceWindowSize)
+				{
+					List<Float> accVarianceWindow = accWindow.subList (accWindow.size() - accVarianceWindowSize, accWindow.size());
+					accVariance = varList(accVarianceWindow);
+					accVarianceRunningCounter = 0;
+				}
+			}
 
 			if (save2file && activeStreams[activeStream.ACCELEROMETER.ordinal()])
 				saveToStream(accStream, getTimestamp(), acc);
@@ -812,10 +837,30 @@ public class InertialSensors {
 					
 					 // Run stepometer
 					 new Thread(stepometer).start();
+
 				}
 				stepometerRunningCounter = 0;
 			}
-			stepometerRunningCounter = stepometerRunningCounter + 1;
+			stepometerRunningCounter++;
+			accVarianceRunningCounter++;
+		}
+		
+		private float avgList(List<Float> accWindow) {
+			float s = 0;
+			for (Float x : accWindow)
+				s+=x;
+			return s/accWindow.size();
+		}
+		
+		public float varList(List<Float> accWindow) {
+			float sumDiffsSquared = 0.0f;
+			float avg = avgList(accWindow);
+			for (Float value : accWindow) {
+				double diff = value - avg;
+				diff *= diff;
+				sumDiffsSquared += diff;
+			}
+			return sumDiffsSquared / (accWindow.size() - 1);
 		}
 
 		/**

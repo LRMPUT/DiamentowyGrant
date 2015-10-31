@@ -38,9 +38,6 @@ int GraphManager::optimize(int iterationCount) {
 
 	// TODO: Not sure if it is supposed to be here
 	int res = optimizer.initializeOptimization();
-	//int res = 1;
-	//optimizer.computeInitialGuess();
-
 	res = optimizer.optimize(iterationCount);
 
 	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK: Chi2 [%f]",
@@ -138,13 +135,20 @@ void GraphManager::addToGraph(string dataToProcess) {
 		else if (type == "EDGE_SE2")
 			addEdgeSE2(data);
 		else if (type == "EDGE_SE2:WIFI_FINGERPRINT")
-			addEdgeWiFiFingerprint(data);
+			addVicinityEdge(data, "WiFi Fingerprint");
 		else if (type == "EDGE_SE2:VPR_VICINITY")
-			addEdgeVPRVicinity(data);
+			addVicinityEdge(data, "VPR Vicinity");
 		else if (type == "VERTEX_SE2")
 			addVertex(data, 0);
 		else if (type == "VERTEX_XY")
 			addVertex(data, 1);
+
+		// If we added first edge to fixed nodes, we unfix position 0 so the whole graph can move
+		if ( type == "EDGE_SE2:WIFI_FINGERPRINT" || type == "EDGE_SE2:VPR_VICINITY") {
+			g2o::OptimizableGraph::Vertex* v = optimizer.vertex(0);
+			if (v)
+				v->setFixed(false);
+		}
 	}
 	pthread_mutex_unlock(&graphMtx);
 
@@ -197,8 +201,8 @@ std::vector<double> GraphManager::getPositionOfAllVertices() {
 			estimate.push_back(vertex->pos[1]);
 			estimate.push_back(0);
 
-			__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG,
-								"NDK: (id, x, y) = (%d, %f, %f)", vertices[i]->vertexId, vertex->pos[0], vertex->pos[1]);
+//			__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG,
+//								"NDK: (id, x, y) = (%d, %f, %f)", vertices[i]->vertexId, vertex->pos[0], vertex->pos[1]);
 
 		} else if (vertices[i]->type == ail::Vertex::Type::VERTEXSE2) {
 			ail::VertexSE2* vertex = static_cast<ail::VertexSE2*>(vertices[i]);
@@ -206,8 +210,8 @@ std::vector<double> GraphManager::getPositionOfAllVertices() {
 			estimate.push_back(vertex->pos[1]);
 			estimate.push_back(vertex->orient);
 
-			__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG,
-											"NDK: (id, x, y) = (%d, %f, %f)", vertices[i]->vertexId, vertex->pos[0], vertex->pos[1]);
+//			__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG,
+//											"NDK: (id, x, y) = (%d, %f, %f)", vertices[i]->vertexId, vertex->pos[0], vertex->pos[1]);
 		}
 
 	}
@@ -242,7 +246,7 @@ int GraphManager::addVertex(stringstream &data, int type) {
 	data >> id;
 	ailVertex->vertexId = id;
 
-	if (id == 0 || (id >= 10000)) {
+	if (id == 0 || id >= 10000) {
 		__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG,
 				"NDK: setFixed(TRUE)!");
 		v->setFixed(true);
@@ -319,14 +323,7 @@ int GraphManager::addEdgeWiFi(stringstream &data) {
 	return 0;
 }
 
-int GraphManager::addEdgeWiFiFingerprint(stringstream &data) {
-	return addVicinityEdge(data, "WiFi Fingerprint");
-}
 
-// Visual Place Recognition vicinity edge
-int GraphManager::addEdgeVPRVicinity(stringstream &data) {
-	return addVicinityEdge(data, "VPR Vicinity");
-}
 
 int GraphManager::addEdgeStepometer(stringstream &data) {
 	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK:LC: [%s]",

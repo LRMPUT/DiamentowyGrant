@@ -7,6 +7,8 @@ import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Scanner;
@@ -22,10 +24,10 @@ public class PriorMapHandler {
 	private static final String moduleLogName = "PriorMapHandler";
 	
 	// The id of currently saved position (starts at 10000 to distinguish anchor nodes from normal nodes)
-	int mapPointId;
+	//int mapPointId;
 	
 	public PriorMapHandler() {
-		mapPointId = 10000;
+		//mapPointId = 10000;
 	}
 	
 	/**
@@ -46,11 +48,21 @@ public class PriorMapHandler {
 		// Listing files in the directory of the WiFi
 		File wifiDir = new File(mapDirectoryPath + "wifiScans/");
 		File wifiScanFiles[] = wifiDir.listFiles();
+		Arrays.sort(wifiScanFiles, new Comparator<File>(){
+		    public int compare(File f1, File f2)
+		    {
+		        return f1.getName().compareTo(f2.getName());
+		    } });
 		Log.d(moduleLogName, "WiFi Scans length: " + wifiScanFiles.length);
 
 		// Listing files in the directory of the images
 		File imageDir = new File(mapDirectoryPath + "images/");
 		File imageFiles[] = imageDir.listFiles();
+		Arrays.sort(imageFiles, new Comparator<File>(){
+		    public int compare(File f1, File f2)
+		    {
+		        return f1.getName().compareTo(f2.getName());
+		    } });
 		Log.d(moduleLogName, "Image directory length: " + imageFiles.length);
 
 		// Check that the we have the same number of WiFi scans and images
@@ -85,6 +97,7 @@ public class PriorMapHandler {
 				mapPosition.Z = positionScanner.nextDouble();
 				mapPosition.angle = positionScanner.nextDouble();
 				String dummy = positionScanner.nextLine();
+				Log.d(moduleLogName, "READ: " + mapPosition.id + " " + mapPosition.X + " " + mapPosition.Y + " " + mapPosition.Z + " " + mapPosition.angle);
 
 				// Reading image
 				Mat image = Highgui.imread(mapDirectoryPath + "images/"
@@ -130,16 +143,16 @@ public class PriorMapHandler {
 		String pathName = creatingSaveMapDirectory(mapName);
 
 		// Saving image
-		saveImageOfMapPoint(mapPosition.image, pathName);
+		saveImageOfMapPoint(mapPosition.id, mapPosition.image, pathName);
 
 		//  Saving WiFis
-		saveWiFiScansOfMapPoint(mapPosition.scannedWiFiList, pathName);
+		saveWiFiScansOfMapPoint(mapPosition.id, mapPosition.scannedWiFiList, pathName);
 
 		// Saving pos
-		savePositionsOfMapPoint(mapPosition.X, mapPosition.Y, mapPosition.Z, mapPosition.angle, pathName);
+		savePositionsOfMapPoint(mapPosition.id, mapPosition.X, mapPosition.Y, mapPosition.Z, mapPosition.angle, pathName);
 
 		// Increase Id for next point
-		mapPointId++;
+		//mapPointId++;
 	}
 	
 	
@@ -199,7 +212,7 @@ public class PriorMapHandler {
 	 * @param image
 	 * @param pathName
 	 */
-	private void saveImageOfMapPoint(Mat image, String pathName) {
+	private void saveImageOfMapPoint(int mapPointId, Mat image, String pathName) {
 		// Creating directory if needed
 		File folder = new File(pathName + "images/");
 		if (!folder.exists()) {
@@ -219,7 +232,7 @@ public class PriorMapHandler {
 	 * @param angle
 	 * @param pathName
 	 */
-	private void savePositionsOfMapPoint(double posX, double posY, double posZ,
+	private void savePositionsOfMapPoint(int mapPointId, double posX, double posY, double posZ,
 			double angle, String pathName) {
 		FileOutputStream foutStream;
 		PrintStream outStreamRawData;
@@ -244,7 +257,7 @@ public class PriorMapHandler {
 	 * @param wifiList
 	 * @param pathName
 	 */
-	private void saveWiFiScansOfMapPoint(List<MyScanResult> wifiList,
+	private void saveWiFiScansOfMapPoint(int mapPointId, List<MyScanResult> wifiList,
 			String pathName) {
 
 		// Create directory if needed

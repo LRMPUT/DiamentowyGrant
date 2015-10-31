@@ -352,7 +352,7 @@ public class WiFiPlaceRecognition implements Runnable {
 		{
 			int indexB = placeIds.get(index);
 			
-			if ( indexA != indexB) {
+			if ( indexA != indexB && indexA < 10000) {
 				WiFiPlaceLink linkToTest = new WiFiPlaceLink(wiFiList, indexA, list, indexB, 0.0f);
 				addToQueue(linkToTest);
 			}
