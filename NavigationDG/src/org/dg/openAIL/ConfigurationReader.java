@@ -39,7 +39,9 @@ public class ConfigurationReader {
 
 			public boolean useModule;
 			public boolean stepometer;
-			public double priorMapStepometerBias;
+			public boolean verticalOrientation;
+			public double priorMapStepometerBiasVertical;
+			public double priorMapStepometerBiasHorizontal;
 			public Record record = new Record();
 		}
 		
@@ -116,7 +118,9 @@ public class ConfigurationReader {
 		Log.d(moduleLogName, "InertialSensors:" +
 				"\n--- useModule=" + parameters.inertialSensors.useModule + 
 				"\n--- stepometer=" + parameters.inertialSensors.stepometer +
-				"\n--- priorMapStepometerBias=" + parameters.inertialSensors.priorMapStepometerBias);	
+				"\n--- verticalOrientation=" + parameters.inertialSensors.verticalOrientation + 
+				"\n--- priorMapStepometerBiasVertical=" + parameters.inertialSensors.priorMapStepometerBiasVertical +
+				"\n--- priorMapStepometerBiasHorizontal=" + parameters.inertialSensors.priorMapStepometerBiasHorizontal);	
 
 		Log.d(moduleLogName, "--- Record:" +
 				"\n------ accelerometer=" + parameters.inertialSensors.record.accelerometer + 
@@ -227,17 +231,24 @@ public class ConfigurationReader {
 		// Reading attributes
 		String useModuleString = parser.getAttributeValue(null, "useModule");
 		String stepometerString = parser.getAttributeValue(null, "stepometer");
-		String priorMapStepometerBiasString = parser.getAttributeValue(null, "priorMapStepometerBias");
+		String verticalOrientationString = parser.getAttributeValue(null, "verticalOrientation");
+		String priorMapStepometerBiasVerticalString = parser.getAttributeValue(null, "priorMapStepometerBiasVertical");
+		String priorMapStepometerBiasHorizontalString = parser.getAttributeValue(null, "priorMapStepometerBiasHorizontal");
 		
 		// Logging those values
 		Log.d(moduleLogName, "useModule = " + useModuleString);
 		Log.d(moduleLogName, "stepometer = " + stepometerString);
-		Log.d(moduleLogName, "priorMapStepometerBias = " + priorMapStepometerBiasString);
+		Log.d(moduleLogName, "verticalOrientation = " + verticalOrientationString);
+		Log.d(moduleLogName, "priorMapStepometerBiasVertical = " + priorMapStepometerBiasVerticalString);
+		Log.d(moduleLogName, "priorMapStepometerBiasHorizontal = " + priorMapStepometerBiasHorizontalString);
 				
 		// Storing read values
 		parameters.inertialSensors.useModule = useModuleString.equals("True");
 		parameters.inertialSensors.stepometer = useModuleString.equals("True");
-		parameters.inertialSensors.priorMapStepometerBias =  Double.parseDouble(priorMapStepometerBiasString);
+		parameters.inertialSensors.verticalOrientation = verticalOrientationString.equals("True");
+		parameters.inertialSensors.priorMapStepometerBiasVertical =  Double.parseDouble(priorMapStepometerBiasVerticalString);
+		parameters.inertialSensors.priorMapStepometerBiasHorizontal =  Double.parseDouble(priorMapStepometerBiasHorizontalString);
+		
 		
 		// Reading record parameters
 		while (parser.next() != XmlPullParser.END_TAG) {

@@ -520,6 +520,8 @@ public class MainScreenSlideActivity extends Activity implements
 			float[] orient = openAIL.inertialSensors.getCurrentAEKFOrient();
 			float[] compOrient = openAIL.inertialSensors.getCurrentComplementaryOrient();
 			
+			int deviceOrientation = openAIL.inertialSensors.getDeviceOrientation();
+			
 			String strongestWiFiNetwork = openAIL.wifiScanner
 					.getStrongestNetwork();
 			int WiFiCount = openAIL.wifiScanner.getNetworkCount();
@@ -539,7 +541,7 @@ public class MainScreenSlideActivity extends Activity implements
 			ScreenSlidePageFragment x = (ScreenSlidePageFragment) ((ScreenSlidePagerAdapter) mPagerAdapter)
 					.getItem(id);
 			x.updateGUIData(orient, compOrient, strongestWiFiNetwork, WiFiCount, foundFreq,
-					stepCount, stepDistance, currentFloor, estimatedHeight, accVariance);
+					stepCount, stepDistance, currentFloor, estimatedHeight, accVariance, deviceOrientation);
 
 		}
 

@@ -2,10 +2,14 @@
 
 <OpenAIL>
 	<MainProcessing 	frequencyOfNewDataQuery="5" 
-								priorMapName="newMap"
-								usePriorMap="True"/>
+								priorMapName="CM_ver3"
+								usePriorMap="True"
+								imageAccVarianceThreshold="0.1"
+								imageCaptureStep="2"
+								imageCaptureVarianceThreshold="0.15"
+								/>
 
-	<InertialSensors useModule="True" stepometer="True">
+	<InertialSensors useModule="True" stepometer="True" verticalOrientation="True" priorMapStepometerBiasVertical="-20" priorMapStepometerBiasHorizontal="0">
 		<Record 
 						accelerometer="True"
 						gyroscope="False"
@@ -22,8 +26,8 @@
 
 	<GraphManager	vprVicinityDeadBandRadius="10.0"
 								informationMatrixOfVPRVicinity="2.0"
-								wifiFingerprintDeadBandRadius="6.0"
-								informationMatrixOfWiFiFingerprint="1.0"
+								wifiFingerprintDeadBandRadius="2.0"
+								informationMatrixOfWiFiFingerprint="5.0"
 								informationMatrixOfWiFi="1.0"
 								optimizeFromFileIterationCount="100"/>	
 	

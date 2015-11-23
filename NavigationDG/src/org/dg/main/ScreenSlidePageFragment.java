@@ -630,10 +630,10 @@ public class ScreenSlidePageFragment extends Fragment {
 	public void updateGUIData(float[] _orient, float[] _compOrient,
 			String _strongestWiFi, int _wiFiCount, float _foundFreq,
 			float _stepCount, float _stepDistance, int _currentFloor,
-			float _estimatedHeight, float _accVariance) {
+			float _estimatedHeight, float _accVariance, int _deviceOrientation) {
 		UpdateMeasurementsInGUI obj = new UpdateMeasurementsInGUI(_orient,
 				_compOrient, _strongestWiFi, _wiFiCount, _foundFreq,
-				_stepCount, _stepDistance, _currentFloor, _estimatedHeight, _accVariance);
+				_stepCount, _stepDistance, _currentFloor, _estimatedHeight, _accVariance, _deviceOrientation);
 		mHandlerOrient.post(obj);
 	}
 
@@ -654,11 +654,12 @@ public class ScreenSlidePageFragment extends Fragment {
 		int currentFloor;
 		float estimatedHeight;
 		float accVariance;
+		int deviceOrientation;
 
 		public UpdateMeasurementsInGUI(float[] _orient, float[] _compOrient,
 				String _strongestWiFi, int _wiFiCount, float _foundFreq,
 				float _stepCount, float _stepDistance, int _currentFloor,
-				float _estimatedHeight, float _accVariance) {
+				float _estimatedHeight, float _accVariance, int _deviceOrientation) {
 			orient = _orient.clone();
 			compOrient = _compOrient.clone();
 			strongestWiFi = _strongestWiFi;
@@ -669,6 +670,7 @@ public class ScreenSlidePageFragment extends Fragment {
 			currentFloor = _currentFloor;
 			estimatedHeight = _estimatedHeight;
 			accVariance = _accVariance;
+			deviceOrientation = _deviceOrientation;
 		}
 
 		public void run() {
@@ -737,11 +739,22 @@ public class ScreenSlidePageFragment extends Fragment {
 						.findViewById(R.id.textViewBarometer1);
 				TextView mTextViewEstimatedHeight = (TextView) getView()
 						.findViewById(R.id.textViewBarometer2);
-
+				TextView mTextViewDeviceOrientation = (TextView) getView()
+						.findViewById(R.id.textViewDeviceOrientation);
+				
 				mTextViewCurrentFloor.setText("Floor: "
 						+ Integer.toString(currentFloor));
 				mTextViewEstimatedHeight.setText("Height: "
 						+ String.format("%.2f", estimatedHeight) + " m");
+				
+				if ( deviceOrientation == 0)
+					mTextViewDeviceOrientation.setText("devOrient: VERT");
+				else if ( deviceOrientation == 1)
+					mTextViewDeviceOrientation.setText("devOrient: HOR LEFT");
+				else if ( deviceOrientation == 2)
+					mTextViewDeviceOrientation.setText("devOrient: HOR RIGHT");
+				else if ( deviceOrientation == 3)
+					mTextViewDeviceOrientation.setText("devOrient: UNKNOWN");
 			}
 		}
 	}

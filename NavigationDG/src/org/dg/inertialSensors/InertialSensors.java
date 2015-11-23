@@ -10,6 +10,7 @@ import java.util.concurrent.Semaphore;
 
 import org.dg.openAIL.ConfigurationReader.Parameters;
 
+import android.R.bool;
 import android.content.MutableContextWrapper;
 import android.hardware.Sensor;
 import android.hardware.SensorEvent;
@@ -71,6 +72,14 @@ public class InertialSensors {
 	boolean firstYawCall = true;
 	Stepometer stepometer;
 	
+	// Testing new stepometer angle
+	public enum DeviceOrientation {VERTICAL, HORIZONTAL_LEFT, HORIZONTAL_RIGHT, UNKNOWN};
+	private int deviceOrientationPoll [] = new int [4];
+	private int deviceOrientationIter = 0;
+	private DeviceOrientation deviceOrientation = DeviceOrientation.VERTICAL;
+	float [] stepometerAngle = new float[3];
+	
+	
 	// Acc variance
 	int accVarianceRunningCounter = 0;
 	final int accVarianceWindowSize = 100;
@@ -88,6 +97,7 @@ public class InertialSensors {
 	
 	// Parameters
 	Parameters.InertialSensors parameters;
+	enum ORIENTATION{VERTICAL, HORIZONTAL};
 
 	public InertialSensors(SensorManager _sensorManager, Parameters.InertialSensors _parameters) {
 		sensorManager = _sensorManager;
@@ -195,7 +205,17 @@ public class InertialSensors {
 	public float getYawForStepometer() {
 		try {
 			yawMtx.acquire();
-			float yawZ = orientAndroid[2];
+			
+			float yawZ = 0.0f;
+			float firstCallBias = 0.0f;
+			if ( parameters.verticalOrientation == true ) {
+				yawZ = orientAndroid[2];
+				firstCallBias = (float) parameters.priorMapStepometerBiasVertical;
+			}
+			else {
+				yawZ = orientAndroid[1];
+				firstCallBias = (float) parameters.priorMapStepometerBiasHorizontal;
+			}
 			yawMtx.release();
 			
 			// In any case we compute the difference in orientations
@@ -205,7 +225,7 @@ public class InertialSensors {
 			// In first case, the diff is equal to global orientation corrected by map bias
 			if ( firstYawCall) {
 				firstYawCall = false;
-				return deltaYaw + (float) parameters.priorMapStepometerBias;
+				return deltaYaw + firstCallBias;
 			}
 			return deltaYaw;
 		} catch (InterruptedException e) {
@@ -232,6 +252,10 @@ public class InertialSensors {
 		return accVariance;
 	}
 		
+	
+	public int getDeviceOrientation() {
+		return deviceOrientation.ordinal();
+	}
 	
 	// Magnetic recognition
 	public int recognizePlaceBasedOnMagneticScan()
@@ -354,6 +378,8 @@ public class InertialSensors {
 	public void stop() {
 		isStarted = false;
 		timestampStart = 0;
+		deviceOrientationIter = 0;
+		deviceOrientationPoll = new int[4]; 
 
 		sensorManager.unregisterListener(sensorEventListener);
 
@@ -623,6 +649,9 @@ public class InertialSensors {
 			}
 			lastAndroidQuat = quaternion;
 			
+			
+		
+			
 			try {
 				orientAndroidMtx.acquire();
 				orientAndroid[0] = computeEulerRollX(quaternion);
@@ -695,6 +724,36 @@ public class InertialSensors {
 							orient);
 			
 			}
+			
+			
+			// TEST
+			// Testing new stepometer angle
+			float [] R = new float [9];
+			SensorManager.getRotationMatrixFromVector(R, event.values);
+			
+			stepometerAngle[0] = (float) Math.atan2(R[3], R[0] ) * 180.0f / 3.141516f;
+			stepometerAngle[1] = (float) Math.atan2(-R[4], -R[1]) * 180.0f / 3.141516f;
+			stepometerAngle[2] = (float) Math.atan2(R[4], R[1]) * 180.0f / 3.141516f;
+			
+			Log.d("Stepometer angle","Values: " + stepometerAngle[0] + " " + stepometerAngle[1] + " " + stepometerAngle[2]);
+			
+			
+			try {
+				
+					orientMtx.acquire();
+					
+					orient[0] = orient[1] = orient[2]= 0; 
+					if ( deviceOrientation == deviceOrientation.VERTICAL)
+						orient[0] = stepometerAngle[0];
+					else if ( deviceOrientation == deviceOrientation.HORIZONTAL_LEFT)
+						orient[0] = stepometerAngle[1];
+					else if ( deviceOrientation == deviceOrientation.HORIZONTAL_RIGHT)
+						orient[0] = stepometerAngle[2];
+					orientMtx.release();
+				
+			} catch (InterruptedException e) {
+			}
+			
 		}
 
 		/**
@@ -800,6 +859,33 @@ public class InertialSensors {
 			acc[0] = event.values[0];
 			acc[1] = event.values[1];
 			acc[2] = event.values[2];
+			
+			// select device orientation type
+			if ( deviceOrientationIter < 50) {
+				if ( acc[1] > Math.abs(acc[0]) && acc[1] > Math.abs(acc[2]) )
+					deviceOrientationPoll[DeviceOrientation.VERTICAL.ordinal()]++;
+				else if ( acc[0] > Math.abs(acc[1]) && acc[0] > Math.abs(acc[2]))
+					deviceOrientationPoll[DeviceOrientation.HORIZONTAL_LEFT.ordinal()]++;
+				else if ( acc[0] < Math.abs(acc[1]) && acc[0] < Math.abs(acc[2]))
+					deviceOrientationPoll[DeviceOrientation.HORIZONTAL_RIGHT.ordinal()]++;
+				else
+					deviceOrientationPoll[DeviceOrientation.UNKNOWN.ordinal()]++;
+				
+				deviceOrientationIter++;
+			}
+			else if ( deviceOrientationIter == 50) {
+				
+				int max = deviceOrientationPoll[0];
+				int index = 0;
+				for (int i=1;i<4;i++) {
+					if ( deviceOrientationPoll[i] > max) {
+						max = deviceOrientationPoll[i];
+						index = i;
+					}
+				}
+				
+				deviceOrientation = DeviceOrientation.values()[index];
+			}
 
 			float accVal = (float) Math.sqrt(acc[0] * acc[0] + acc[1]
 					* acc[1] + acc[2] * acc[2]);
