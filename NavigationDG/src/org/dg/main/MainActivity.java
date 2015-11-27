@@ -433,7 +433,7 @@ public class MainActivity extends Activity {
 		public void run() {
 
 			 // get distance
-			 double distance = openAIL.inertialSensors.getGraphStepDistance();
+			 double distance = openAIL.inertialSensors.getStepometerStepDistance();
 			
 			 // Adding WiFi measurement
 			 if ( distance > 0.1 )
@@ -506,9 +506,9 @@ public class MainActivity extends Activity {
 			float[] orient = openAIL.inertialSensors.getCurrentAEKFOrient();
 			String strongestWiFiNetwork = openAIL.wifiScanner.getStrongestNetwork();
 			int WiFiCount = openAIL.wifiScanner.getNetworkCount();
-			float foundFreq = openAIL.inertialSensors.getLastDetectedFrequency();
-			float stepCount = openAIL.inertialSensors.getDetectedNumberOfSteps();
-			float stepDistance = openAIL.inertialSensors.getCovertedStepDistance();
+			float foundFreq = openAIL.inertialSensors.getStepometerLastDetectedFrequency();
+			float stepCount = openAIL.inertialSensors.getStepometerNumberOfSteps();
+			float stepDistance = openAIL.inertialSensors.getStepometerCoveredStepDistance();
 			int currentFloor = openAIL.inertialSensors.getCurrentFloor();
 			float estimatedHeight = openAIL.inertialSensors.getEstimatedHeight();
 

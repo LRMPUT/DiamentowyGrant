@@ -5,6 +5,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Semaphore;
 
@@ -20,14 +21,13 @@ import android.os.Environment;
 import android.util.Log;
 
 public class InertialSensors {
-	// Parameters
-	static final int verboseLevel = 0;
-
+	private static final String moduleLogName = "InertialSensors.java";
+	
 	// Main Android handler
 	SensorManager sensorManager;
 
 	// Streams to save data
-	public enum activeStream {
+	private enum ActiveStreamNames {
 		ACCELEROMETER, GYROSCOPE, MAGNETOMETER, ACCELEROMETER_WITHOUT_GRAVITY, ORIENTATION_ANDROID, ORIENTATION_ANDROID_EULER, ORIENTATION_AEKF,
 		ORIENTATION_AEKF_EULER, ORIENTATION_COMPLEMENTARY, ORIENTATION_COMPLEMENTARY_EULER, PRESSURE;
 	}
@@ -45,11 +45,11 @@ public class InertialSensors {
 	private final Semaphore orientAndroidMtx = new Semaphore(1, true);
 	private final Semaphore yawMtx = new Semaphore(1, true);
 	
-	int id = 0;
-	float acc[], mag[], accwog[], gyro[], orient[], orientComp[], orientAndroid[], lastAndroidQuat[];
+	private final Semaphore gyroMtx = new Semaphore(1, true);
+	private final Semaphore accMtx = new Semaphore(1, true);
 	
-	// Window to compute 
-	float accVariance = 0;
+	int id = 0;
+	float acc[], mag[], accwog[], orient[], orientComp[], orientAndroid[], lastAndroidQuat[];
 
 	// isRunning
 	boolean isStarted;
@@ -64,7 +64,8 @@ public class InertialSensors {
 	ComplementaryFilter complementaryFilterEstimation = null;
 
 	// Stepometer
-	private List<Float> accWindow;
+	private LinkedList<Float> accStepometerWindow, accVarianceWindow, gyroVarianceWindow;
+	static int gyroWindowSize = 100;
 	boolean stepometerStarted = false;
 	int stepometerRunningCounter = 0;
 	final int stepometerWindowSize = 1024;
@@ -77,7 +78,7 @@ public class InertialSensors {
 	private int deviceOrientationPoll [] = new int [4];
 	private int deviceOrientationIter = 0;
 	private DeviceOrientation deviceOrientation = DeviceOrientation.VERTICAL;
-	float [] stepometerAngle = new float[3];
+	float stepometerAngle;
 	
 	
 	// Acc variance
@@ -97,7 +98,6 @@ public class InertialSensors {
 	
 	// Parameters
 	Parameters.InertialSensors parameters;
-	enum ORIENTATION{VERTICAL, HORIZONTAL};
 
 	public InertialSensors(SensorManager _sensorManager, Parameters.InertialSensors _parameters) {
 		sensorManager = _sensorManager;
@@ -107,13 +107,15 @@ public class InertialSensors {
 		acc = new float[3];
 		mag = new float[3];
 		accwog = new float[3];
-		gyro = new float[3];
 		orient = new float[3];
 		orientComp = new float[3];
 		orientAndroid = new float[3];
 		lastAndroidQuat = new float[4];
 		performOrientationEstimation = true;
-		accWindow = new ArrayList<Float>();
+		
+		accStepometerWindow = new LinkedList<Float>();
+		accVarianceWindow = new LinkedList<Float>();
+		gyroVarianceWindow = new LinkedList<Float>();
 		stepometer = new Stepometer();
 		
 		magneticWindow = new ArrayList<Float>();
@@ -128,23 +130,23 @@ public class InertialSensors {
 		activeStreams = new boolean[11];
 		
 		// Basic sensors
-		activeStreams[activeStream.ACCELEROMETER.ordinal()] = parameters.record.accelerometer;
-		activeStreams[activeStream.GYROSCOPE.ordinal()] = parameters.record.gyroscope;
-		activeStreams[activeStream.MAGNETOMETER.ordinal()] = parameters.record.magnetometer;
-		activeStreams[activeStream.ACCELEROMETER_WITHOUT_GRAVITY.ordinal()] = parameters.record.accelerometerWithoutGravity;
-		activeStreams[activeStream.PRESSURE.ordinal()] = parameters.record.barometer;
+		activeStreams[ActiveStreamNames.ACCELEROMETER.ordinal()] = parameters.record.accelerometer;
+		activeStreams[ActiveStreamNames.GYROSCOPE.ordinal()] = parameters.record.gyroscope;
+		activeStreams[ActiveStreamNames.MAGNETOMETER.ordinal()] = parameters.record.magnetometer;
+		activeStreams[ActiveStreamNames.ACCELEROMETER_WITHOUT_GRAVITY.ordinal()] = parameters.record.accelerometerWithoutGravity;
+		activeStreams[ActiveStreamNames.PRESSURE.ordinal()] = parameters.record.barometer;
 		
 		// Android estimation
-		activeStreams[activeStream.ORIENTATION_ANDROID.ordinal()] = parameters.record.orientationAndroid;
-		activeStreams[activeStream.ORIENTATION_ANDROID_EULER.ordinal()] = parameters.record.orientationAndroidEuler;
+		activeStreams[ActiveStreamNames.ORIENTATION_ANDROID.ordinal()] = parameters.record.orientationAndroid;
+		activeStreams[ActiveStreamNames.ORIENTATION_ANDROID_EULER.ordinal()] = parameters.record.orientationAndroidEuler;
 		
 		// AEKF
-		activeStreams[activeStream.ORIENTATION_AEKF.ordinal()] = parameters.record.orientationAEKF;
-		activeStreams[activeStream.ORIENTATION_AEKF_EULER.ordinal()] = parameters.record.orientationAEKFEuler;
+		activeStreams[ActiveStreamNames.ORIENTATION_AEKF.ordinal()] = parameters.record.orientationAEKF;
+		activeStreams[ActiveStreamNames.ORIENTATION_AEKF_EULER.ordinal()] = parameters.record.orientationAEKFEuler;
 		
 		// CF
-		activeStreams[activeStream.ORIENTATION_COMPLEMENTARY.ordinal()] = parameters.record.orientationCF;
-		activeStreams[activeStream.ORIENTATION_COMPLEMENTARY_EULER.ordinal()] = parameters.record.orientationCFEuler;	
+		activeStreams[ActiveStreamNames.ORIENTATION_COMPLEMENTARY.ordinal()] = parameters.record.orientationCF;
+		activeStreams[ActiveStreamNames.ORIENTATION_COMPLEMENTARY_EULER.ordinal()] = parameters.record.orientationCFEuler;	
 		
 	}
 
@@ -183,22 +185,26 @@ public class InertialSensors {
 		return stepometerStarted;
 	}
 
-	public float getLastDetectedFrequency() {
+	public float getStepometerLastDetectedFrequency() {
 		return stepometer.getLastFoundFreq();
 	}
 
-	public float getCovertedStepDistance() {
+	public float getStepometerCoveredStepDistance() {
 		return stepometer.getCoveredStepDistance();
 	}
 	
-	public float getGraphStepDistance() {
-		return stepometer.getGraphStepDistance();
+	public float getStepometerStepDistance() {
+		return stepometer.getStepDistance();
 	}
 
-	public float getDetectedNumberOfSteps() {
+	public float getStepometerNumberOfSteps() {
 		return stepometer.getDetectedNumberOfSteps();
 	}
 	
+	
+	public float getAngleForStepometer() {
+		return stepometerAngle;
+	}
 	/**
 	 * Returns Yaw (Z-axis) in degrees
 	 */
@@ -209,11 +215,11 @@ public class InertialSensors {
 			float yawZ = 0.0f;
 			float firstCallBias = 0.0f;
 			if ( parameters.verticalOrientation == true ) {
-				yawZ = orientAndroid[2];
+				yawZ = stepometerAngle;
 				firstCallBias = (float) parameters.priorMapStepometerBiasVertical;
 			}
 			else {
-				yawZ = orientAndroid[1];
+				yawZ = stepometerAngle;
 				firstCallBias = (float) parameters.priorMapStepometerBiasHorizontal;
 			}
 			yawMtx.release();
@@ -249,7 +255,27 @@ public class InertialSensors {
 	}
 	
 	public float getAccVariance() {
-		return accVariance;
+		float val = 0.0f;
+		try {
+			accMtx.acquire();
+			val = varList(accVarianceWindow);
+			accMtx.release();
+		} catch (Exception e) { }
+		
+		return val;
+	}
+	
+	public float getGyroVariance() {
+		
+		float val = 0.0f;
+		try {
+			gyroMtx.acquire();
+			val = varList(gyroVarianceWindow);
+			gyroMtx.release();
+		} catch (InterruptedException e) {
+		}
+		
+		return val;
 	}
 		
 	
@@ -474,63 +500,63 @@ public class InertialSensors {
 			dir.mkdirs();
 		}
 
-		if ( activeStreams[activeStream.ACCELEROMETER.ordinal()] ) {
+		if ( activeStreams[ActiveStreamNames.ACCELEROMETER.ordinal()] ) {
 			String fileName = dir.toString() + "/acc.log";
 			FileOutputStream faccStream = new FileOutputStream(fileName);
 			accStream = new PrintStream(faccStream);
 		}
 
-		if ( activeStreams[activeStream.GYROSCOPE.ordinal()] ) {
+		if ( activeStreams[ActiveStreamNames.GYROSCOPE.ordinal()] ) {
 			String fileName = dir.toString() + "/gyro.log";
 			FileOutputStream fgyroStream = new FileOutputStream(fileName);
 			gyroStream = new PrintStream(fgyroStream);
 		}
 
-		if ( activeStreams[activeStream.MAGNETOMETER.ordinal()] ) {
+		if ( activeStreams[ActiveStreamNames.MAGNETOMETER.ordinal()] ) {
 			String fileName = dir.toString() + "/mag.log";
 			FileOutputStream fmagStream = new FileOutputStream(fileName);
 			magStream = new PrintStream(fmagStream);
 		}
 
-		if ( activeStreams[activeStream.ACCELEROMETER_WITHOUT_GRAVITY.ordinal()] ) {
+		if ( activeStreams[ActiveStreamNames.ACCELEROMETER_WITHOUT_GRAVITY.ordinal()] ) {
 			String fileName = dir.toString() + "/accwog.log";
 			FileOutputStream faccwogStream = new FileOutputStream(fileName);
 			accwogStream = new PrintStream(faccwogStream);
 		}
 
-		if ( activeStreams[activeStream.ORIENTATION_ANDROID.ordinal()] ) {
+		if ( activeStreams[ActiveStreamNames.ORIENTATION_ANDROID.ordinal()] ) {
 			String fileName = dir.toString() + "/orientAndroid.log";
 			FileOutputStream forientAndroidStream = new FileOutputStream(fileName);
 			orientAndroidStream = new PrintStream(forientAndroidStream);
 		}
 		
-		if ( activeStreams[activeStream.ORIENTATION_ANDROID_EULER.ordinal()] ) {
+		if ( activeStreams[ActiveStreamNames.ORIENTATION_ANDROID_EULER.ordinal()] ) {
 			String fileName = dir.toString() + "/orientAndroidEuler.log";
 			FileOutputStream forientAndroidEulerStream = new FileOutputStream(fileName);
 			orientAndroidEulerStream = new PrintStream(forientAndroidEulerStream);
 		}
 
 		if (performOrientationEstimation) {
-			if ( activeStreams[activeStream.ORIENTATION_AEKF.ordinal()] ) {
+			if ( activeStreams[ActiveStreamNames.ORIENTATION_AEKF.ordinal()] ) {
 				String fileName = dir.toString() + "/myOrientAEKF.log";
 				FileOutputStream fmyOrientStream = new FileOutputStream(fileName);
 				myOrientAEKFStream = new PrintStream(fmyOrientStream);
 			}
 
-			if (activeStreams[activeStream.ORIENTATION_AEKF_EULER.ordinal()]) {
+			if (activeStreams[ActiveStreamNames.ORIENTATION_AEKF_EULER.ordinal()]) {
 				String fileName = dir.toString() + "/myOrientAEKFEuler.log";
 				FileOutputStream fmyOrientEulerStream = new FileOutputStream(
 						fileName);
 				myOrientAEKFEulerStream = new PrintStream(fmyOrientEulerStream);
 			}
 			
-			if ( activeStreams[activeStream.ORIENTATION_COMPLEMENTARY.ordinal()] ) {
+			if ( activeStreams[ActiveStreamNames.ORIENTATION_COMPLEMENTARY.ordinal()] ) {
 				String fileName = dir.toString() + "/myOrientComplementary.log";
 				FileOutputStream fmyOrientComplementaryStream = new FileOutputStream(fileName);
 				myOrientComplementaryStream = new PrintStream(fmyOrientComplementaryStream);
 			}
 
-			if ( activeStreams[activeStream.ORIENTATION_COMPLEMENTARY_EULER.ordinal()] ) {
+			if ( activeStreams[ActiveStreamNames.ORIENTATION_COMPLEMENTARY_EULER.ordinal()] ) {
 				String fileName = dir.toString() + "/myOrientComplementaryEuler.log";
 				FileOutputStream fmyOrientComplementaryEulerStream = new FileOutputStream(
 						fileName);
@@ -539,7 +565,7 @@ public class InertialSensors {
 	
 		}
 		
-		if ( activeStreams[activeStream.PRESSURE.ordinal()] ) {
+		if ( activeStreams[ActiveStreamNames.PRESSURE.ordinal()] ) {
 			String fileName = dir.toString() + "/pressure.log";
 			FileOutputStream fpressureStream = new FileOutputStream(fileName);
 			pressureStream = new PrintStream(fpressureStream);
@@ -608,7 +634,7 @@ public class InertialSensors {
 
 			} else if (event.sensor.getType() == Sensor.TYPE_LINEAR_ACCELERATION) {
 				
-				if (save2file && activeStreams[activeStream.ACCELEROMETER_WITHOUT_GRAVITY.ordinal()])
+				if (save2file && activeStreams[ActiveStreamNames.ACCELEROMETER_WITHOUT_GRAVITY.ordinal()])
 					saveToStream(accwogStream, getTimestamp(), event.values);
 
 			} else if (event.sensor.getType() == Sensor.TYPE_ROTATION_VECTOR) {
@@ -629,7 +655,7 @@ public class InertialSensors {
 			event.values[2] = SensorManager.getAltitude(SensorManager.PRESSURE_STANDARD_ATMOSPHERE, event.values[0]);
 			lastBarometerValue = event.values[1];
 			
-			if (save2file && activeStreams[activeStream.PRESSURE.ordinal()] )
+			if (save2file && activeStreams[ActiveStreamNames.PRESSURE.ordinal()] )
 				saveToStream(pressureStream, getTimestamp(), event.values);
 		}
 
@@ -666,9 +692,9 @@ public class InertialSensors {
 				e.printStackTrace();
 			}
 			
-			if (save2file && activeStreams[activeStream.ORIENTATION_ANDROID.ordinal()])
+			if (save2file && activeStreams[ActiveStreamNames.ORIENTATION_ANDROID.ordinal()])
 				saveToStream(orientAndroidStream, getTimestamp(), quaternion);
-			if (save2file && activeStreams[activeStream.ORIENTATION_ANDROID_EULER.ordinal()])
+			if (save2file && activeStreams[ActiveStreamNames.ORIENTATION_ANDROID_EULER.ordinal()])
 				saveToStream(orientAndroidEulerStream, getTimestamp(), orientAndroid);
 
 			if (performOrientationEstimation) {
@@ -691,9 +717,9 @@ public class InertialSensors {
 						e.printStackTrace();
 					}
 					
-					if (save2file && activeStreams[activeStream.ORIENTATION_COMPLEMENTARY.ordinal()])
+					if (save2file && activeStreams[ActiveStreamNames.ORIENTATION_COMPLEMENTARY.ordinal()])
 						saveToStream(myOrientComplementaryStream, getTimestamp(), orientCompQuat);
-					if (save2file && activeStreams[activeStream.ORIENTATION_COMPLEMENTARY_EULER.ordinal()])
+					if (save2file && activeStreams[ActiveStreamNames.ORIENTATION_COMPLEMENTARY_EULER.ordinal()])
 						saveToStream(myOrientComplementaryEulerStream, getTimestamp(), orientComp);
 					
 
@@ -717,9 +743,9 @@ public class InertialSensors {
 					e.printStackTrace();
 				}
 
-				if (save2file && activeStreams[activeStream.ORIENTATION_AEKF.ordinal()])
+				if (save2file && activeStreams[ActiveStreamNames.ORIENTATION_AEKF.ordinal()])
 					saveToStream(myOrientAEKFStream, getTimestamp(), orientAEKFQuat);
-				if (save2file && activeStreams[activeStream.ORIENTATION_AEKF_EULER.ordinal()])
+				if (save2file && activeStreams[ActiveStreamNames.ORIENTATION_AEKF_EULER.ordinal()])
 					saveToStream(myOrientAEKFEulerStream, getTimestamp(),
 							orient);
 			
@@ -728,32 +754,19 @@ public class InertialSensors {
 			
 			// TEST
 			// Testing new stepometer angle
-			float [] R = new float [9];
+
+			float[] R = new float[9];
 			SensorManager.getRotationMatrixFromVector(R, event.values);
-			
-			stepometerAngle[0] = (float) Math.atan2(R[3], R[0] ) * 180.0f / 3.141516f;
-			stepometerAngle[1] = (float) Math.atan2(-R[4], -R[1]) * 180.0f / 3.141516f;
-			stepometerAngle[2] = (float) Math.atan2(R[4], R[1]) * 180.0f / 3.141516f;
-			
-			Log.d("Stepometer angle","Values: " + stepometerAngle[0] + " " + stepometerAngle[1] + " " + stepometerAngle[2]);
-			
-			
-			try {
-				
-					orientMtx.acquire();
-					
-					orient[0] = orient[1] = orient[2]= 0; 
-					if ( deviceOrientation == deviceOrientation.VERTICAL)
-						orient[0] = stepometerAngle[0];
-					else if ( deviceOrientation == deviceOrientation.HORIZONTAL_LEFT)
-						orient[0] = stepometerAngle[1];
-					else if ( deviceOrientation == deviceOrientation.HORIZONTAL_RIGHT)
-						orient[0] = stepometerAngle[2];
-					orientMtx.release();
-				
-			} catch (InterruptedException e) {
-			}
-			
+			if (deviceOrientation == deviceOrientation.VERTICAL)
+				stepometerAngle = (float) (Math.atan2(R[3], R[0]) * 180.0d / Math.PI);
+			else if (deviceOrientation == deviceOrientation.HORIZONTAL_LEFT)
+				stepometerAngle = (float) (Math.atan2(-R[4], -R[1]) * 180.0d / Math.PI);
+			else if (deviceOrientation == DeviceOrientation.HORIZONTAL_RIGHT)
+				stepometerAngle = (float) (Math.atan2(R[4], R[1]) * 180.0d / Math.PI);
+			else if (deviceOrientation == DeviceOrientation.UNKNOWN)
+				stepometerAngle = (float) (90.0f - Math.atan2(-R[5], R[2]) * 180.0d / Math.PI);
+
+
 		}
 
 		/**
@@ -820,7 +833,7 @@ public class InertialSensors {
 			
 			magneticRecognitionCounter++;
 
-			if (save2file && activeStreams[activeStream.MAGNETOMETER.ordinal()])
+			if (save2file && activeStreams[ActiveStreamNames.MAGNETOMETER.ordinal()])
 				saveToStream(magStream, getTimestamp(), mag);
 		}
 
@@ -828,18 +841,30 @@ public class InertialSensors {
 		 * @param event
 		 */
 		private void processNewGyroscopeData(SensorEvent event) {
+			float [] gyro = new float [3];
 			gyro[0] = event.values[0];
 			gyro[1] = event.values[1];
 			gyro[2] = event.values[2];
 			
-			if (performOrientationEstimation) {
-			// Time from last update converted from ns to s
-			final float convertNs2s = 1000000000.0f;
+			// Gyro window
+			try {
+				gyroMtx.acquire();
+				gyroVarianceWindow.add((float) Math.sqrt(gyro[0]*gyro[0]+gyro[1]*gyro[1]+gyro[2]*gyro[2]));
+				if ( gyroVarianceWindow.size() > gyroWindowSize)
+				{
+					gyroVarianceWindow.removeFirst();
+				}
+				gyroMtx.release();
+			} catch (Exception e) {};
 			
-			float dt = 0.0f;
-			if ( lastOrientationEstimationTimestamp >= 0)
-				dt = (event.timestamp - lastOrientationEstimationTimestamp)/convertNs2s; 
-			lastOrientationEstimationTimestamp = event.timestamp;
+			if (performOrientationEstimation) {
+				// Time from last update converted from ns to s
+				final float convertNs2s = 1000000000.0f;
+				
+				float dt = 0.0f;
+				if ( lastOrientationEstimationTimestamp >= 0)
+					dt = (event.timestamp - lastOrientationEstimationTimestamp)/convertNs2s; 
+				lastOrientationEstimationTimestamp = event.timestamp;
 							
 				// AEKF
 				orientationEstimator.predict(gyro[0], gyro[1], gyro[2], dt);
@@ -848,7 +873,7 @@ public class InertialSensors {
 					complementaryFilterEstimation.gyroscopeUpdate(gyro, dt);
 			}
 
-			if (save2file && activeStreams[activeStream.GYROSCOPE.ordinal()])
+			if (save2file && activeStreams[ActiveStreamNames.GYROSCOPE.ordinal()])
 				saveToStream(gyroStream, getTimestamp(), gyro);
 		}
 
@@ -885,39 +910,46 @@ public class InertialSensors {
 				}
 				
 				deviceOrientation = DeviceOrientation.values()[index];
+				
+				//TESTING
+				//deviceOrientation = DeviceOrientation.UNKNOWN;
 			}
 
 			float accVal = (float) Math.sqrt(acc[0] * acc[0] + acc[1]
 					* acc[1] + acc[2] * acc[2]);
-			accWindow.add(Float.valueOf(accVal));
 			
-			// Computer acc variance
-			if ( accVarianceRunningCounter > accVarianceWindowSize)
-			{
-				if ( accWindow.size() > accVarianceWindowSize)
-				{
-					List<Float> accVarianceWindow = accWindow.subList (accWindow.size() - accVarianceWindowSize, accWindow.size());
-					accVariance = varList(accVarianceWindow);
-					accVarianceRunningCounter = 0;
-				}
+			try {
+				accMtx.acquire();
+					accVarianceWindow.add(Float.valueOf(accVal));
+				accMtx.release();
+				
+				accStepometerWindow.add(Float.valueOf(accVal));
+				
+			} catch (Exception e) {};
+			
+			
+			// Remove element if too long
+			if (accVarianceWindow.size() > accVarianceWindowSize) {
+				accVarianceWindow.removeFirst();
+			}
+			if (accStepometerWindow.size() > stepometerWindowSize) {
+				accStepometerWindow.removeFirst();
 			}
 
-			if (save2file && activeStreams[activeStream.ACCELEROMETER.ordinal()])
+			if (save2file && activeStreams[ActiveStreamNames.ACCELEROMETER.ordinal()])
 				saveToStream(accStream, getTimestamp(), acc);
 			
 			if (stepometerStarted && stepometerRunningCounter > 200)
 			{
-				if ( accWindow.size() > stepometerWindowSize)
+				if ( accVarianceWindow.size() > stepometerWindowSize)
 				{
-					 // Reduce list size to stepometerWindowSize
-					 accWindow = accWindow.subList(accWindow.size() - stepometerWindowSize, accWindow.size());
-					 
+					
 					 // Copying from list to float array, so we can process in new thread
-					 int accWindowSize = accWindow.size();
+					 int accWindowSize = accVarianceWindow.size();
 					 float [] accWindowFloat = new float[accWindowSize];
 					 for (int i=0;i<accWindowSize;i++)
 					 {
-						accWindowFloat[i] = accWindow.get(i);
+						accWindowFloat[i] = accVarianceWindow.get(i);
 					 }
 					 stepometer.setAccWindow(accWindowFloat, accWindowSize);
 					
@@ -931,23 +963,7 @@ public class InertialSensors {
 			accVarianceRunningCounter++;
 		}
 		
-		private float avgList(List<Float> accWindow) {
-			float s = 0;
-			for (Float x : accWindow)
-				s+=x;
-			return s/accWindow.size();
-		}
 		
-		public float varList(List<Float> accWindow) {
-			float sumDiffsSquared = 0.0f;
-			float avg = avgList(accWindow);
-			for (Float value : accWindow) {
-				double diff = value - avg;
-				diff *= diff;
-				sumDiffsSquared += diff;
-			}
-			return sumDiffsSquared / (accWindow.size() - 1);
-		}
 
 		/**
 		 */
@@ -961,6 +977,24 @@ public class InertialSensors {
 			stream.print(System.getProperty("line.separator"));
 		}
 	};
+	
+	private float avgList(LinkedList<Float> values) {
+		float s = 0;
+		for (Float x : values)
+			s+=x;
+		return s/values.size();
+	}
+	
+	private float varList(LinkedList<Float> values) {
+		float sumDiffsSquared = 0.0f;
+		float avg = avgList(values);
+		for (Float value : values) {
+			double diff = value - avg;
+			diff *= diff;
+			sumDiffsSquared += diff;
+		}
+		return sumDiffsSquared / (values.size() - 1);
+	}
 	
 	
 	private float RMSE(float[] x, float [] y) {

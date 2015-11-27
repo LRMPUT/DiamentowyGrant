@@ -93,7 +93,7 @@ public class Stepometer implements Runnable{
 		return coveredStepDistance;
 	}
 	
-	public float getGraphStepDistance() {
+	public float getStepDistance() {
 		float distance =  coveredStepDistance - lastReportedCoveredStepDistance;
 		lastReportedCoveredStepDistance = coveredStepDistance;
 		return distance;

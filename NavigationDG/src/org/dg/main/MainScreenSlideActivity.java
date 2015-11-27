@@ -84,8 +84,7 @@ public class MainScreenSlideActivity extends Activity implements
 	 */
 	Preview preview;
 	Camera camera;
-	
-	
+
 	// Orient in main update
 	private Timer orientAndWiFiScanUpdateTimer = new Timer();
 
@@ -119,9 +118,8 @@ public class MainScreenSlideActivity extends Activity implements
 
 				Toast.makeText(MainScreenSlideActivity.this,
 						"Loaded all libraries", Toast.LENGTH_LONG).show();
-				
-				
-				openAIL.initAfterOpenCV();				
+
+				openAIL.initAfterOpenCV();
 			}
 				break;
 			default: {
@@ -196,10 +194,9 @@ public class MainScreenSlideActivity extends Activity implements
 
 		// 6. Add WiFi scan to recognition list
 		if (link.contains("Add WiFi to recognition")) {
-			
-			
+
 			// TODO!!!
-			//openAIL.wifiScanner.addLastScanToRecognition();
+			// openAIL.wifiScanner.addLastScanToRecognition();
 
 			if (wiFiRecognitionStarted == false) {
 				wiFiRecognitionTimer.scheduleAtFixedRate(
@@ -232,16 +229,19 @@ public class MainScreenSlideActivity extends Activity implements
 		if (link.contains("Start graph") || link.contains("Optimize graph")) {
 
 			if (!openAIL.graphManager.started()) {
-				
+
 				// We need to update the preview
-				ScreenSlidePageFragment cameraFragment = (ScreenSlidePageFragment)((ScreenSlidePagerAdapter)mPagerAdapter).getItem(0);
+				ScreenSlidePageFragment cameraFragment = (ScreenSlidePageFragment) ((ScreenSlidePagerAdapter) mPagerAdapter)
+						.getItem(0);
 				openAIL.preview = cameraFragment.preview;
-				
+
 				// Get the view to draw trajectory
-				ScreenSlidePageFragment visualizationFragment = (ScreenSlidePageFragment)((ScreenSlidePagerAdapter)mPagerAdapter).getItem(3);
-				LocalizationView localizationView = visualizationFragment.getLocalizationView();
+				ScreenSlidePageFragment visualizationFragment = (ScreenSlidePageFragment) ((ScreenSlidePagerAdapter) mPagerAdapter)
+						.getItem(3);
+				LocalizationView localizationView = visualizationFragment
+						.getLocalizationView();
 				openAIL.setLocalizationView(localizationView);
-				
+
 				openAIL.startLocalization();
 			} else {
 				openAIL.stopLocalization();
@@ -252,104 +252,113 @@ public class MainScreenSlideActivity extends Activity implements
 		// Side View 3 - Optimize graph from file
 		if (link.contains("Graph from file")) {
 			// Get the view to draw trajectory
-			ScreenSlidePageFragment visualizationFragment = (ScreenSlidePageFragment)((ScreenSlidePagerAdapter)mPagerAdapter).getItem(3);
-			LocalizationView localizationView = visualizationFragment.getLocalizationView();
+			ScreenSlidePageFragment visualizationFragment = (ScreenSlidePageFragment) ((ScreenSlidePagerAdapter) mPagerAdapter)
+					.getItem(3);
+			LocalizationView localizationView = visualizationFragment
+					.getLocalizationView();
 			openAIL.setLocalizationView(localizationView);
-			
+
 			openAIL.optimizeGraphInFile("lastCreatedGraph.g2o");
 		}
-		
+
 		// Side View 4 - Add magnetic place to recognition
 		if (link.contains("Add magnetic place to recognition")) {
 			openAIL.inertialSensors.addMagneticRecognitionPlace();
 		}
-		
+
 		// Side View 5 - Start/Stop complementary filter
-		if (link.contains("Start complementary filter") || link.contains("Stop complementary filter")) {
-			// TODO !!! 
+		if (link.contains("Start complementary filter")
+				|| link.contains("Stop complementary filter")) {
+			// TODO !!!
 		}
-		
+
 		// Side View 6 - Orientation From file test
 		if (link.contains("Orient file test")) {
-		
+
 			Thread thread = new Thread() {
-			    @Override
-			    public void run() {
-			    	File folder = new File(Environment.getExternalStorageDirectory()
-							+ "/DG");
+				@Override
+				public void run() {
+					File folder = new File(
+							Environment.getExternalStorageDirectory() + "/DG");
 
 					if (!folder.exists()) {
 						folder.mkdir();
 					}
 
-					File dir = new File(String.format(
-							Environment.getExternalStorageDirectory() + "/DG/xSenseTel3"));
+					File dir = new File(String.format(Environment
+							.getExternalStorageDirectory() + "/DG/xSenseTel3"));
 					if (!dir.exists()) {
 						dir.mkdirs();
 					}
-					
-					try{
-						PrintStream paramOutStream = new PrintStream(new FileOutputStream(dir.toString() + "/param.log"));
+
+					try {
+						PrintStream paramOutStream = new PrintStream(
+								new FileOutputStream(dir.toString()
+										+ "/param.log"));
 						float param = 0.000001f;
-						while(param < 0.02f){
-	//						ProcessRecorded.process(dir, 0.999325f);
-							double score = ProcessRecorded.process(dir, 1.0f - param);
-							
-							paramOutStream.print(Float.toString(param) + " " + Double.toString(score));
-							paramOutStream.print(System.getProperty("line.separator"));
-							
-							Log.d(TAG, String.format("param = %f, score = %f", param, score));
-							
+						while (param < 0.02f) {
+							// ProcessRecorded.process(dir, 0.999325f);
+							double score = ProcessRecorded.process(dir,
+									1.0f - param);
+
+							paramOutStream.print(Float.toString(param) + " "
+									+ Double.toString(score));
+							paramOutStream.print(System
+									.getProperty("line.separator"));
+
+							Log.d(TAG, String.format("param = %f, score = %f",
+									param, score));
+
 							param *= 2;
 						}
 						paramOutStream.close();
-					}
-					catch(FileNotFoundException e){
+					} catch (FileNotFoundException e) {
 						e.printStackTrace();
 					}
-			    }
+				}
 			};
 			thread.start();
 		}
-		
+
 		// Side View 7 - TESTING VisualPlaceRecognition
 		if (link.contains("Visual Place Recognition")) {
 			openAIL.visualPlaceRecognition.callAndVerifyAllMethods();
 		}
-		
+
 		// Save map place
 		if (link.contains("Save map point")) {
-			
+
 			// Getting mapName, X, Y, Z which are separated by '&'
 			String[] separated = link.split("&");
-			
+
 			NumberFormat nf = NumberFormat.getInstance(Locale.US);
 			double[] pos = new double[3];
-			for(int i=0;i<3;i++)
-			{
+			for (int i = 0; i < 3; i++) {
 				try {
-					Number myNumber = nf.parse(separated[3+i]);
+					Number myNumber = nf.parse(separated[3 + i]);
 					pos[i] = myNumber.doubleValue();
 				} catch (ParseException e) {
 					e.printStackTrace();
-				}	
+				}
 			}
-			
 
-			Log.d(TAG, "Save map point::" + pos[0] + "::" + pos[1] + "::" + pos[2] + "::");
-			
+			Log.d(TAG, "Save map point::" + pos[0] + "::" + pos[1] + "::"
+					+ pos[2] + "::");
+
 			// We need to update the preview
-			ScreenSlidePageFragment cameraFragment = (ScreenSlidePageFragment)((ScreenSlidePagerAdapter)mPagerAdapter).getItem(0);
+			ScreenSlidePageFragment cameraFragment = (ScreenSlidePageFragment) ((ScreenSlidePagerAdapter) mPagerAdapter)
+					.getItem(0);
 			openAIL.preview = cameraFragment.preview;
-			
+
 			int mapPointId = Integer.parseInt(separated[2]);
-			openAIL.saveMapPoint(separated[1], mapPointId, pos[0], pos[1], pos[2]);
-			
+			openAIL.saveMapPoint(separated[1], mapPointId, pos[0], pos[1],
+					pos[2]);
+
 		}
-		
+
 		// Save VPR place
 		if (link.contains("Save VPR place")) {
-			
+
 			Scanner scanner = new Scanner(link);
 
 			// use US locale to be able to identify doubles in the string
@@ -365,33 +374,34 @@ public class MainScreenSlideActivity extends Activity implements
 				} else
 					scanner.next();
 			}
-			
-			if ( i == 3){
-				Log.d(TAG, "Save VPR position::" + pos[0] + "::" + pos[1] + "::" + pos[2] + "::");
-			}
-			else{
+
+			if (i == 3) {
+				Log.d(TAG, "Save VPR position::" + pos[0] + "::" + pos[1]
+						+ "::" + pos[2] + "::");
+			} else {
 				Log.d(TAG, "Save VPR position - could not find 3 numbers");
 			}
-			
+
 			Camera.Parameters params = camera.getParameters();
-			int size = params.getPreviewSize().width * params.getPreviewSize().height * 
-		            ImageFormat.getBitsPerPixel(params.getPreviewFormat()) / 8;
-			
-	        byte buffer[] = new byte[size];
-	        camera.addCallbackBuffer(buffer);
-			
+			int size = params.getPreviewSize().width
+					* params.getPreviewSize().height
+					* ImageFormat.getBitsPerPixel(params.getPreviewFormat())
+					/ 8;
+
+			byte buffer[] = new byte[size];
+			camera.addCallbackBuffer(buffer);
+
 			Mat image = getCurPreviewImage();
-			
-			if(image != null){
-				openAIL.visualPlaceRecognition.savePlace(pos[0], pos[1], pos[2], image);
-				Toast.makeText(this, "Saved image",
-						Toast.LENGTH_LONG).show();
-			}
-			else{
+
+			if (image != null) {
+				openAIL.visualPlaceRecognition.savePlace(pos[0], pos[1],
+						pos[2], image);
+				Toast.makeText(this, "Saved image", Toast.LENGTH_LONG).show();
+			} else {
 				Log.e(TAG, "Save VPR position - image == null");
 			}
 		}
-		
+
 	}
 
 	@Override
@@ -411,7 +421,6 @@ public class MainScreenSlideActivity extends Activity implements
 		fragments.add(ScreenSlidePageFragment.create(1));
 		fragments.add(ScreenSlidePageFragment.create(2));
 		fragments.add(ScreenSlidePageFragment.create(3));
-		
 
 		// Instantiate a ViewPager and a PagerAdapter.
 		mPager = (ViewPager) findViewById(R.id.pager);
@@ -434,9 +443,6 @@ public class MainScreenSlideActivity extends Activity implements
 			}
 		});
 
-
-		
-		
 		// Init Sensor Managers
 		SensorManager sensorManager;
 		sensorManager = (android.hardware.SensorManager) getSystemService(Context.SENSOR_SERVICE);
@@ -444,10 +450,10 @@ public class MainScreenSlideActivity extends Activity implements
 		// Init WiFi
 		WifiManager wifiManager;
 		wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
-		
+
 		// Init library
 		openAIL = new OpenAndroidIndoorLocalization(sensorManager, wifiManager);
-		
+
 		// Reguster wifi scanner
 		registerReceiver(openAIL.wifiScanner, new IntentFilter(
 				WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
@@ -455,7 +461,7 @@ public class MainScreenSlideActivity extends Activity implements
 		// Initialize update of orient in GUI
 		orientAndWiFiScanUpdateTimer.scheduleAtFixedRate(
 				new UpdateOrientAndWiFiScanGUI(), 2000, 100);
-		
+
 	}
 
 	@Override
@@ -511,37 +517,40 @@ public class MainScreenSlideActivity extends Activity implements
 
 		return super.onOptionsItemSelected(item);
 	}
-	
-	
-	
 
 	class UpdateOrientAndWiFiScanGUI extends TimerTask {
 		public void run() {
 			float[] orient = openAIL.inertialSensors.getCurrentAEKFOrient();
-			float[] compOrient = openAIL.inertialSensors.getCurrentComplementaryOrient();
-			
-			int deviceOrientation = openAIL.inertialSensors.getDeviceOrientation();
-			
+			float[] compOrient = openAIL.inertialSensors
+					.getCurrentComplementaryOrient();
+
+			int deviceOrientation = openAIL.inertialSensors
+					.getDeviceOrientation();
+
 			String strongestWiFiNetwork = openAIL.wifiScanner
 					.getStrongestNetwork();
 			int WiFiCount = openAIL.wifiScanner.getNetworkCount();
 			float foundFreq = openAIL.inertialSensors
-					.getLastDetectedFrequency();
+					.getStepometerLastDetectedFrequency();
 			float stepCount = openAIL.inertialSensors
-					.getDetectedNumberOfSteps();
+					.getStepometerNumberOfSteps();
 			float stepDistance = openAIL.inertialSensors
-					.getCovertedStepDistance();
+					.getStepometerCoveredStepDistance();
 			int currentFloor = openAIL.inertialSensors.getCurrentFloor();
 			float estimatedHeight = openAIL.inertialSensors
 					.getEstimatedHeight();
 			float accVariance = openAIL.inertialSensors.getAccVariance();
+			float stepometerAngle = openAIL.inertialSensors.getGlobalYaw();
+			float gyroVariance = openAIL.inertialSensors.getGyroVariance();
 
 			// Passing to fragment for update
 			int id = mPager.getCurrentItem();
 			ScreenSlidePageFragment x = (ScreenSlidePageFragment) ((ScreenSlidePagerAdapter) mPagerAdapter)
 					.getItem(id);
-			x.updateGUIData(orient, compOrient, strongestWiFiNetwork, WiFiCount, foundFreq,
-					stepCount, stepDistance, currentFloor, estimatedHeight, accVariance, deviceOrientation);
+			x.updateGUIData(orient, compOrient, strongestWiFiNetwork,
+					WiFiCount, foundFreq, stepCount, stepDistance,
+					currentFloor, estimatedHeight, accVariance,
+					deviceOrientation, stepometerAngle, gyroVariance);
 
 		}
 
@@ -549,8 +558,8 @@ public class MainScreenSlideActivity extends Activity implements
 
 	class UpdateWiFiSRecognitionGUI extends TimerTask {
 		public void run() {
-//			int recognizedPlaceId = openAIL.wifiScanner
-//					.recognizePlaceBasedOnLastScan();
+			// int recognizedPlaceId = openAIL.wifiScanner
+			// .recognizePlaceBasedOnLastScan();
 			int recognizedPlaceId = 0;
 			int sizeOfPlaceDatabase = openAIL.wifiScanner
 					.getSizeOfPlaceDatabase();
@@ -599,72 +608,70 @@ public class MainScreenSlideActivity extends Activity implements
 	protected void onResume() {
 		Log.d(TAG, "onResume");
 		super.onResume();
-//		OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_2_4_9, this,
-//				mLoaderCallback);
+		// OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_2_4_9, this,
+		// mLoaderCallback);
 
 		camera = Camera.open();
-		
-		// Rotating the view according to device 
-		android.hardware.Camera.CameraInfo info = new android.hardware.Camera.CameraInfo();
-	    android.hardware.Camera.getCameraInfo(0, info);
-	    int rotation = this.getWindowManager().getDefaultDisplay().getRotation();
-	    int degrees = 0;
-	    switch (rotation)
-	    {
-	    case Surface.ROTATION_0:
-	        degrees = 0;
-	        break;
-	    case Surface.ROTATION_90:
-	        degrees = 90;
-	        break;
-	    case Surface.ROTATION_180:
-	        degrees = 180;
-	        break;
-	    case Surface.ROTATION_270:
-	        degrees = 270;
-	        break;
-	    }
 
-	    int result;
-	    if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT)
-	    {
-	        result = (info.orientation + degrees) % 360;
-	        result = (360 - result) % 360; // compensate the mirror
-	    }
-	    else {
-	        result = (info.orientation - degrees + 360) % 360;
-	    }
-	    camera.setDisplayOrientation(result);
-	    
-	    // Settings the focus to some fixed value
-//		Camera.Parameters parameters = camera.getParameters();		
-//		List<String> modes = parameters.getSupportedFocusModes();
-//		if ( modes.contains(Camera.Parameters.FOCUS_MODE_FIXED)) {
-//			parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_FIXED);
-//		}
-//		else if ( modes.contains(Camera.Parameters.FOCUS_MODE_INFINITY)) {
-//			parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_INFINITY);
-//		}
-//		camera.setParameters(parameters);
-		
-		//fragment with camera preview
-		ScreenSlidePageFragment cameraFragment = (ScreenSlidePageFragment)((ScreenSlidePagerAdapter)mPagerAdapter).getItem(0);
+		// Rotating the view according to device
+		android.hardware.Camera.CameraInfo info = new android.hardware.Camera.CameraInfo();
+		android.hardware.Camera.getCameraInfo(0, info);
+		int rotation = this.getWindowManager().getDefaultDisplay()
+				.getRotation();
+		int degrees = 0;
+		switch (rotation) {
+		case Surface.ROTATION_0:
+			degrees = 0;
+			break;
+		case Surface.ROTATION_90:
+			degrees = 90;
+			break;
+		case Surface.ROTATION_180:
+			degrees = 180;
+			break;
+		case Surface.ROTATION_270:
+			degrees = 270;
+			break;
+		}
+
+		int result;
+		if (info.facing == Camera.CameraInfo.CAMERA_FACING_FRONT) {
+			result = (info.orientation + degrees) % 360;
+			result = (360 - result) % 360; // compensate the mirror
+		} else {
+			result = (info.orientation - degrees + 360) % 360;
+		}
+		camera.setDisplayOrientation(result);
+
+		// Settings the focus to some fixed value
+		// Camera.Parameters parameters = camera.getParameters();
+		// List<String> modes = parameters.getSupportedFocusModes();
+		// if ( modes.contains(Camera.Parameters.FOCUS_MODE_FIXED)) {
+		// parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_FIXED);
+		// }
+		// else if ( modes.contains(Camera.Parameters.FOCUS_MODE_INFINITY)) {
+		// parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_INFINITY);
+		// }
+		// camera.setParameters(parameters);
+
+		// fragment with camera preview
+		ScreenSlidePageFragment cameraFragment = (ScreenSlidePageFragment) ((ScreenSlidePagerAdapter) mPagerAdapter)
+				.getItem(0);
 		cameraFragment.setCamera(camera);
-		
+
 		preview = cameraFragment.preview;
 		camera.setPreviewCallback(preview);
-		
 
-		
 	}
 
 	@Override
 	protected void onPause() {
 		Log.d(TAG, "onPause");
 		if (camera != null) {
-			
-			//fragment with camera preview
-			ScreenSlidePageFragment cameraFragment = (ScreenSlidePageFragment)((ScreenSlidePagerAdapter)mPagerAdapter).getItem(0);
+
+			// fragment with camera preview
+			ScreenSlidePageFragment cameraFragment = (ScreenSlidePageFragment) ((ScreenSlidePagerAdapter) mPagerAdapter)
+					.getItem(0);
 			camera.stopPreview();
 			camera.setPreviewCallback(null);
 			cameraFragment.setCamera(null);
@@ -673,12 +680,13 @@ public class MainScreenSlideActivity extends Activity implements
 		}
 		super.onPause();
 	}
-	
-	protected Mat getCurPreviewImage(){
-		ScreenSlidePageFragment cameraFragment = (ScreenSlidePageFragment)((ScreenSlidePagerAdapter)mPagerAdapter).getItem(0);
+
+	protected Mat getCurPreviewImage() {
+		ScreenSlidePageFragment cameraFragment = (ScreenSlidePageFragment) ((ScreenSlidePagerAdapter) mPagerAdapter)
+				.getItem(0);
 
 		openAIL.preview = cameraFragment.preview;
 		return cameraFragment.preview.getCurPreviewImage();
 	}
-	
+
 }

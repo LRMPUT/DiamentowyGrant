@@ -630,10 +630,13 @@ public class ScreenSlidePageFragment extends Fragment {
 	public void updateGUIData(float[] _orient, float[] _compOrient,
 			String _strongestWiFi, int _wiFiCount, float _foundFreq,
 			float _stepCount, float _stepDistance, int _currentFloor,
-			float _estimatedHeight, float _accVariance, int _deviceOrientation) {
+			float _estimatedHeight, float _accVariance, int _deviceOrientation,
+			float _stepometerAngle, float _gyroVariance) {
 		UpdateMeasurementsInGUI obj = new UpdateMeasurementsInGUI(_orient,
 				_compOrient, _strongestWiFi, _wiFiCount, _foundFreq,
-				_stepCount, _stepDistance, _currentFloor, _estimatedHeight, _accVariance, _deviceOrientation);
+				_stepCount, _stepDistance, _currentFloor, _estimatedHeight,
+				_accVariance, _deviceOrientation, _stepometerAngle,
+				_gyroVariance);
 		mHandlerOrient.post(obj);
 	}
 
@@ -653,13 +656,15 @@ public class ScreenSlidePageFragment extends Fragment {
 		float stepCount, stepDistance;
 		int currentFloor;
 		float estimatedHeight;
-		float accVariance;
+		float accVariance, gyroVariance, stepometerAngle;
 		int deviceOrientation;
 
 		public UpdateMeasurementsInGUI(float[] _orient, float[] _compOrient,
 				String _strongestWiFi, int _wiFiCount, float _foundFreq,
 				float _stepCount, float _stepDistance, int _currentFloor,
-				float _estimatedHeight, float _accVariance, int _deviceOrientation) {
+				float _estimatedHeight, float _accVariance,
+				int _deviceOrientation, float _stepometerAngle,
+				float _gyroVariance) {
 			orient = _orient.clone();
 			compOrient = _compOrient.clone();
 			strongestWiFi = _strongestWiFi;
@@ -671,6 +676,9 @@ public class ScreenSlidePageFragment extends Fragment {
 			estimatedHeight = _estimatedHeight;
 			accVariance = _accVariance;
 			deviceOrientation = _deviceOrientation;
+			stepometerAngle = _stepometerAngle;
+			gyroVariance = _gyroVariance;
+			
 		}
 
 		public void run() {
@@ -723,17 +731,25 @@ public class ScreenSlidePageFragment extends Fragment {
 						.findViewById(R.id.textViewStepometer2);
 				TextView mTextViewStepDistance = (TextView) getView()
 						.findViewById(R.id.textViewStepometer3);
-				TextView mTextViewAccVariance = (TextView) getView()
+				TextView mTextViewAngle = (TextView) getView()
 						.findViewById(R.id.textViewStepometer4);
+				TextView mTextViewAccVariance = (TextView) getView()
+						.findViewById(R.id.textViewStepometer5);
+				TextView mTextViewGyroVariance = (TextView) getView()
+						.findViewById(R.id.textViewStepometer6);
 
-				mTextViewFoundFrequency.setText("Found freq: "
+				mTextViewFoundFrequency.setText("Freq: "
 						+ String.format("%.2f", foundFreq) + " Hz");
-				mTextViewStepCounter.setText("Step counter: "
+				mTextViewStepCounter.setText("Steps: "
 						+ String.format("%.2f", stepCount));
-				mTextViewStepDistance.setText("Distance: "
+				mTextViewStepDistance.setText("Dist: "
 						+ String.format("%.2f", stepDistance) + " m");
+				mTextViewAngle.setText("Angle: "
+						+ String.format("%.2f", stepometerAngle) );
 				mTextViewAccVariance.setText("Acc var: "
 						+ String.format("%.2f", accVariance) );
+				mTextViewGyroVariance.setText("Gyro var: "
+						+ String.format("%.2f", gyroVariance) );
 
 				TextView mTextViewCurrentFloor = (TextView) getView()
 						.findViewById(R.id.textViewBarometer1);

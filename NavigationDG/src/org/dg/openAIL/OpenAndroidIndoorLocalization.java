@@ -1,16 +1,10 @@
 package org.dg.openAIL;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Scanner;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -21,13 +15,9 @@ import org.dg.graphManager.Vertex;
 import org.dg.graphManager.wiFiMeasurement;
 import org.dg.inertialSensors.InertialSensors;
 import org.dg.main.LocalizationView;
-import org.dg.main.R;
-import org.dg.wifi.MyScanResult;
 import org.dg.wifi.WifiScanner;
 import org.opencv.core.Mat;
-import org.opencv.highgui.Highgui;
 import org.xmlpull.v1.XmlPullParserException;
-
 import android.hardware.SensorManager;
 import android.net.wifi.WifiManager;
 import android.os.Environment;
@@ -67,6 +57,10 @@ public class OpenAndroidIndoorLocalization {
 	// View to draw localization
 	LocalizationView localizationView;
 
+	/*
+	 * Creates OpenAIL, loads settings and initializes graph optimization, 
+	 * inertial sensors and WiFi scanner
+	 */
 	public OpenAndroidIndoorLocalization(SensorManager sensorManager,
 			WifiManager wifiManager) {
 		
@@ -93,24 +87,8 @@ public class OpenAndroidIndoorLocalization {
 	}
 
 	/**
-	 * 
+	 * Part of the code that can be only called after OpenCV was loaded inside application
 	 */
-	private void createNeededDirectories() {
-		File folder = new File(Environment.getExternalStorageDirectory()
-				+ "/OpenAIL/");
-
-		if (!folder.exists()) {
-			folder.mkdir();
-		}
-
-		folder = new File(Environment.getExternalStorageDirectory()
-				+ "/OpenAIL/PriorData/");
-
-		if (!folder.exists()) {
-			folder.mkdir();
-		}
-	}
-
 	public void initAfterOpenCV() {
 		Log.d(moduleLogName,
 				"Initializing OpenAIL submodules after OpenCV initialization");
@@ -119,6 +97,12 @@ public class OpenAndroidIndoorLocalization {
 		visualPlaceRecognition = new VisualPlaceRecognition();
 	}
 
+	/*
+	 * Starting the localization task:
+	 * - creating graph structure
+	 * - loading prior map
+	 * - start checking for new measurments
+	 */
 	public void startLocalization() {
 		// Creating new graph
 		graphManager.start();
@@ -170,6 +154,9 @@ public class OpenAndroidIndoorLocalization {
 		}
 	}
 
+	/*
+	 * Stopping the localization
+	 */
 	public void stopLocalization() {
 
 		// Stop checking for new data
@@ -189,6 +176,9 @@ public class OpenAndroidIndoorLocalization {
 //		List<Vertex> list = graphManager.getVerticesEstimates();
 	}
 
+	/*
+	 * Optimizing the graph stored in a file - "offline mode"
+	 */
 	public void optimizeGraphInFile(String name)
 	{
 		graphManager.optimizeGraphInFile("lastCreatedGraph.g2o");
@@ -221,6 +211,9 @@ public class OpenAndroidIndoorLocalization {
 		
 	}
 	
+	/*
+	 * Setting the view to draw current localization estimates
+	 */
 	public void setLocalizationView(LocalizationView _localizationView) {
 		// Save localization view for drawing
 		localizationView = _localizationView;
@@ -234,31 +227,26 @@ public class OpenAndroidIndoorLocalization {
 		int iterationCounter = 0;
 		int lastImageSaveIterationCounter = 0;
 
+		// Called to check new data
 		public void run() {
-			Log.d(moduleLogName, "Starting query cycle");
-
-			// get distance
-			Log.d(moduleLogName, "Processing stepometer ...");
-			double distance = inertialSensors.getGraphStepDistance();
-
+		
+			// Stepometer
+			double distance = inertialSensors.getStepometerStepDistance();
 			if (distance > 0.01) {
-				Log.d(moduleLogName, "Detected some motion from stepometer!");
-
+				
 				// get angle from our estimation
 				// TODO: RIGHT NOW WE USE ANDROID ORIENTATION
 				float yawZ = -inertialSensors.getYawForStepometer();
 
 				// We need to change yawZ into radians and change direction
-//				yawZ = (float) (-yawZ * Math.PI / 180.0f);
 				yawZ = (float) (yawZ * Math.PI / 180.0f);
 
 				graphManager.addStepometerMeasurement(distance, yawZ);
 			}
 			
 			
-			// We take picture if the variance is ok
+			// Visual place recognition - take the image if acc variance is reasonable
 			float accVariance = inertialSensors.getAccVariance();
-			
 			if (iterationCounter - lastImageSaveIterationCounter >= parameters.mainProcessing.imageCaptureStep
 					&& accVariance < parameters.mainProcessing.imageCaptureVarianceThreshold)
 			{
@@ -276,17 +264,11 @@ public class OpenAndroidIndoorLocalization {
 				lastImageSaveIterationCounter = iterationCounter;
 			}
 
-			// WiFi read all found connections
-			Log.d(moduleLogName, "Processing WiFi ...");
-
+			// WiFi place recognition
 			List<IdPair<Integer, Integer>> recognizedPlaces = wifiScanner
 					.getAndClearRecognizedPlacesList();
-
 			Log.d(moduleLogName, "The placeRecognition thread found "
 					+ recognizedPlaces.size() + " connections");
-						
-			// Add found results to the final graph
-			// graphManager.addMultipleWiFiFingerprints(placesIds);
 			graphManager.addMultipleWiFiFingerprints(recognizedPlaces);
 			
 			// Check if there is new measurement
@@ -343,12 +325,10 @@ public class OpenAndroidIndoorLocalization {
 			{
 				graphManager.changeInOptimizedData = false;
 				
-				Log.d(moduleLogName,
-						"Adding user positions to visualization");
+				Log.d(moduleLogName, "Adding user positions to visualization");
 				List<Vertex> listOfVertices = graphManager.getVerticesEstimates();
 				List<Pair<Double, Double>> userLocations = new ArrayList<Pair<Double, Double>>();	
 				for (Vertex v : listOfVertices) {
-				//	Log.d(moduleLogName, "Vertex " + v.id + " - pos = (" + v.X + ", " + v.Y + ", " + v.Z + ")");
 					if ( v.id < 10000 )
 						userLocations.add(new Pair<Double,Double>(v.X, v.Y));
 				}
@@ -361,10 +341,9 @@ public class OpenAndroidIndoorLocalization {
 		}
 
 	}
-
 	
 	/**
-	 * 
+	 *  Method that can be used to save a position in a map
 	 */
 	public void saveMapPoint(String mapName, int id, double X, double Y, double Z) {
 		Log.d(moduleLogName, "Called saveMapPoint with: " + mapName + " id: " + id + " " + X + " " + Y + " " + Z);
@@ -415,4 +394,23 @@ public class OpenAndroidIndoorLocalization {
 		return null;
 	}
 
+
+	/**
+	 *  Method used to create directories if those do not exist
+	 */
+	private void createNeededDirectories() {
+		File folder = new File(Environment.getExternalStorageDirectory()
+				+ "/OpenAIL/");
+
+		if (!folder.exists()) {
+			folder.mkdir();
+		}
+
+		folder = new File(Environment.getExternalStorageDirectory()
+				+ "/OpenAIL/PriorData/");
+
+		if (!folder.exists()) {
+			folder.mkdir();
+		}
+	}
 }
