@@ -18,7 +18,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.dg.camera.CameraSaver;
 import org.dg.camera.Preview;
-import org.dg.camera.QRCode;
+import org.dg.camera.QRCodeDecoderClass;
 import org.dg.camera.VisualPlaceRecognition;
 import org.dg.inertialSensors.InertialSensors;
 import org.dg.inertialSensors.ProcessRecorded;
@@ -418,9 +418,9 @@ public class MainScreenSlideActivity extends Activity implements
 			
 			Mat image = getCurPreviewImage();
 			
-			QRCode qrCode = new QRCode(getApplicationContext());
 			Log.e(TAG, "Calling decode");
-			qrCode.decode(image);
+			Integer positionId = openAIL.graphManager.getCurrentPoseId();
+			openAIL.qrCodeDecoder.decode(positionId, image);
 			
 			
 		}
@@ -475,7 +475,7 @@ public class MainScreenSlideActivity extends Activity implements
 		wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
 
 		// Init library
-		openAIL = new OpenAndroidIndoorLocalization(sensorManager, wifiManager);
+		openAIL = new OpenAndroidIndoorLocalization(getApplicationContext(), sensorManager, wifiManager);
 
 		// Reguster wifi scanner
 		registerReceiver(openAIL.wifiScanner, new IntentFilter(

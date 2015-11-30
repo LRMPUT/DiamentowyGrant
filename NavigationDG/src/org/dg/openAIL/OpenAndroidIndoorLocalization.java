@@ -9,6 +9,8 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import org.dg.camera.Preview;
+import org.dg.camera.QRCode;
+import org.dg.camera.QRCodeDecoderClass;
 import org.dg.camera.VisualPlaceRecognition;
 import org.dg.graphManager.GraphManager;
 import org.dg.graphManager.Vertex;
@@ -18,6 +20,8 @@ import org.dg.main.LocalizationView;
 import org.dg.wifi.WifiScanner;
 import org.opencv.core.Mat;
 import org.xmlpull.v1.XmlPullParserException;
+
+import android.content.Context;
 import android.hardware.SensorManager;
 import android.net.wifi.WifiManager;
 import android.os.Environment;
@@ -56,13 +60,21 @@ public class OpenAndroidIndoorLocalization {
 	
 	// View to draw localization
 	LocalizationView localizationView;
+	
+	// QR Code decoding
+	public QRCodeDecoderClass qrCodeDecoder;
+	
+	// Context for toasts
+	Context context;
 
 	/*
 	 * Creates OpenAIL, loads settings and initializes graph optimization, 
 	 * inertial sensors and WiFi scanner
 	 */
-	public OpenAndroidIndoorLocalization(SensorManager sensorManager,
+	public OpenAndroidIndoorLocalization(Context _context, SensorManager sensorManager,
 			WifiManager wifiManager) {
+		// Save context
+		context = _context;
 		
 		// Create directories if needed
 		createNeededDirectories();
@@ -83,6 +95,9 @@ public class OpenAndroidIndoorLocalization {
 		// Init WiFi
 		wifiScanner = new WifiScanner(wifiManager,
 				parameters.wifiPlaceRecognition);
+		
+		// Create QRCodeDecoder
+		qrCodeDecoder = new QRCodeDecoderClass(context);
 
 	}
 
@@ -319,6 +334,9 @@ public class OpenAndroidIndoorLocalization {
 //
 //			List<IdPair<Integer, Integer>> vprList = visualPlaceRecognition
 //					.getAndClearVPRMatchedList();
+			
+			// QR Codes
+			ca
 			
 			// TODO: Get current estimate of vertices
 			if (graphManager.changeInOptimizedData)
