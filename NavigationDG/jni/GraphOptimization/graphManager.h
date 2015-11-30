@@ -28,6 +28,7 @@
 #include "edge_se2_pointXY_distance.h"
 #include "edge_se2_distanceOrientation.h"
 #include "edge_se2_placeVicinity.h"
+#include "edge_se2_qr.h"
 
 
 using namespace std;
@@ -116,6 +117,9 @@ private:
 
 	// Typical odometry SE2 edge
 	int addEdgeSE2(stringstream &data);
+
+	// QR edge
+	int addEdgeQR(stringstream &data);
 
 	// findIndex of vertex with given id
 	int findIndexInVertices(int id);

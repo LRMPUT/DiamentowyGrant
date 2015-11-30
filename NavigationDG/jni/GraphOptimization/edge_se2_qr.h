@@ -24,8 +24,8 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef G2O_EDGE_SE2_PLACEVICINITY_H
-#define G2O_EDGE_SE2_PLACEVICINITY_H
+#ifndef G2O_EDGE_SE2_QR_H
+#define G2O_EDGE_SE2_QR_H
 
 #include "g2o/config.h"
 #include "g2o/types/slam2d/vertex_se2.h"
@@ -60,11 +60,11 @@ using namespace g2o;
 
 namespace g2o {
 
-class G2O_TYPES_SLAM2D_API EdgeSE2PlaceVicinity: public BaseBinaryEdge<1,
+class G2O_TYPES_SLAM2D_API EdgeSE2QR: public BaseBinaryEdge<1,
 		double, VertexSE2, VertexSE2> {
 public:
 	EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-	EdgeSE2PlaceVicinity();
+	EdgeSE2QR();
 	void computeError() {
 		const VertexSE2* v1 = static_cast<const VertexSE2*>(_vertices[0]);
 		const VertexSE2* l2 = static_cast<const VertexSE2*>(_vertices[1]);
@@ -73,12 +73,7 @@ public:
 
 
 		_error[0] = sqrt(delta[0] * delta[0] + delta[1] * delta[1]);
-		if ( _error[0] < _measurement )
-			_error[0] = 0.0f;
-		else if ( _error[0] - _measurement > 100)
-			_error[0] = 100;
-		else
-			_error[0] -= _measurement;
+		_error[0] -= _measurement;
 
 	}
 
@@ -117,18 +112,18 @@ public:
 			OptimizableGraph::Vertex* to);
 };
 
-class G2O_TYPES_SLAM2D_API EdgeSE2PlaceVicinityWriteGnuplotAction: public WriteGnuplotAction {
+class G2O_TYPES_SLAM2D_API EdgeSE2QRWriteGnuplotAction: public WriteGnuplotAction {
 public:
-	EdgeSE2PlaceVicinityWriteGnuplotAction();
+	EdgeSE2QRWriteGnuplotAction();
 	virtual HyperGraphElementAction* operator()(
 			HyperGraph::HyperGraphElement* element,
 			HyperGraphElementAction::Parameters* params_);
 };
 
 #ifdef G2O_HAVE_OPENGL
-class G2O_TYPES_SLAM2D_API EdgeSE2PlaceVicinityDrawAction: public DrawAction {
+class G2O_TYPES_SLAM2D_API EdgeSE2QRDrawAction: public DrawAction {
 public:
-	EdgeSE2PlaceVicinityDrawAction();
+	EdgeSE2QRDrawAction();
 	virtual HyperGraphElementAction* operator()(HyperGraph::HyperGraphElement* element,
 			HyperGraphElementAction::Parameters* params_);
 };

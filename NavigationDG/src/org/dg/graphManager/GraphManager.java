@@ -192,6 +192,7 @@ public class GraphManager {
 			qrCodeId++;
 		}
 		
+		Log.d(moduleLogName, g2oString);
 		
 		save2file(g2oString);
 		NDKGraphAddVertexEdge(addrGraph, g2oString);

@@ -337,8 +337,10 @@ public class OpenAndroidIndoorLocalization {
 			
 			// QR Codes
 			List<Pair<Integer, Point3>> recognizedQRCodes = qrCodeDecoder.getRecognizedQRCodes();
-			graphManager.addMultipleQRCodes(recognizedQRCodes);
-			
+			Log.d(moduleLogName, "Recognized QR codes: " + recognizedQRCodes.size());
+			if ( recognizedQRCodes.size() > 0) {
+				graphManager.addMultipleQRCodes(recognizedQRCodes);
+			}
 			
 			// TODO: Get current estimate of vertices
 			if (graphManager.changeInOptimizedData)

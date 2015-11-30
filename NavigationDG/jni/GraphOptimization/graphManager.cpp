@@ -134,6 +134,8 @@ void GraphManager::addToGraph(string dataToProcess) {
 			addEdgeStepometer(data);
 		else if (type == "EDGE_SE2")
 			addEdgeSE2(data);
+		else if (type == "EDGE_SE2:QR")
+			addEdgeQR(data);
 		else if (type == "EDGE_SE2:WIFI_FINGERPRINT")
 			addVicinityEdge(data, "WiFi Fingerprint");
 		else if (type == "EDGE_SE2:VPR_VICINITY")
@@ -423,6 +425,28 @@ int GraphManager::addEdgeSE2(stringstream &data) {
 		if (!optimizer.addEdge(e)) {
 			__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK:LC: [%s]",
 					"Unable to add edge SE2");
+			delete e;
+			return -1;
+		}
+	}
+	return 0;
+}
+
+int GraphManager::addEdgeQR(stringstream &data) {
+	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK:LC: [%s]",
+					"Adding SE2 QR");
+
+	int id1, id2;
+	EdgeSE2QR* e = new EdgeSE2QR();
+	data >> id1 >> id2;
+	OptimizableGraph::Vertex* from = optimizer.vertex(id1);
+	OptimizableGraph::Vertex* to = optimizer.vertex(id2);
+	if (from && to) {
+		e->setVertex(0, from);
+		e->setVertex(1, to);
+		e->read(data);
+		if (!optimizer.addEdge(e)) {
+			__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK:LC: [Unable to add edge QR]");
 			delete e;
 			return -1;
 		}

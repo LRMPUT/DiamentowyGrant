@@ -112,18 +112,17 @@ public class QRCodeDecoderClass {
         	Log.d(TAG, "onPostExecute : " + result);
         	Toast.makeText(context, result, Toast.LENGTH_LONG).show();
         	
-        	
-			try {
-				recognizedMessagesMtx.acquire();
-				
-				recognizedMessages.add(new Pair<Integer,String>(positionId, result));
-	        	
-				recognizedMessagesMtx.release();
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-
-        	
+        	if ( result != "Decode failed!") {
+				try {
+					recognizedMessagesMtx.acquire();
+					
+					recognizedMessages.add(new Pair<Integer,String>(positionId, result));
+		        	
+					recognizedMessagesMtx.release();
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+        	}
 
         }
         
