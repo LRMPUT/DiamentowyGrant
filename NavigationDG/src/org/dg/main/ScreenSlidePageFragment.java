@@ -5,8 +5,6 @@ import java.util.List;
 
 import org.dg.camera.CameraSaver;
 import org.dg.camera.Preview;
-import org.dg.main.MainActivity.UpdateGraph;
-import org.dg.main.MainActivity.UpdateWiFiSRecognitionGUI;
 
 import android.app.Activity;
 import android.app.Fragment;
@@ -18,6 +16,7 @@ import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.SurfaceView;
 import android.view.View;
+import android.view.View.OnLongClickListener;
 import android.view.ViewGroup;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup.LayoutParams;
@@ -119,6 +118,18 @@ public class ScreenSlidePageFragment extends Fragment {
 			SurfaceView surfView = (SurfaceView)rootView.findViewById(R.id.SurfaceView01);
 			preview = new Preview(surfView);
 			
+			// If you you touch for longer time -> do the QR code scanning
+			surfView.setOnLongClickListener(new OnLongClickListener() {
+				@Override
+				public boolean onLongClick(View v) {
+					Log.d("Camera::preview", "on touch");
+					
+					onSomeClick(v, "Decode QR");
+					return false;
+					
+				}
+			});
+			
 //			android.hardware.Camera.CameraInfo info = new android.hardware.Camera.CameraInfo();
 //		    android.hardware.Camera.getCameraInfo(0, info);
 //		    int rotation = activity.getWindowManager().getDefaultDisplay().getRotation();
@@ -189,6 +200,9 @@ public class ScreenSlidePageFragment extends Fragment {
 			
 			// Save VPR
 			initButtonSaveVPR(rootView, R.id.buttonSaveVPR);
+			
+			// Side View 8 - Decode QR code
+			initButtonQRCode(rootView, R.id.buttonSideView8);
 			
 
 		} else if (mPageNumber == 2 ) {
@@ -581,6 +595,21 @@ public class ScreenSlidePageFragment extends Fragment {
 				EditText y = (EditText) rootView.findViewById(R.id.editTextWiFiPosY);
 				EditText z = (EditText) rootView.findViewById(R.id.editTextWiFiPosZ);
 				onSomeClick(v, "Save VPR place: " + x.getText() + " " + y.getText() + " " + z.getText());
+			}
+		});
+	}
+	
+	/**
+	 * 
+	 */
+	// Side View 8 - Decode QR Code
+	private void initButtonQRCode(
+			final ViewGroup rootView, int id) {
+		Button buttonQRCode = (Button) rootView.findViewById(id);
+		buttonQRCode.setText("Decode QR");
+		buttonQRCode.setOnClickListener(new OnClickListener() {
+			public void onClick(View v) {
+				onSomeClick(v, "Decode QR");
 			}
 		});
 	}

@@ -18,6 +18,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.dg.camera.CameraSaver;
 import org.dg.camera.Preview;
+import org.dg.camera.QRCode;
 import org.dg.camera.VisualPlaceRecognition;
 import org.dg.inertialSensors.InertialSensors;
 import org.dg.inertialSensors.ProcessRecorded;
@@ -30,6 +31,7 @@ import org.opencv.android.OpenCVLoader;
 import org.opencv.android.Utils;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.highgui.Highgui;
 import org.opencv.imgproc.Imgproc;
 
 import android.app.Activity;
@@ -400,6 +402,27 @@ public class MainScreenSlideActivity extends Activity implements
 			} else {
 				Log.e(TAG, "Save VPR position - image == null");
 			}
+		}
+		
+		// Decode QR code
+		if (link.contains("Decode QR")) {
+//			Mat image = getCurPreviewImage();
+//			String text = QRCode.decodeQRImage(image);
+//			Toast.makeText(getApplicationContext(), text, Toast.LENGTH_LONG).show();
+			
+			Log.e(TAG, "Reading image");
+//			File file = new File(
+//					Environment.getExternalStorageDirectory() + "/OpenAIL/exemplaryQRCode.png");
+//			
+//			Mat image = Highgui.imread(file.toString());
+			
+			Mat image = getCurPreviewImage();
+			
+			QRCode qrCode = new QRCode(getApplicationContext());
+			Log.e(TAG, "Calling decode");
+			qrCode.decode(image);
+			
+			
 		}
 
 	}

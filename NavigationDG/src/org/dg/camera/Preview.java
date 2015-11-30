@@ -22,10 +22,12 @@ import android.hardware.Camera.PreviewCallback;
 import android.hardware.Camera.Size;
 import android.os.Environment;
 import android.util.Log;
+import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
 public class Preview extends ViewGroup implements SurfaceHolder.Callback, PreviewCallback  {
     private final String TAG = "Camera::Preview";
@@ -60,6 +62,12 @@ public class Preview extends ViewGroup implements SurfaceHolder.Callback, Previe
         mHolder = mSurfaceView.getHolder();
         mHolder.addCallback(this);
         mHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+    }
+    
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+    	Log.d(TAG, "Tap detected");
+    	return true;
     }
 
     public void setCamera(Camera camera) {

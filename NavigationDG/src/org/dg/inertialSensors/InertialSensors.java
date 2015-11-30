@@ -202,9 +202,10 @@ public class InertialSensors {
 	}
 	
 	
-	public float getAngleForStepometer() {
-		return stepometerAngle;
-	}
+//	public float getAngleForStepometer() {
+//		return stepometerAngle;
+//	}
+	
 	/**
 	 * Returns Yaw (Z-axis) in degrees
 	 */
@@ -420,14 +421,6 @@ public class InertialSensors {
 			closeStreams();
 	}
 
-	public float[] getCurrentMagnetometer() {
-
-		return mag;
-	}
-
-	public float[] getCurrentAcc() {
-		return acc;
-	}
 
 	public float[] getCurrentAEKFOrient() {
 		float[] orientToReturn = null;
@@ -608,10 +601,12 @@ public class InertialSensors {
 	// Listener pushing the data into the files
 	private SensorEventListener sensorEventListener = new SensorEventListener() {
 
+		// We do nothing
 		public void onAccuracyChanged(Sensor sensor, int accuracy) {
 
 		}
 
+		// On new data
 		public void onSensorChanged(SensorEvent event) {
 
 
@@ -642,25 +637,22 @@ public class InertialSensors {
 				processNewOrientationData(event);
 
 			} else if (event.sensor.getType() == Sensor.TYPE_PRESSURE) {
-				
+				if (save2file && activeStreams[ActiveStreamNames.PRESSURE.ordinal()] )
+					saveToStream(pressureStream, getTimestamp(), event.values);
 				processNewPressureData(event);
 		
 			}
 		}
 
 		/**
-		 * @param event
+		 * Computes the height in meters 
 		 */
 		private void processNewPressureData(SensorEvent event) {
-			event.values[2] = SensorManager.getAltitude(SensorManager.PRESSURE_STANDARD_ATMOSPHERE, event.values[0]);
-			lastBarometerValue = event.values[1];
-			
-			if (save2file && activeStreams[ActiveStreamNames.PRESSURE.ordinal()] )
-				saveToStream(pressureStream, getTimestamp(), event.values);
+			lastBarometerValue = SensorManager.getAltitude(SensorManager.PRESSURE_STANDARD_ATMOSPHERE, event.values[0]);
 		}
 
 		/**
-		 * @param event
+		 * Updates orientation filters
 		 */
 		private void processNewOrientationData(SensorEvent event) {
 			float[] quaternion = new float[4];
@@ -769,38 +761,7 @@ public class InertialSensors {
 
 		}
 
-		/**
-		 * //http://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
-		 */
-		private float computeEulerYawZ(float w, float x, float y, float z) {
-			return (float) (Math.atan2(2*(w*z + y*x), 1-2*(y*y + z*z))* 180.0 / Math.PI);
-		}
-		
-		private float computeEulerYawZ(float [] orientQuat) {
-			return computeEulerYawZ(orientQuat[0], orientQuat[1], orientQuat[2], orientQuat[3]);
-		}
-
-		/**
-		 */
-		private float computeEulerPitchY(float w, float x, float y, float z) {
-			return (float) (Math.asin(2 * (w *y - x*z)) * 180.0 / Math.PI);
-		}
-		
-		private float computeEulerPitchY(float [] orientQuat) {
-			return computeEulerPitchY(orientQuat[0], orientQuat[1], orientQuat[2], orientQuat[3]);
-		}
-		
-		
-
-		/**
-		 */
-		private float computeEulerRollX(float w, float x, float y, float z) {
-			return (float) (Math.atan2(2*y*z + 2 * x * w, 1 - 2 * ( x*x + y*y) ) * 180.0 / Math.PI );
-		}
-		
-		private float computeEulerRollX(float [] orientQuat) {
-			return computeEulerRollX(orientQuat[0], orientQuat[1], orientQuat[2], orientQuat[3]);
-		}
+	
 
 		/**
 		 * @param event
@@ -964,6 +925,38 @@ public class InertialSensors {
 		}
 		
 		
+		/**
+		 * //http://en.wikipedia.org/wiki/Conversion_between_quaternions_and_Euler_angles
+		 */
+		private float computeEulerYawZ(float w, float x, float y, float z) {
+			return (float) (Math.atan2(2*(w*z + y*x), 1-2*(y*y + z*z))* 180.0 / Math.PI);
+		}
+		
+		private float computeEulerYawZ(float [] orientQuat) {
+			return computeEulerYawZ(orientQuat[0], orientQuat[1], orientQuat[2], orientQuat[3]);
+		}
+
+		/**
+		 */
+		private float computeEulerPitchY(float w, float x, float y, float z) {
+			return (float) (Math.asin(2 * (w *y - x*z)) * 180.0 / Math.PI);
+		}
+		
+		private float computeEulerPitchY(float [] orientQuat) {
+			return computeEulerPitchY(orientQuat[0], orientQuat[1], orientQuat[2], orientQuat[3]);
+		}
+		
+		
+
+		/**
+		 */
+		private float computeEulerRollX(float w, float x, float y, float z) {
+			return (float) (Math.atan2(2*y*z + 2 * x * w, 1 - 2 * ( x*x + y*y) ) * 180.0 / Math.PI );
+		}
+		
+		private float computeEulerRollX(float [] orientQuat) {
+			return computeEulerRollX(orientQuat[0], orientQuat[1], orientQuat[2], orientQuat[3]);
+		}
 
 		/**
 		 */
