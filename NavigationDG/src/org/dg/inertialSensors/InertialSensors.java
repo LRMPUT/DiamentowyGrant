@@ -890,9 +890,9 @@ public class InertialSensors {
 			
 			
 			// Remove element if too long
-			if (accVarianceWindow.size() > accVarianceWindowSize) {
-				accVarianceWindow.removeFirst();
-			}
+//			if (accVarianceWindow.size() > accVarianceWindowSize) {
+//				accVarianceWindow.removeFirst();
+//			}
 			if (accStepometerWindow.size() > stepometerWindowSize) {
 				accStepometerWindow.removeFirst();
 			}
@@ -902,15 +902,16 @@ public class InertialSensors {
 			
 			if (stepometerStarted && stepometerRunningCounter > 200)
 			{
-				if ( accVarianceWindow.size() > stepometerWindowSize)
+				Log.d(moduleLogName, "Compare sizes: " + accStepometerWindow.size() + " " + stepometerWindowSize);
+				if ( accStepometerWindow.size() == stepometerWindowSize)
 				{
 					
 					 // Copying from list to float array, so we can process in new thread
-					 int accWindowSize = accVarianceWindow.size();
+					 int accWindowSize = accStepometerWindow.size();
 					 float [] accWindowFloat = new float[accWindowSize];
 					 for (int i=0;i<accWindowSize;i++)
 					 {
-						accWindowFloat[i] = accVarianceWindow.get(i);
+						accWindowFloat[i] = accStepometerWindow.get(i);
 					 }
 					 stepometer.setAccWindow(accWindowFloat, accWindowSize);
 					
