@@ -9,7 +9,6 @@ import java.util.Timer;
 import java.util.TimerTask;
 
 import org.dg.camera.Preview;
-import org.dg.camera.QRCode;
 import org.dg.camera.QRCodeDecoderClass;
 import org.dg.camera.VisualPlaceRecognition;
 import org.dg.graphManager.GraphManager;
@@ -19,6 +18,7 @@ import org.dg.inertialSensors.InertialSensors;
 import org.dg.main.LocalizationView;
 import org.dg.wifi.WifiScanner;
 import org.opencv.core.Mat;
+import org.opencv.core.Point3;
 import org.xmlpull.v1.XmlPullParserException;
 
 import android.content.Context;
@@ -336,7 +336,9 @@ public class OpenAndroidIndoorLocalization {
 //					.getAndClearVPRMatchedList();
 			
 			// QR Codes
-			ca
+			List<Pair<Integer, Point3>> recognizedQRCodes = qrCodeDecoder.getRecognizedQRCodes();
+			graphManager.addMultipleQRCodes(recognizedQRCodes);
+			
 			
 			// TODO: Get current estimate of vertices
 			if (graphManager.changeInOptimizedData)

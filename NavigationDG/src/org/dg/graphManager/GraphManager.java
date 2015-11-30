@@ -10,9 +10,12 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.opencv.core.Point3;
+
 import android.media.MediaScannerConnection;
 import android.os.Environment;
 import android.util.Log;
+import android.util.Pair;
 
 
 public class GraphManager {
@@ -34,6 +37,7 @@ public class GraphManager {
 	// Address of graph
 	long addrGraph = 0;
 	int currentPoseId = 0;
+	int qrCodeId = 20000;
 	boolean started = false;
 	boolean continueOptimization = true;
 	public boolean changeInOptimizedData = false;
@@ -175,6 +179,23 @@ public class GraphManager {
 		NDKGraphAddVertexEdge(addrGraph, g2oString);
 	}
 	
+	public void addMultipleQRCodes(List<Pair<Integer, Point3>> listOfPositions) {
+		checkGraphExistance();
+		
+		String g2oString = "";
+		for (Pair<Integer, Point3> measurement: listOfPositions)
+		{
+			addVertexWithKnownPosition(qrCodeId, measurement.second.x, measurement.second.y, measurement.second.z);
+			String edgeQR = createQREdgeString(qrCodeId, measurement.first);
+			
+			g2oString = g2oString + edgeQR;
+			qrCodeId++;
+		}
+		
+		
+		save2file(g2oString);
+		NDKGraphAddVertexEdge(addrGraph, g2oString);
+	}
 	
 	// Currently disabled - correct it !
 	public void addMultipleWiFiMeasurements(List<wiFiMeasurement> wifiList) {
@@ -372,6 +393,11 @@ public class GraphManager {
 	 */
 	private String createWiFiEdgeString(int id, double distance) {
 		String edgeWiFi ="EDGE_SE2:WIFI " + currentPoseId + " " + id + " " + distance + " " + parameters.informationMatrixOfWiFi + "\n";
+		return edgeWiFi;
+	}
+	
+	private String createQREdgeString(int qrId, int posId) {
+		String edgeWiFi ="EDGE_SE2:QR " + qrId + " " + posId + " 0.0 999999999.0\n";
 		return edgeWiFi;
 	}
 	

@@ -1,11 +1,19 @@
 package org.dg.camera;
 
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Locale;
+import java.util.Scanner;
 import java.util.concurrent.Semaphore;
 
+import org.dg.openAIL.MapPosition;
 import org.opencv.android.Utils;
 import org.opencv.core.Mat;
+import org.opencv.core.Point3;
 
 import com.google.zxing.BinaryBitmap;
 import com.google.zxing.LuminanceSource;
@@ -40,21 +48,36 @@ public class QRCodeDecoderClass {
 		new DecodeAsyncTask(positionId, mContext).execute(image);
 	}
 	
-	public List<Pair<Integer,String>> getRecognizedQRCodes() {
+	public List<Pair<Integer,Point3>> getRecognizedQRCodes() {
 		
-		List<Pair<Integer,String>> returnList = new LinkedList<Pair<Integer,String>>();
+		List<Pair<Integer,Point3>> returnList = new LinkedList<Pair<Integer,Point3>>();
 		
 		try {
+			
+			
+			
 			recognizedMessagesMtx.acquire();
 			for (Pair<Integer, String> pair : recognizedMessages) {
-				returnList.add(new Pair<Integer,String>(pair.first, pair.second));
+				
+				// Preparations to read positions
+				Scanner positionScanner = null;
+				positionScanner = new Scanner(pair.second);
+				positionScanner.useLocale(Locale.US);
+			
+				
+				positionScanner.next("Position");
+				double X = positionScanner.nextDouble();
+				double Y = positionScanner.nextDouble();
+				double Z = positionScanner.nextDouble();
+				
+				Point3 pos = new Point3(X, Y, Z);
+				returnList.add(new Pair<Integer,Point3>(pair.first, pos));
 			}
 			recognizedMessages.clear();
 			
 			recognizedMessagesMtx.release();
 			
-		} catch (InterruptedException e) {
-			
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		
