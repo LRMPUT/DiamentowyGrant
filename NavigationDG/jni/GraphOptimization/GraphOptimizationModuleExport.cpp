@@ -25,7 +25,8 @@ JNIEXPORT jdoubleArray JNICALL Java_org_dg_graphManager_GraphManager_NDKGraphGet
 JNIEXPORT jdoubleArray JNICALL Java_org_dg_graphManager_GraphManager_NDKGraphGetPositionOfAllVertices(
 		JNIEnv* env, jobject self, jlong addrGraph);
 
-JNIEXPORT jint JNICALL Java_org_dg_graphManager_GraphManager_NDKGraphOptimize(
+
+JNIEXPORT jdouble JNICALL Java_org_dg_graphManager_GraphManager_NDKGraphOptimize(
 		JNIEnv* env, jobject self, jlong addrGraph, jint iterationCount,
 		jstring logThis);
 
@@ -109,7 +110,7 @@ JNIEXPORT jdoubleArray JNICALL Java_org_dg_graphManager_GraphManager_NDKGraphGet
 }
 
 
-JNIEXPORT jint JNICALL Java_org_dg_graphManager_GraphManager_NDKGraphOptimize(
+JNIEXPORT jdouble JNICALL Java_org_dg_graphManager_GraphManager_NDKGraphOptimize(
 		JNIEnv* env, jobject self, jlong addrGraph, jint iterationCount,
 		jstring logThis) {
 	// Retrieving graph manager
@@ -119,7 +120,7 @@ JNIEXPORT jint JNICALL Java_org_dg_graphManager_GraphManager_NDKGraphOptimize(
 	graphManager.addToGraph();
 
 	// Perform optimization
-	int res = graphManager.optimize(iterationCount);
+	double res = graphManager.optimize(iterationCount);
 
 	// Retrieve string from jstring concerning the path
 	jboolean isCopy;

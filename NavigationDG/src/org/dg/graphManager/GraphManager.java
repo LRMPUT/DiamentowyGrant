@@ -35,8 +35,8 @@ public class GraphManager {
 	 * 		-> gets position of single vertex
 	 * - double[] NDKGraphGetPositionOfAllVertices(long addrGraph) 
 	 * 		-> gets positions of all vertices
-	 * - int NDKGraphOptimize(long addrGraph, int iterationCount, String path) 
-	 * 		-> optimizes graph for set of iterations and saves file
+	 * - double NDKGraphOptimize(long addrGraph, int iterationCount, String path) 
+	 * 		-> optimizes graph for set of iterations and saves file, return chi2 (if <0 then error)
 	 * - void NDKGraphDestroy(long addrGraph) 
 	 * 		-> cleaning 
 	 */
@@ -44,7 +44,7 @@ public class GraphManager {
 	public native void NDKGraphAddVertexEdge(long addrGraph, String g2oStream);
 	public native double[] NDKGraphGetVertexPosition(long addrGraph, int id);
 	public native double[] NDKGraphGetPositionOfAllVertices(long addrGraph);
-	public native int NDKGraphOptimize(long addrGraph, int iterationCount, String path);
+	public native double NDKGraphOptimize(long addrGraph, int iterationCount, String path);
 	public native void NDKGraphDestroy(long addrGraph);
 	
 	// Address in memory of graph structure
@@ -73,7 +73,7 @@ public class GraphManager {
 	
 	// Current estimate
 	static final Object currentEstimateMtx = new Object();
-	List<Vertex> currentEstimate;
+	List<Vertex> currentEstimate = new ArrayList<Vertex>();
 	
 	///
 	/// Methods -- creation/start/destruction
@@ -320,9 +320,13 @@ public class GraphManager {
 	 * returns the current estimates of vertices
 	 */
 	public List<Vertex> getVerticesEstimates() {
-		synchronized (currentEstimateMtx) {
-			return currentEstimate;
+		Log.d(moduleLogName, "getVerticesEstimates()");
+		if(changeInOptimizedData) {
+			synchronized (currentEstimateMtx) {
+				currentEstimate = getVerticesEstimatesFromNDK();
+			}
 		}
+		return currentEstimate;
 	}
 
 	///
@@ -350,11 +354,10 @@ public class GraphManager {
 		optimizationThread = new Thread() {
 			public void run() {
 
-				int res = NDKGraphOptimize(addrGraph, iterationCount, path);
+				double chi2 = NDKGraphOptimize(addrGraph, iterationCount, path);
 
 				synchronized (currentEstimateMtx) {
 					currentEstimate = getVerticesEstimatesFromNDK();
-					changeInOptimizedData = true;
 				}
 
 				Log.d(moduleLogName, "Optimization ended");
@@ -387,33 +390,36 @@ public class GraphManager {
 		// New thread
 		optimizationThread = new Thread() {
 		public void run() {
+			final double chi2Threshold = 1.e-30;
+			
 			optimizationInProgress = true;
+			
+			int timesWithoutMarkingChange = 0;
 			
 			// While we did not get the stop condition
 			while ( optimizationInProgress )
 			{
 				// Perform one iteration
-				int res = NDKGraphOptimize(addrGraph, 1, path);
-				
-				// Save estimate
-				synchronized(currentEstimateMtx)
-				{
-					currentEstimate = getVerticesEstimatesFromNDK();
-					changeInOptimizedData = true;
-				}
+				double chi2 = NDKGraphOptimize(addrGraph, 1, path);		
+	
+				Log.d(moduleLogName, "OptimizationOnline: iteration ended with chi2=" + chi2);
 				
 				// Should we sleep as the graph is probably empty
-				if (res == 0)
-				{
+				if (chi2 < chi2Threshold && timesWithoutMarkingChange < 5)
+				{					
 					try {
+						timesWithoutMarkingChange++;
 						Thread.sleep(200);
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
 				}
+				else
+				{
+					timesWithoutMarkingChange = 0;
+					changeInOptimizedData = true;
+				}			
 				
-				
-				Log.d(moduleLogName, "OptimizationOnline: iteration ended");
 			}
 			Log.d(moduleLogName, "OptimizationOnline ended");
 			} ;
@@ -427,6 +433,7 @@ public class GraphManager {
 	 * returns the list of estimates from NDK
 	 */
 	private List<Vertex> getVerticesEstimatesFromNDK() {
+		Log.d(moduleLogName, "getVerticesEstimatesFromNDK()");
 		
 		// The list of all vertices
 		List<Vertex> vertices = new ArrayList<Vertex>();

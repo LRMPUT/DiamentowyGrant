@@ -36,7 +36,7 @@ GraphManager::GraphManager() {
 }
 
 
-int GraphManager::optimize(int iterationCount) {
+double GraphManager::optimize(int iterationCount) {
 	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "GraphManager::optimize");
 
 	// Locking the graph - we are the only one modifying
@@ -72,9 +72,9 @@ int GraphManager::optimize(int iterationCount) {
 
 	// TODO: return it to java
 	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK: Chi2 [%f]",
-						optimizer.chi2());
+			optimizer.chi2());
 
-	return res;
+	return optimizer.chi2();
 }
 
 
@@ -179,7 +179,7 @@ std::vector<double> GraphManager::getVertexPosition(int id) {
 // Get information about position of all vertices
 std::vector<double> GraphManager::getPositionOfAllVertices() {
 	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG,
-			"NDK: Called getPositionOfAllVertices - size: %d", vertices.size());
+			"GraphManager::getPositionOfAllVertices() - size: %d", vertices.size());
 
 	// locking the vertex mtx
 	pthread_mutex_lock(&verticesMtx);

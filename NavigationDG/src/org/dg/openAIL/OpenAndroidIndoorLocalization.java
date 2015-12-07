@@ -347,18 +347,25 @@ public class OpenAndroidIndoorLocalization {
 			
 			// TODO: Get current estimate of vertices
 			if (graphManager.changeInOptimizedData)
-			{
-				graphManager.changeInOptimizedData = false;
-				
+			{				
 				Log.d(moduleLogName, "Adding user positions to visualization");
 				List<Vertex> listOfVertices = graphManager.getVerticesEstimates();
 				List<Pair<Double, Double>> userLocations = new ArrayList<Pair<Double, Double>>();	
+				
+				if ( listOfVertices == null) {
+					Log.d(moduleLogName, "list of vertices is null");
+				} else {
+					Log.d(moduleLogName, "SIZE: " + listOfVertices.size());
+				}
+				
 				for (Vertex v : listOfVertices) {
 					if ( v.id < 10000 )
 						userLocations.add(new Pair<Double,Double>(v.X, v.Y));
 				}
 				
 				localizationView.setUserLocations(userLocations);
+				
+				graphManager.changeInOptimizedData = false;
 			}
 			
 			

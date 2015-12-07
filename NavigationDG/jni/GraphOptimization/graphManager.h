@@ -86,8 +86,8 @@ public:
 	GraphManager();
 
 	// Perform optimization for given number of iterations
-	// Returns 1 if ok, 0 if not ok (e.g. 0 edges)
-	int optimize(int iterationCount);
+	// Returns chi2 and 0 if not ok (e.g. 0 vertices)
+	double optimize(int iterationCount);
 
 	// Save optimized graph to file
 	int saveOptimizationResult(ofstream &ofs);
