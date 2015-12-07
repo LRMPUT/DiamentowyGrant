@@ -83,12 +83,10 @@ private:
 	double prevUserPositionX, prevUserPositionY, prevUserPositionTheta;
 
 public:
-	// TODO: Information to add to graph
-	string dataToAdd;
-
 	GraphManager();
 
 	// Perform optimization for given number of iterations
+	// Returns 1 if ok, 0 if not ok (e.g. 0 edges)
 	int optimize(int iterationCount);
 
 	// Save optimized graph to file
@@ -98,7 +96,7 @@ public:
 	void delayedAddToGraph(string dataToProcess);
 
 	// Add information in string to graph
-	void addToGraph(string dataToProcess);
+	void addToGraph();
 
 	// Get information about position of vertex with given id
 	std::vector<double> getVertexPosition(int id);
@@ -130,6 +128,16 @@ private:
 	// findIndex of vertex with given id
 	int findIndexInVertices(int id);
 
+	//
+	// TODO!
+	//
+	void extractVerticesEstimates(std::set<g2o::OptimizableGraph::Vertex*,
+					g2o::OptimizableGraph::VertexIDCompare> & verticesToCopy);
+
+	void updateVerticesEstimates(
+			const std::set<g2o::OptimizableGraph::Vertex*,
+					g2o::OptimizableGraph::VertexIDCompare>& verticesToCopy);
+
 	// Current estimates
 	std::vector<ail::Vertex*> vertices;
 
@@ -138,6 +146,10 @@ private:
 
 	// Lock to current estimate - vertices
 	pthread_mutex_t verticesMtx;
+
+	// Information to add to graph
+	pthread_mutex_t addMtx;
+	string dataToAdd;
 
 	// Buffor of vertices to add
 	pthread_mutex_t bufferMtx;

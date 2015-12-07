@@ -52,7 +52,7 @@ JNIEXPORT void JNICALL Java_org_dg_graphManager_GraphManager_NDKGraphAddVertexEd
 	env->ReleaseStringUTFChars(g2oVertexEdge, szLogThis);
 
 	// Adding all elements
-	graphManager.addToGraph(g2oStream);
+	graphManager.delayedAddToGraph(g2oStream);
 }
 
 JNIEXPORT jdoubleArray JNICALL Java_org_dg_graphManager_GraphManager_NDKGraphGetVertexPosition(
@@ -116,8 +116,7 @@ JNIEXPORT jint JNICALL Java_org_dg_graphManager_GraphManager_NDKGraphOptimize(
 	GraphManager &graphManager = *(GraphManager*) addrGraph;
 
 	// Add new measurements
-	graphManager.addToGraph(graphManager.dataToAdd);
-	graphManager.dataToAdd="";
+	graphManager.addToGraph();
 
 	// Peform optimization
 	int res = graphManager.optimize(iterationCount);

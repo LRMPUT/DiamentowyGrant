@@ -384,7 +384,6 @@ public class GraphManager {
 		
 		final String path = Environment.getExternalStorageDirectory().getAbsolutePath() + "/OpenAIL/GraphLog/";
 		
-		
 		// New thread
 		optimizationThread = new Thread() {
 		public void run() {
@@ -403,7 +402,7 @@ public class GraphManager {
 					changeInOptimizedData = true;
 				}
 				
-				// Should we sleep (not enough optimization change)
+				// Should we sleep as the graph is probably empty
 				if (res == 0)
 				{
 					try {
