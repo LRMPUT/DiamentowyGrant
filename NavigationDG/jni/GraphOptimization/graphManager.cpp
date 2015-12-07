@@ -28,16 +28,22 @@ GraphManager::GraphManager() {
 
 	// Setting Levenberg as optimizaiton algorithm
 	optimizer.setAlgorithm(optimizationAlgorithm);
+
+	// Adding initial node (0,0,0)
+	stringstream tmp;
+	tmp << "0 0.0 0.0 0.0\n";
+	addVertex(tmp, 0);
 }
 
 
 int GraphManager::optimize(int iterationCount) {
+	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "GraphManager::optimize");
 
 	// Locking the graph - we are the only one modifying
 	pthread_mutex_lock(&graphMtx);
 
 	// No edges -> return
-	if ( optimizer.edges().size() == 0 )
+	if ( optimizer.vertices().size() == 0 )
 	{
 		pthread_mutex_unlock(&graphMtx);
 		__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "Graph is empty");
@@ -84,6 +90,7 @@ void GraphManager::delayedAddToGraph(string dataToProcess) {
 }
 
 void GraphManager::addToGraph() {
+	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "GraphManager::addToGraph");
 
 	// Convert string to stream to process line by line - need to get mutex
 	pthread_mutex_lock(&addMtx);
@@ -196,6 +203,50 @@ std::vector<double> GraphManager::getPositionOfAllVertices() {
 
 	}
 
+	// Creating some prediction
+	pthread_mutex_lock(&addMtx);
+	std::istringstream f(dataToAdd);
+	pthread_mutex_unlock(&addMtx);
+
+	// Get a line from data to add
+	std::string line;
+	while (std::getline(f, line)) {
+		stringstream tmpStream(line);
+
+		// Getting operation type
+		string type;
+		tmpStream >> type;
+
+		// Adding vertex/edge
+		if (type == "EDGE_SE2:STEP")
+		{
+			int id1, id2;
+			double distance, theta;
+			tmpStream >> id1 >> id2 >> distance >> theta;
+
+			// Find previous
+			for (int i=estimate.size()-4;i>0;i=i-4) {
+				if ( estimate[i] == id1) {
+					double X = estimate[i+1];
+					double Y = estimate[i+2];
+					double angle = estimate[i+3];
+
+					angle = angle + theta;
+					X = X + distance * cos(angle);
+					Y = Y + distance * sin(angle);
+
+					estimate.push_back(id2);
+					estimate.push_back(X);
+					estimate.push_back(Y);
+					estimate.push_back(angle);
+
+					__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG,
+													"NDK: Prediction: %d %f %f %f", id2, X, Y, angle);
+					break;
+				}
+			}
+		}
+	}
 	// unlocking the vertex mtx
 	pthread_mutex_unlock(&verticesMtx);
 
@@ -205,6 +256,8 @@ std::vector<double> GraphManager::getPositionOfAllVertices() {
 void GraphManager::extractVerticesEstimates(
 		std::set<g2o::OptimizableGraph::Vertex*,
 				g2o::OptimizableGraph::VertexIDCompare> & verticesToCopy) {
+	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "GraphManager::extractVerticesEstimates");
+
 	for (g2o::HyperGraph::EdgeSet::const_iterator it =
 			optimizer.edges().begin(); it != optimizer.edges().end(); ++it) {
 		g2o::OptimizableGraph::Edge* e =
@@ -226,13 +279,11 @@ void GraphManager::extractVerticesEstimates(
 void GraphManager::updateVerticesEstimates(
 		const std::set<g2o::OptimizableGraph::Vertex*,
 				g2o::OptimizableGraph::VertexIDCompare>& verticesToCopy) {
+	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "GraphManager::updateVerticesEstimates");
 
 	for (auto &v : verticesToCopy) {
 		std::vector<double> estimate;
 		v->getEstimateData(estimate);
-
-		__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG,
-				"optimize: processing vertex");
 
 		int index = findIndexInVertices(v->id());
 
@@ -251,8 +302,6 @@ void GraphManager::updateVerticesEstimates(
 			vertex->pos[1] = estimate[1];
 			vertex->orient = estimate[2];
 		}
-
-		//__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK: Vertex id: %d\tEstimates: %f %f %f", v->id(), estimate[0], estimate[1], estimate[2]);
 	}
 }
 

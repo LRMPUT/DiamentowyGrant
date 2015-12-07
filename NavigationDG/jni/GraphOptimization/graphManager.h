@@ -128,12 +128,11 @@ private:
 	// findIndex of vertex with given id
 	int findIndexInVertices(int id);
 
-	//
-	// TODO!
-	//
+	// Takes the edges from the graph and extracts new vertex poses
 	void extractVerticesEstimates(std::set<g2o::OptimizableGraph::Vertex*,
 					g2o::OptimizableGraph::VertexIDCompare> & verticesToCopy);
 
+	// Takes the new vertex poses and updates the current estimate
 	void updateVerticesEstimates(
 			const std::set<g2o::OptimizableGraph::Vertex*,
 					g2o::OptimizableGraph::VertexIDCompare>& verticesToCopy);

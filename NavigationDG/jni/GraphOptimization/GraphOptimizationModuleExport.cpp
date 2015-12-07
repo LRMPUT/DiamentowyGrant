@@ -115,10 +115,10 @@ JNIEXPORT jint JNICALL Java_org_dg_graphManager_GraphManager_NDKGraphOptimize(
 	// Retrieving graph manager
 	GraphManager &graphManager = *(GraphManager*) addrGraph;
 
-	// Add new measurements
+	//Add new measurements
 	graphManager.addToGraph();
 
-	// Peform optimization
+	// Perform optimization
 	int res = graphManager.optimize(iterationCount);
 
 	// Retrieve string from jstring concerning the path
