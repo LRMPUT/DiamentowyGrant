@@ -215,6 +215,11 @@ public class WiFiPlaceRecognition implements Runnable {
 		} catch (InterruptedException e) {
 			Log.d(moduleLogName, "Failed to join recognizePlacesThread");
 		}
+		
+		queueOfWiFiMatchesToCheck.clear();
+		indexOfNewPlaceToProcess = -1;
+		placeDatabase.clear();
+		placeIds.clear();
 	}
 	
 	List<IdPair<Integer, Integer>> getAndClearRecognizedPlacesList() {

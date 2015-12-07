@@ -92,6 +92,7 @@ public class GraphManager {
 	public void destroyGraph() {
 		if (addrGraph != 0)
 			NDKGraphDestroy(addrGraph);
+		addrGraph = 0;
 	}
 	
 	/*

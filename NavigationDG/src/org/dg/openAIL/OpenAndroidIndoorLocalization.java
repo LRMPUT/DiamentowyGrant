@@ -50,7 +50,7 @@ public class OpenAndroidIndoorLocalization {
 	public GraphManager graphManager;
 
 	// Graph update
-	private Timer updateGraphTimer = new Timer();
+	private Timer updateGraphTimer;
 
 	// Preview
 	public Preview preview;
@@ -157,6 +157,7 @@ public class OpenAndroidIndoorLocalization {
 		// visualPlaceRecognition.start(_preview);
 
 		// Check for new information at fixed rate
+		updateGraphTimer = new Timer();
 		long delay = (long) (1000.0 / parameters.mainProcessing.frequencyOfNewDataQuery);
 		updateGraphTimer.scheduleAtFixedRate(new UpdateGraph(), 0, delay);
 
@@ -178,7 +179,8 @@ public class OpenAndroidIndoorLocalization {
 
 		// Stop checking for new data
 		updateGraphTimer.cancel();
-
+		updateGraphTimer = null;
+		
 		// Stop WiFi recognition thread
 		wifiScanner.stopNewPlaceRecognitionThread();
 
