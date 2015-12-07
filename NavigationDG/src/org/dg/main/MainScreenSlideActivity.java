@@ -229,8 +229,8 @@ public class MainScreenSlideActivity extends Activity implements
 
 		// Side View 2 - Start/Optimize Graph
 		if (link.contains("Start graph") || link.contains("Optimize graph")) {
-
-			if (!openAIL.graphManager.started()) {
+	
+			if (!openAIL.graphManager.isOptimizationInProgress()) {
 
 				// We need to update the preview
 				ScreenSlidePageFragment cameraFragment = (ScreenSlidePageFragment) ((ScreenSlidePagerAdapter) mPagerAdapter)

@@ -119,6 +119,8 @@ public class OpenAndroidIndoorLocalization {
 	 * - start checking for new measurments
 	 */
 	public void startLocalization() {
+		Log.d(moduleLogName, "startLocalization()");
+		
 		// Creating new graph
 		graphManager.start();
 
