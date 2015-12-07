@@ -112,8 +112,14 @@ JNIEXPORT jdoubleArray JNICALL Java_org_dg_graphManager_GraphManager_NDKGraphGet
 JNIEXPORT jint JNICALL Java_org_dg_graphManager_GraphManager_NDKGraphOptimize(
 		JNIEnv* env, jobject self, jlong addrGraph, jint iterationCount,
 		jstring logThis) {
-	// Calling
+	// Retrieving graph manager
 	GraphManager &graphManager = *(GraphManager*) addrGraph;
+
+	// Add new measurements
+	graphManager.addToGraph(graphManager.dataToAdd);
+	graphManager.dataToAdd="";
+
+	// Peform optimization
 	int res = graphManager.optimize(iterationCount);
 
 	// Retrieve string from jstring concerning the path

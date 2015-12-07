@@ -184,7 +184,6 @@ public class OpenAndroidIndoorLocalization {
 		// visualPlaceRecognition.stop()
 
 		// Stop the optimization thread
-		graphManager.stop(); // TODO: Remove it!
 		graphManager.stopOptimizationThread();
 
 		// Getting the estimates

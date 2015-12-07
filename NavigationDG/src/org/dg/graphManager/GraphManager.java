@@ -12,7 +12,6 @@ import java.util.List;
 
 import org.opencv.core.Point3;
 
-import android.media.MediaScannerConnection;
 import android.os.Environment;
 import android.util.Log;
 import android.util.Pair;
@@ -95,16 +94,6 @@ public class GraphManager {
 		
 		
 		startOptimizeOnlineThread();
-	}
-	
-	public void stop() {
-		started = false;
-		
-		if (graphStream != null)
-		{
-			graphStream.close();
-			graphStream = null;
-		}
 	}
 	
 	public boolean started() {
@@ -372,6 +361,14 @@ public class GraphManager {
 	}
 	
 	public void stopOptimizationThread() {
+		started = false;
+		
+		if (graphStream != null)
+		{
+			graphStream.close();
+			graphStream = null;
+		}
+		
 		continueOptimization = false;
 		try {
 			if ( optimizationThread != null )

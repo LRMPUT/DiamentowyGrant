@@ -252,7 +252,7 @@ public class MainActivity extends Activity {
 								1000, 200);
 						buttonStartGraphOnline.setText("Optimize graph");
 					} else {
-						openAIL.graphManager.stop();
+					//	openAIL.graphManager.stop();
 						updateGraphTimer.cancel();
 						openAIL.graphManager.optimize(100);
 						buttonStartGraphOnline.setText("Start graph");

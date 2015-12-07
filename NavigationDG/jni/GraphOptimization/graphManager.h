@@ -83,6 +83,9 @@ private:
 	double prevUserPositionX, prevUserPositionY, prevUserPositionTheta;
 
 public:
+	// TODO: Information to add to graph
+	string dataToAdd;
+
 	GraphManager();
 
 	// Perform optimization for given number of iterations
@@ -90,6 +93,9 @@ public:
 
 	// Save optimized graph to file
 	int saveOptimizationResult(ofstream &ofs);
+
+	// Delay adding to the graph
+	void delayedAddToGraph(string dataToProcess);
 
 	// Add information in string to graph
 	void addToGraph(string dataToProcess);
@@ -132,4 +138,13 @@ private:
 
 	// Lock to current estimate - vertices
 	pthread_mutex_t verticesMtx;
+
+	// Buffor of vertices to add
+	pthread_mutex_t bufferMtx;
+	std::vector<g2o::OptimizableGraph::Vertex*> bufferVertices;
+	std::vector<g2o::EdgeSE2DistanceOrientation*> bufferStepometerEdges;
+	std::vector<g2o::EdgeSE2PlaceVicinity> bufferPlaceVicinityEdges;
+	std::vector<g2o::EdgeSE2PointXYDistance> bufferPointXYDistanceEdges;
+	std::vector<g2o::EdgeSE2*> bufferSE2Edges;
+	std::vector<g2o::EdgeSE2QR*> bufferSE2QREdges;
 };

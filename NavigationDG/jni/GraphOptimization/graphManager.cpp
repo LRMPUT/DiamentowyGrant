@@ -10,6 +10,10 @@ GraphManager::GraphManager() {
 		__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "Mutex init failed!");
 	}
 
+	if (pthread_mutex_init(&bufferMtx, NULL)) {
+		__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "Mutex init failed!");
+	}
+
 	prevUserPositionTheta = prevUserPositionX = prevUserPositionY = 0.0;
 
 	BlockSolverX::LinearSolverType* linearSolver = new LinearSolverPCG<
@@ -108,6 +112,11 @@ int GraphManager::optimize(int iterationCount) {
 int GraphManager::saveOptimizationResult(ofstream &ofs) {
 	int res = optimizer.save(ofs);
 	return res;
+}
+
+// Delay adding to the graph
+void GraphManager::delayedAddToGraph(string dataToProcess) {
+	dataToAdd = dataToAdd + "\n" + dataToProcess;
 }
 
 void GraphManager::addToGraph(string dataToProcess) {
@@ -268,8 +277,14 @@ int GraphManager::addVertex(stringstream &data, int type) {
 		return -1;
 	}
 
+//	pthread_mutex_lock(&bufferMtx);
+//	bufferVertices.add(v);
+//	pthread_mutex_unlock(&bufferMtx);
+
 	// Adding to vertices
+	pthread_mutex_lock(&verticesMtx);
 	vertices.push_back(ailVertex);
+	pthread_mutex_unlock(&verticesMtx);
 }
 
 int GraphManager::addVicinityEdge(stringstream &data, string name)
@@ -286,6 +301,9 @@ int GraphManager::addVicinityEdge(stringstream &data, string name)
 		e->setVertex(0, from);
 		e->setVertex(1, to);
 		e->read(data);
+//		pthread_mutex_lock(&bufferMtx);
+//		bufferPlaceVicinityEdges.push_back(e);
+//		pthread_mutex_unlock(&bufferMtx);
 		if (!optimizer.addEdge(e)) {
 			__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK:LC: [Unable to add edge %s]", name.c_str());
 			delete e;
@@ -315,6 +333,9 @@ int GraphManager::addEdgeWiFi(stringstream &data) {
 		e->setVertex(0, from);
 		e->setVertex(1, to);
 		e->read(data);
+//		pthread_mutex_lock(&bufferMtx);
+//		bufferPointXYDistanceEdges.push_back(e);
+//		pthread_mutex_unlock(&bufferMtx);
 		if (!optimizer.addEdge(e)) {
 			__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK:LC: [%s]",
 					"Unable to add edge wifi");
@@ -324,9 +345,6 @@ int GraphManager::addEdgeWiFi(stringstream &data) {
 	}
 	return 0;
 }
-
-
-
 int GraphManager::addEdgeStepometer(stringstream &data) {
 	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK:LC: [%s]",
 					"Adding stepometer edge");
@@ -369,6 +387,9 @@ int GraphManager::addEdgeStepometer(stringstream &data) {
 		e->setVertex(0, from);
 		e->setVertex(1, to);
 		e->read(data);
+//		pthread_mutex_lock(&bufferMtx);
+//		bufferStepometerEdges.push_back(e);
+//		pthread_mutex_unlock(&bufferMtx);
 		if (!optimizer.addEdge(e)) {
 			__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK:LC: [%s]",
 					"Unable to add edge stepometer");
@@ -445,6 +466,9 @@ int GraphManager::addEdgeQR(stringstream &data) {
 		e->setVertex(0, from);
 		e->setVertex(1, to);
 		e->read(data);
+//		pthread_mutex_lock(&bufferMtx);
+//		bufferSE2QR.push_back(e);
+//		thread_mutex_unlock(&bufferMtx);
 		if (!optimizer.addEdge(e)) {
 			__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK:LC: [Unable to add edge QR]");
 			delete e;
