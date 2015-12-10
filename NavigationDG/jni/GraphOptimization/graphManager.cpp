@@ -415,6 +415,7 @@ int GraphManager::addEdgeWiFi(stringstream &data) {
 	}
 	return 0;
 }
+
 int GraphManager::addEdgeStepometer(stringstream &data) {
 	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK:LC: [%s]",
 					"Adding stepometer edge");
@@ -426,7 +427,7 @@ int GraphManager::addEdgeStepometer(stringstream &data) {
 	OptimizableGraph::Vertex* to = optimizer.vertex(id2);
 	if (!from) {
 		__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK:LC: [%s]",
-				"Adding initial vertex");
+				"Adding initial vertex -- should not have happen anymore!");
 		stringstream tmp;
 		tmp << id1 << " 0.0 0.0 0.0\n";
 		addVertex(tmp, 0);
@@ -440,6 +441,24 @@ int GraphManager::addEdgeStepometer(stringstream &data) {
 		double distance, theta;
 		string xxx;
 		tmpStream >> xxx >> id1 >> id2 >> distance >> theta;
+
+
+
+
+		int index = findIndexInVertices(id1);
+
+		if (index < 0 || vertices[index]->type != ail::Vertex::Type::VERTEXSE2) {
+			__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG,
+				"NDK: Can't do prediction!!!");
+		}
+		else {
+			ail::VertexSE2* vertex =
+					static_cast<ail::VertexSE2*>(vertices[index]);
+			prevUserPositionX = vertex->pos[0];
+			prevUserPositionY = vertex->pos[1];
+			prevUserPositionTheta = vertex->orient;
+		}
+
 		prevUserPositionTheta = prevUserPositionTheta + theta;
 		prevUserPositionX = prevUserPositionX
 				+ distance * cos(prevUserPositionTheta);
