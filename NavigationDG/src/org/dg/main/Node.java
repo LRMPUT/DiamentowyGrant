@@ -23,12 +23,12 @@ public class Node {
 		init(id, px, py, x, y);
 	}
 	
-	private void init(int id, double px, double py, double x, double y) {
-		this.id = id;
-		this.px = x;
-		this.py = y;
-		this.x = x;
-		this.y = y;
+	private void init(int _id, double _px, double _py, double _x, double _y) {
+		this.id = _id;
+		this.px = _px;
+		this.py = _py;
+		this.x = _x;
+		this.y = _y;
 	}
 	
 	public int getId() {

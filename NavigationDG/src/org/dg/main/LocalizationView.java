@@ -46,7 +46,7 @@ public class LocalizationView extends SurfaceView implements SurfaceHolder.Callb
 		private boolean mRun = true;
 		
         /** The drawable to use as the background of the animation canvas */
-        private Bitmap mBackgroundImage, mLegend;
+        private Bitmap mBackgroundImage, mBackgroundImageDraw, mLegend;
 		
 		/**
          * Current height of the surface/canvas.
@@ -105,6 +105,7 @@ public class LocalizationView extends SurfaceView implements SurfaceHolder.Callb
 							+ "/OpenAIL/PriorData/" + mapName
 							+ "/cmbin.jpg");
 			mBackgroundImage = BitmapFactory.decodeFile(backgroundFilePath);
+			mBackgroundImageDraw = mBackgroundImage;
         	
 			
 			String mapFilePath = String.format(Locale.getDefault(),
@@ -177,6 +178,13 @@ public class LocalizationView extends SurfaceView implements SurfaceHolder.Callb
                     
         }
 		
+//		public boolean isInsideBackgroundImage(float y) {
+//			Log.d(TAG, "isInsideBackgroundImage: " + y + " & " + mBackgroundImage.getHeight());
+//			if ( y  > mBackgroundImage.getHeight())
+//				return false;
+//			return true;
+//		}
+		
 		@Override
 		public void run() {
 			while (mRun) {
@@ -215,15 +223,15 @@ public class LocalizationView extends SurfaceView implements SurfaceHolder.Callb
                 mCanvasWidth = width;
                 mCanvasHeight = height;
                 
-				recomputeDrawingScale();
+//				recomputeDrawingScale();
 				
-	            double widthScale = (double) (width) / mBackgroundImage.getWidth();
-	            double heightScale = (double) (height) / mBackgroundImage.getHeight();
+	            double widthScale = (double) (width * zoom) / mBackgroundImage.getWidth();
+	            double heightScale = (double) (height * zoom) / mBackgroundImage.getHeight();
 	            
 	            double minimumScale = Math.min(widthScale, heightScale);
 	            
-	            int wid = (int) (minimumScale * mBackgroundImage.getWidth() * zoom);
-	            int hei = (int) (minimumScale * mBackgroundImage.getHeight() * zoom); 
+	            int wid = (int) (minimumScale * mBackgroundImage.getWidth() );
+	            int hei = (int) (minimumScale * mBackgroundImage.getHeight() ); 
 	            
 	            backgroundResizedPx2OriginalPx = minimumScale;
 	            
@@ -236,7 +244,7 @@ public class LocalizationView extends SurfaceView implements SurfaceHolder.Callb
 	            
 	            Log.d(TAG, "setSurfaceSiz origin: old=" + originX + " new=" + centerX);
 	            
-                mBackgroundImage = Bitmap.createScaledBitmap(
+                mBackgroundImageDraw = Bitmap.createScaledBitmap(
                         mBackgroundImage, wid, hei, true);
                 
                 
@@ -248,29 +256,13 @@ public class LocalizationView extends SurfaceView implements SurfaceHolder.Callb
 		/**
 		 * 
 		 */
-		private void recomputeDrawingScale() {
-			// Find the interval of changes for X and Y
-			double minX = 0.0, maxX = 0.0, minY = 0.0, maxY = 0.0;
-			
-			boolean start = true;
-			synchronized (wifiScanLocations) {
-				for (Pair<Double, Double> p : wifiScanLocations) {
-					if (p.second < minX || start)
-						minX = p.second;
-					if (p.second > maxX || start)
-						maxX = p.second;
-
-					if (p.first < minY || start)
-						minY = p.first;
-					if (p.first > maxY || start)
-						maxY = p.first;
-
-					start = false;
-				}
-			}
-
-//			synchronized (userLocations) {
-//				for (Pair<Double, Double> p : userLocations) {
+//		private void recomputeDrawingScale() {
+//			// Find the interval of changes for X and Y
+//			double minX = 0.0, maxX = 0.0, minY = 0.0, maxY = 0.0;
+//			
+//			boolean start = true;
+//			synchronized (wifiScanLocations) {
+//				for (Pair<Double, Double> p : wifiScanLocations) {
 //					if (p.second < minX || start)
 //						minX = p.second;
 //					if (p.second > maxX || start)
@@ -284,45 +276,61 @@ public class LocalizationView extends SurfaceView implements SurfaceHolder.Callb
 //					start = false;
 //				}
 //			}
-
-			Log.d(TAG, "visX in metres: " + minX + " " + maxX);
-			Log.d(TAG, "visY in metres: " + minY + " " + maxY);
-
-			// Computing the scale of drawing
-//			float scaleX = mCanvasWidth / (float) (maxX - minX);
-//			float scaleY = mCanvasHeight / (float) (maxY - minY);
-
-			//scale = (float) (Math.min(scaleX, scaleY) / 1.4);
-			
-			//float unknownX = (float) ((maxX - minX) /  (664.0-248.0) * 1049.0);
-//			float unknownX = (float) ((maxX - minX) /  (877.0-248.0) * 1049.0);
-//			float unknownY = (float) ((maxY - minY) / (2360.0-509.0) * 3049.0);
+//
+////			synchronized (userLocations) {
+////				for (Pair<Double, Double> p : userLocations) {
+////					if (p.second < minX || start)
+////						minX = p.second;
+////					if (p.second > maxX || start)
+////						maxX = p.second;
+////
+////					if (p.first < minY || start)
+////						minY = p.first;
+////					if (p.first > maxY || start)
+////						maxY = p.first;
+////
+////					start = false;
+////				}
+////			}
+//
+//			Log.d(TAG, "visX in metres: " + minX + " " + maxX);
+//			Log.d(TAG, "visY in metres: " + minY + " " + maxY);
+//
+//			// Computing the scale of drawing
+////			float scaleX = mCanvasWidth / (float) (maxX - minX);
+////			float scaleY = mCanvasHeight / (float) (maxY - minY);
+//
+//			//scale = (float) (Math.min(scaleX, scaleY) / 1.4);
 //			
-//			float scaleX = Math.abs(mCanvasWidth / (float) (unknownX));
-//			float scaleY = Math.abs(mCanvasHeight / (float) (unknownY));
-//			scale = (float) (Math.min(scaleX, scaleY));
+//			//float unknownX = (float) ((maxX - minX) /  (664.0-248.0) * 1049.0);
+////			float unknownX = (float) ((maxX - minX) /  (877.0-248.0) * 1049.0);
+////			float unknownY = (float) ((maxY - minY) / (2360.0-509.0) * 3049.0);
+////			
+////			float scaleX = Math.abs(mCanvasWidth / (float) (unknownX));
+////			float scaleY = Math.abs(mCanvasHeight / (float) (unknownY));
+////			scale = (float) (Math.min(scaleX, scaleY));
+////			
+////			centerX = (float) ((maxX + minX) / 2) + 67.0f/1049.0f * unknownX;
+////			centerY = (float) ((maxY + minY) / 2) + 90.0f/3049.0f * unknownY; //- 39.0f/1049.0f * unknownY;
 //			
-//			centerX = (float) ((maxX + minX) / 2) + 67.0f/1049.0f * unknownX;
-//			centerY = (float) ((maxY + minY) / 2) + 90.0f/3049.0f * unknownY; //- 39.0f/1049.0f * unknownY;
-			
-			
-			//TODO: LAST ONE!
-//			// Computing metres to px conversion
-//			float metres2pixelsVisXScale = (float) ((maxX - minX) /  (877.0-248.0) );
-//			float metres2pixelsVisYScale = (float) ((maxY - minY) / (2360.0-509.0) );
 //			
-//			// Taking into account than on screen we can have less pixels than in the image
-//			float scaleX = Math.abs(mCanvasWidth / (float) (metres2pixelsVisXScale) / 1049.0f);
-//			float scaleY = Math.abs(mCanvasHeight / (float) (metres2pixelsVisYScale) / 3049.0f);
-//			scale = (float) (Math.min(scaleX, scaleY));
-//			
-//			// Value in metres at center
-//			centerX = -(670.1f - 1049.0f/2)*metres2pixelsVisXScale;
-//			centerY = (1430.0f -  3049.0f/2)* metres2pixelsVisYScale; //- 39.0f/1049.0f * unknownY;
-				
-//			centerX = originX / mapPixels2Metres;
-//			centerY = originY / mapPixels2Metres;
-		}
+//			//TODO: LAST ONE!
+////			// Computing metres to px conversion
+////			float metres2pixelsVisXScale = (float) ((maxX - minX) /  (877.0-248.0) );
+////			float metres2pixelsVisYScale = (float) ((maxY - minY) / (2360.0-509.0) );
+////			
+////			// Taking into account than on screen we can have less pixels than in the image
+////			float scaleX = Math.abs(mCanvasWidth / (float) (metres2pixelsVisXScale) / 1049.0f);
+////			float scaleY = Math.abs(mCanvasHeight / (float) (metres2pixelsVisYScale) / 3049.0f);
+////			scale = (float) (Math.min(scaleX, scaleY));
+////			
+////			// Value in metres at center
+////			centerX = -(670.1f - 1049.0f/2)*metres2pixelsVisXScale;
+////			centerY = (1430.0f -  3049.0f/2)* metres2pixelsVisYScale; //- 39.0f/1049.0f * unknownY;
+//				
+////			centerX = originX / mapPixels2Metres;
+////			centerY = originY / mapPixels2Metres;
+//		}
 		
 		public void setWiFiScanLocations(List<Pair<Double, Double>> _newWiFiScanLocations)
 		{
@@ -334,7 +342,6 @@ public class LocalizationView extends SurfaceView implements SurfaceHolder.Callb
 					wifiScanLocations.add( tmp );
 				}
 			}
-			recomputeDrawingScale();
 		}
 		
 		public void setUserLocations(List<Pair<Double, Double>> _userLocations)
@@ -343,27 +350,32 @@ public class LocalizationView extends SurfaceView implements SurfaceHolder.Callb
 				userLocations.clear();
 				for(Pair<Double, Double> item: _userLocations) 
 				{
-					Log.d(TAG, "User locations : " + item.first + " "  + item.second);
+//					Log.d(TAG, "User locations : " + item.first + " "  + item.second);
 					Pair<Double, Double> tmp = new Pair<Double, Double>(item.first, item.second);
 					userLocations.add( tmp );
 				}
 			}
-			recomputeDrawingScale();
 		}
 		
 		
 		private void doDraw(Canvas canvas) {
 			Log.d(TAG, "Called draw - wifiLocations: " + wifiScanLocations.size() + " userLocations: " + userLocations.size());
-			Log.d(TAG, "Centers: " + centerX + " & " + centerY + " scale: " + scale);
+			
+			Log.d(TAG, "Centers: " + centerX + " & " + centerY);
+			Log.d(TAG, "backgroundResizedPx2OriginalPx: " + backgroundResizedPx2OriginalPx);
+			Log.d(TAG, "mapPixels2Metres: " + mapPixels2Metres);
 			
 			canvas.drawColor(Color.BLACK);
 			
 			// Draw the background image. Operations on the Canvas accumulate
 			// so this is like clearing the screen.
-			canvas.drawBitmap(mBackgroundImage, 0, 0, null);  
+			canvas.drawBitmap(mBackgroundImageDraw, 0, 0, null);  
 			
 			canvas.drawBitmap(mLegend, canvas.getWidth() - mLegend.getWidth(), canvas.getHeight() - mLegend.getHeight(), null);  
 			
+			
+			float centerX = (float) (originX * backgroundResizedPx2OriginalPx);
+			float centerY = (float) (originY * backgroundResizedPx2OriginalPx);
 			drawX(canvas, (float) centerX, (float) centerY, drawSize, 255, 0, 0);
 			
 			
@@ -393,9 +405,12 @@ public class LocalizationView extends SurfaceView implements SurfaceHolder.Callb
 				synchronized (wifiScanLocations) {
 					
 					for (Pair<Double, Double> p : wifiScanLocations) {
-						float drawX = (float) ((p.second - centerX) * scale + mCanvasWidth / 2);
-						float drawY = (float) ((p.first - centerY) * (-scale) + mCanvasHeight / 2);
+//						float drawX = (float) ((p.first - centerX) * scale + mCanvasWidth / 2);
+//						float drawY = (float) ((p.first - centerY) * (-scale) + mCanvasHeight / 2);
 						
+						float drawX = (float) (p.first * mapPixels2Metres + centerX);
+						float drawY = (float) (p.second * mapPixels2Metres + centerY);
+											
 						drawX(canvas, drawX, drawY, drawSize, 255, 0, 0);
 					}
 				}
@@ -405,11 +420,11 @@ public class LocalizationView extends SurfaceView implements SurfaceHolder.Callb
 					boolean firstLocation = true;
 					float prevDrawX = 0.0f, prevDrawY = 0.0f;
 					for (Pair<Double, Double> p : userLocations) {
-						float drawX = (float) ((p.second - centerX) * scale + mCanvasWidth / 2);
-						float drawY = (float) ((p.first - centerY) * (-scale) + mCanvasHeight / 2);
+						float drawX = (float) (p.first * mapPixels2Metres + centerX);
+						float drawY = (float) (p.second * mapPixels2Metres + centerY);
 
-						// Log.d(TAG, "Called drawCircle: " + p.first + " " +
-						// p.second + " | " + drawX + " " + drawY);
+						Log.d(TAG, "userLocations: " + p.first + " " +
+						 p.second + " | " + drawX + " " + drawY);
 						drawCircle(canvas, drawX, drawY, drawSize, 99, 209, 244);
 
 						if (!firstLocation) {
@@ -547,10 +562,12 @@ public class LocalizationView extends SurfaceView implements SurfaceHolder.Callb
 
 	@Override
 	public boolean onTouchEvent(MotionEvent event) {
-		
-		drawThread.zoom += 0.1; 
+		if ( event.getRawY() < 920)
+			drawThread.zoom += 0.1; 
+		else
+			drawThread.zoom -= 0.1; 
 		drawThread.setSurfaceSize();
-		Log.d(TAG, "onTouch!");
+		Log.d(TAG, "onTouch! Zoom = " + drawThread.zoom);
 		return false;
 		
 	}
