@@ -10,84 +10,10 @@
 #include <tuple>
 
 #include "Node.h"
-
-#define M_PI 3.14159265358979323846
+#include "Callbacks.h"
 
 using namespace cv;
 using namespace std;
-
-
-
-bool shouldBreak, rightClick = false;
-int id = 0;
-vector<pair<Node, Node>> links;
-set<Node> nodes;
-Node lastNode;
-
-double distanceThreshold = 2;
-double pixelsToMetres = 0;
-
-
-Node findInNodes(set<Node> &nodes, Node currentNode) {
-	for (auto it = nodes.begin(); it != nodes.end(); ++it)
-	{
-		double dist = (it->pixelX - currentNode.pixelX)*(it->pixelX - currentNode.pixelX) + (it->pixelY - currentNode.pixelY)*(it->pixelY - currentNode.pixelY);
-		if (dist < distanceThreshold*distanceThreshold*pixelsToMetres*pixelsToMetres)
-			return *it;
-	}
-	return currentNode;
-}
-
-void CallBackFunc(int event, int x, int y, int flags, void* userdata)
-{
-	if (event == EVENT_LBUTTONDOWN)
-	{
-		cout << "Left button of the mouse is clicked - position (" << x << ", " << y << ")" << endl;
-		
-		Node tmp(id, x, y, x/pixelsToMetres, y / pixelsToMetres);
-		Node current = findInNodes(nodes, tmp);
-
-		cout << "current node - position (" << x << ", " << y << ")" << endl;
-
-		
-
-		if (id != 0 && !rightClick) {
-			links.push_back(make_pair(lastNode, current));	
-		}
-		
-		nodes.insert(current);
-		lastNode = current;
-
-		// Let's see if we need to add new node
-		
-		rightClick = false;
-		if ( current.id == id)
-			id++;
-	}
-	else if (event == EVENT_RBUTTONDOWN)
-	{
-		cout << "Right button of the mouse is clicked - position (" << x << ", " << y << ")" << endl;
-		rightClick = true;
-	}
-	else if (event == EVENT_MBUTTONDOWN) {
-		cout << "Middle button of the mouse is clicked - position (" << x << ", " << y << ")" << endl;
-		shouldBreak = true;
-	}
-}
-
-vector<pair<int, int>> coordinateSystem;
-void CallBackOrigin(int event, int x, int y, int flags, void* origin)
-{
-	if (event == EVENT_LBUTTONDOWN)
-	{
-		cout << "X (" << x << ", " << y << ")" << endl;
-		coordinateSystem.push_back(make_pair(x, y));
-	
-		if ( coordinateSystem.size() >= 2)
-			shouldBreak = true;
-	}
-}
-
 
 std::pair<int, int> fitToMyScreen(int cols, int rows, double &scale) {
 
@@ -102,63 +28,57 @@ std::pair<int, int> fitToMyScreen(int cols, int rows, double &scale) {
 	return sizeToScreen;
 }
 
-
 std::tuple<double, double, double> pinpointOriginOfCoordinateSystem(Mat image) {
 	cout << "Choose (0,0) point, then X direction (Y is clockwise, Z to the user)" << endl;
 
 	Mat imgToShow = image.clone();
 
 	imshow("Choosing (0,0) point", imgToShow);
-	setMouseCallback("Choosing (0,0) point", CallBackOrigin, NULL);
+	vector<pair<int, int>>  coordinateSystem;
+	setMouseCallback("Choosing (0,0) point", CallBackLeftClick, &coordinateSystem);
 
 	shouldBreak = false;
-	while (!shouldBreak) {
+	while (coordinateSystem.size() < 1) {
 		cvWaitKey(20);
 	}
 	double x0 = coordinateSystem[0].first;
 	double y0 = coordinateSystem[0].second;
-	double x1 = coordinateSystem[1].first;
-	double y1 = coordinateSystem[1].second;
+	double x1 = coordinateSystem[0].first+ imgToShow.cols / 8;
+	double y1 = coordinateSystem[0].second;
 	line(imgToShow, cvPoint(x0, y0), cvPoint(x1, y1), cvScalar(0, 255.0, 0, 0), 5);
+	putText(imgToShow, "X", cvPoint(x1 + 10, y1 + 10), CV_FONT_NORMAL, 2, cvScalar(0, 255.0, 0, 0), 3);
 
-	double xprim = x1 - x0, yprim = y1 - y0;
-	double dl = sqrt(xprim*xprim + yprim*yprim);
-	double angle = atan2(yprim, xprim);
-
-	double xbis = x0 + dl * cos(angle - M_PI / 2);
-	double ybis = y0 + dl * sin(angle - M_PI / 2);
+	double xbis = x0;
+	double ybis = y0 - imgToShow.cols / 8;
 
 	line(imgToShow, cvPoint(coordinateSystem[0].first, coordinateSystem[0].second), cvPoint(xbis, ybis), cvScalar(0, 0, 255.0, 0), 5);
+	putText(imgToShow, "Y", cvPoint(xbis, ybis), CV_FONT_NORMAL, 2, cvScalar(0, 0.0, 255.0, 0), 3);
+
 	imshow("Choosing (0,0) point", imgToShow);
-	cvWaitKey(2000);
+	cvWaitKey(0);
 	cvDestroyWindow("Choosing (0,0) point");
 
-	return std::make_tuple(x0, y0, angle * 180.0 / M_PI);
-}
-
-vector<pair<int, int>> scaleCoordinateSystem;
-void CallBackScale(int event, int x, int y, int flags, void* userdata)
-{
-	if (event == EVENT_LBUTTONDOWN)
-	{
-		cout << "Scale (" << x << ", " << y << ")" << endl;
-		scaleCoordinateSystem.push_back(make_pair(x, y));
-
-		if (scaleCoordinateSystem.size() >= 2)
-			shouldBreak = true;
-	}
+	return std::make_tuple(x0, y0, 0);
 }
 
 void acquireScale(Mat image) {
 	Mat imgToShow = image.clone();
 
 	imshow("Getting the scale", imgToShow);
-	setMouseCallback("Getting the scale", CallBackScale, NULL);
 
-	shouldBreak = false;
-	while (!shouldBreak) {
+	vector<pair<int, int>> scaleCoordinateSystem;
+	setMouseCallback("Getting the scale", CallBackLeftClick, &scaleCoordinateSystem);
+
+	while (scaleCoordinateSystem.size() < 2) {
 		cvWaitKey(20);
 	}
+	
+	rectangle(imgToShow, cvPoint(scaleCoordinateSystem[0].first-5, scaleCoordinateSystem[0].second-5), cvPoint(scaleCoordinateSystem[0].first+5, scaleCoordinateSystem[0].second+5), cvScalar(255.0, 0.0, 0.0, 0), 8);
+	rectangle(imgToShow, cvPoint(scaleCoordinateSystem[1].first - 5, scaleCoordinateSystem[1].second - 5), cvPoint(scaleCoordinateSystem[1].first + 5, scaleCoordinateSystem[1].second + 5), cvScalar(255.0, 0.0, 0.0, 0), 8);
+	line(imgToShow, cvPoint(scaleCoordinateSystem[0].first, scaleCoordinateSystem[0].second), cvPoint(scaleCoordinateSystem[1].first, scaleCoordinateSystem[1].second), cvScalar(0, 0, 255.0, 0), 5);
+	
+	imshow("Getting the scale", imgToShow);
+	cvWaitKey(0);
 	cvDestroyWindow("Getting the scale");
 
 	double metricDistance;
@@ -198,7 +118,6 @@ void saveWiFiPositions() {
 	}
 	positionsFile.close();
 }
-
 
 int main(int argc, char** argv)
 {

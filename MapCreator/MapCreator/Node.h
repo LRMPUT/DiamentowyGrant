@@ -1,6 +1,7 @@
 #pragma once
 #include <iostream>
 #include <fstream>
+#include <set>
 
 class Node {
 public:
@@ -17,6 +18,17 @@ public:
 
 	friend std::ostream& operator<<(std::ostream &file, const Node &n);
 };
+
+
+Node findInNodes(std::set<Node> &nodes, Node currentNode, double distanceThreshold) {
+	for (auto it = nodes.begin(); it != nodes.end(); ++it)
+	{
+		double dist = (it->pixelX - currentNode.pixelX)*(it->pixelX - currentNode.pixelX) + (it->pixelY - currentNode.pixelY)*(it->pixelY - currentNode.pixelY);
+		if (dist < distanceThreshold*distanceThreshold)
+			return *it;
+	}
+	return currentNode;
+}
 
 std::ostream& operator<<(std::ostream & file, const Node & n)
 {
