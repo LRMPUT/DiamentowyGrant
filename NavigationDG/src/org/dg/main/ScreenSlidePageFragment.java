@@ -43,7 +43,7 @@ public class ScreenSlidePageFragment extends Fragment {
 	public static final String ARG_PAGE = "page";
 //	public static final String DEVICE_ORIENTATION = "deviceOrientation";
 
-	/**
+	/**f
 	 * The fragment's page number, which is set to the argument value for
 	 * {@link #ARG_PAGE}.
 	 */

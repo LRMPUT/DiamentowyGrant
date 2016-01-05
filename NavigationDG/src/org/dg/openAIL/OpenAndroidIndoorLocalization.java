@@ -121,12 +121,16 @@ public class OpenAndroidIndoorLocalization {
 	public void startLocalization() {
 		Log.d(moduleLogName, "startLocalization()");
 		
+		// Let's read map plan
+		BuildingPlan buildingPlan = priorMapHandler.loadCorridorMap(parameters.mainProcessing.priorMapName);
+		localizationView.setBuildingPlan(buildingPlan);
+		
 		// Creating new graph
 		graphManager.start();
 
 		// Load prior map
 		if (parameters.mainProcessing.usePriorMap) {
-			List<MapPosition> mapPositions = priorMapHandler.loadPriorMap(parameters.mainProcessing.priorMapName);
+			List<MapPosition> mapPositions = priorMapHandler.loadWiFiAndImageMap(parameters.mainProcessing.priorMapName);
 			
 			// For all positions in a map add to graph and initially add to visualization
 			List<Pair<Double, Double>> wifiScanLocations = new ArrayList<Pair<Double, Double>>();
@@ -215,7 +219,7 @@ public class OpenAndroidIndoorLocalization {
 		// For all positions in a map add to graph and initially add to visualization
 		List<Pair<Double, Double>> wifiScanLocations = new ArrayList<Pair<Double, Double>>();
 		if (parameters.mainProcessing.usePriorMap) {
-			List<MapPosition> mapPositions = priorMapHandler.loadPriorMap(parameters.mainProcessing.priorMapName);
+			List<MapPosition> mapPositions = priorMapHandler.loadWiFiAndImageMap(parameters.mainProcessing.priorMapName);
 			
 			// For all positions in a map
 			for (MapPosition mapPos: mapPositions) {
