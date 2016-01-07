@@ -7,8 +7,6 @@ import java.util.List;
 
 import org.dg.main.Edge;
 import org.dg.main.Node;
-import org.dg.openAIL.ConfigurationReader.Parameters.InertialSensors.Record;
-
 import android.util.Log;
 import android.util.Pair;
 
@@ -18,20 +16,76 @@ public class Navigation {
 	
 	private List<Node> nodes = null;
 	private List<List<Edge>> edges = null;
+	private List<Edge> edgeList = null;
 	
 	public Navigation(BuildingPlan buildingPlan) {
 		Log.d(moduleLogName, "Navigation()");
 		nodes = buildingPlan.nodeLocations;
+		edgeList = buildingPlan.edgeLocations;
 		edges = repackEdges(buildingPlan.edgeLocations, nodes.size());
 		
 		Log.d(moduleLogName, "nodes = " + nodes.size());
 		Log.d(moduleLogName, "edges = " + edges.size());
 	}
 	
+	public double computeSquaredDistance(Pair<Double, Double> p1, Pair<Double, Double> p2) {
+		return Math.pow(p1.first - p2.first, 2) + Math.pow(p1.second - p2.second, 2);
+	}
+	
+	public Pair<Double, Double> findClosestXY(double X, double Y) {
+		Node n = findClosestNode(X, Y);
+		double bestDist = n.euclideanDistance(X, Y);
+		Log.d(moduleLogName, "node distance = " + bestDist);
+		
+		Pair<Double, Double> snappedPoint = new Pair<Double, Double>(n.getX(),n.getY());
+		
+		Pair<Double, Double> p = new Pair<Double, Double>(X,Y);
+		for (Edge e : edgeList) {
+			Pair<Double, Double> a = new Pair<Double, Double>(e.from.getX(),e.from.getY());
+			Pair<Double, Double> b = new Pair<Double, Double>(e.to.getX(),e.to.getY());
+			
+			if ( computeSquaredDistance(b, p) < computeSquaredDistance(a, p) + computeSquaredDistance(a, b) &&
+					computeSquaredDistance(a, p) < computeSquaredDistance(p, b) + computeSquaredDistance(a, b) ) {
+				
+				double A = a.second - b.second;
+				double B = b.first - a.first;
+				double C = (a.first - b.first)*a.second + (b.second - a.second) * a.first;
+				
+//				Log.d(moduleLogName, "ABC POINTS = " + a.first + " " + a.second + " " + b.first + " " + b.second);
+//				Log.d(moduleLogName, "A = " + A + " B = " + B + " C = " + C);
+//				Log.d(moduleLogName, "ABC test = " + (A*a.first + B*a.second + C));
+//				Log.d(moduleLogName, "ABC test = " + (A*b.first + B*b.second + C));
+				
+				double dist = Math.abs(A*p.first + B*p.second + C) / Math.sqrt(A*A + B*B);
+				if ( dist < bestDist) {
+					// Log.d(moduleLogName, "edge distance = " + dist);
+
+					double ab2 = (b.first - a.first) * (b.first - a.first)
+							+ (b.second - a.second) * (b.second - a.second);
+					double ap_ab = (p.first - a.first) * (b.first - a.first)
+							+ (p.second - a.second) * (b.second - a.second);
+					double t = ap_ab / ab2;
+
+					double snappedX = a.first + (b.first - a.first) * t;
+					double snappedY = a.second + (b.second - a.second) * t;
+					snappedPoint = new Pair<Double, Double>(snappedX, snappedY);
+					
+					bestDist = dist;
+				}
+				
+			}
+		}
+		
+		return snappedPoint;
+	}
+	
 	public List<Pair<Double, Double>> startNavigation(double startX, double startY, double endX, double endY) {
 		Log.d(moduleLogName, "startNavigation() - startX=" + startX
 				+ " startY=" + startY + " endX=" + endX + " endY=" + endY);
 
+		//TODO : TESTS!
+		Pair<Double, Double> snappedEnd = findClosestXY(endX, endY);
+		
 		// find closest node to start
 		Node start = findClosestNode(startX, startY);
 		
@@ -51,7 +105,7 @@ public class Navigation {
 		}
 		fValue.set(start.getId(), computeHeuristic(start, end));
 		costFromStart.set(start.getId(), Double.valueOf(0.0));
-		stillOpen.add(Integer.valueOf(0));
+		stillOpen.add(start.getId());
 		
 		// Search for path to goal
 		Boolean goalReached = false;
@@ -160,6 +214,7 @@ public class Navigation {
 			Log.d(moduleLogName, "costFromStart: costFromStart["+i+"] = " +  costFromStart.get(i));
 		
 		Collections.reverse(pathFromGoal);
+		pathFromGoal.add(new Pair<Double, Double>(snappedEnd.first, snappedEnd.second));
 		return pathFromGoal;
 	}
 	

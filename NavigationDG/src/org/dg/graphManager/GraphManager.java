@@ -328,6 +328,20 @@ public class GraphManager {
 		}
 		return currentEstimate;
 	}
+	
+	/*
+	 * returns the estimate of the current vertex
+	 */
+	public Vertex getCurrentPoseEstimate() {
+		Log.d(moduleLogName, "getCurrentPoseEstimate()");
+		Vertex v = null;
+		synchronized (currentEstimateMtx) {
+			if (currentEstimate != null && !currentEstimate.isEmpty()) {
+				v = currentEstimate.get(currentEstimate.size()-1);
+			}
+		}
+		return v;
+	}
 
 	///
 	/// Methods -- private

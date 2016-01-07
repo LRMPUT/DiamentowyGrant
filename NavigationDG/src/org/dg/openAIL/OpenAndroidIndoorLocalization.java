@@ -381,7 +381,14 @@ public class OpenAndroidIndoorLocalization {
 			// Navigation part TODO: STILL TESTING
 			if( localizationView.isGoalSet() ) {
 				Pair<Double, Double> goal = localizationView.getGoal();
-				List<Pair<Double, Double>> pathToGoal = navigation.startNavigation(0, 0, goal.first, goal.second);
+				
+				Vertex v = graphManager.getCurrentPoseEstimate();
+				if ( v == null) {
+					Log.d(moduleLogName, "Navigation: vertex is null");
+					v = new Vertex(-1, 0, 0, 0);
+				}
+				
+				List<Pair<Double, Double>> pathToGoal = navigation.startNavigation(v.X, v.Y, goal.first, goal.second);
 				localizationView.setPathToGoal(pathToGoal);
 			}
 			
