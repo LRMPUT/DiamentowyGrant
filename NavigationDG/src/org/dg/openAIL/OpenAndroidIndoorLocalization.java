@@ -15,6 +15,7 @@ import org.dg.graphManager.GraphManager;
 import org.dg.graphManager.Vertex;
 import org.dg.graphManager.wiFiMeasurement;
 import org.dg.inertialSensors.InertialSensors;
+import org.dg.main.Edge;
 import org.dg.main.LocalizationView;
 import org.dg.wifi.WifiScanner;
 import org.opencv.core.Mat;
@@ -57,6 +58,9 @@ public class OpenAndroidIndoorLocalization {
 
 	// Prior map
 	public PriorMapHandler priorMapHandler;
+	
+	// Navigation
+	public Navigation navigation;
 	
 	// View to draw localization
 	LocalizationView localizationView;
@@ -124,6 +128,7 @@ public class OpenAndroidIndoorLocalization {
 		// Let's read map plan
 		BuildingPlan buildingPlan = priorMapHandler.loadCorridorMap(parameters.mainProcessing.priorMapName);
 		localizationView.setBuildingPlan(buildingPlan);
+		navigation = new Navigation(buildingPlan);
 		
 		// Creating new graph
 		graphManager.start();
@@ -371,6 +376,15 @@ public class OpenAndroidIndoorLocalization {
 				
 				graphManager.changeInOptimizedData = false;
 			}
+			
+			
+			// Navigation part TODO: STILL TESTING
+			if( localizationView.isGoalSet() ) {
+				Pair<Double, Double> goal = localizationView.getGoal();
+				List<Pair<Double, Double>> pathToGoal = navigation.startNavigation(0, 0, goal.first, goal.second);
+				localizationView.setPathToGoal(pathToGoal);
+			}
+			
 			
 			
 			iterationCounter++;

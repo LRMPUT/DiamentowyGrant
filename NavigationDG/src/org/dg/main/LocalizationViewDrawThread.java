@@ -19,19 +19,23 @@ import android.util.Pair;
 import android.view.SurfaceHolder;
 
 public class LocalizationViewDrawThread extends Thread {
+	private static final String TAG = "drawThread";
+	
+	// Stores information about building plan image and corridors
 	public BuildingPlan buildingPlan = new BuildingPlan();
 
-	private static final String TAG = "drawThread";
-
+	// Some const of drawing
 	private static final float drawSize = 25.0f;
 
+	// Used to lock canvas
 	private SurfaceHolder mSurfaceHolder;
 
+	// If the drawing thread should be running
 	private boolean mRun = true;
 
 	/** The drawable to use as the background of the animation canvas */
-	public Bitmap mBackgroundImageDraw = null, mLegend; // mBackgroundImage,
-
+	private Bitmap mBackgroundImageDraw = null, mLegend = null; 
+	
 	/**
 	 * Current height of the surface/canvas.
 	 * 
@@ -46,15 +50,21 @@ public class LocalizationViewDrawThread extends Thread {
 	 */
 	private int mCanvasWidth = 1;
 
+	// Current user poses and known WiFi scans
 	private List<Pair<Double, Double>> wifiScanLocations = new ArrayList<Pair<Double, Double>>();
 	private List<Pair<Double, Double>> userLocations = new ArrayList<Pair<Double, Double>>();
+	private List<Pair<Double, Double>> pathToGoal = new ArrayList<Pair<Double, Double>>();
 
-	public double zoom = 1.0;
+	// Zoom
+	private double zoom = 1.0;
 
-	// MAP
-	double mapPixels2Metres = 1;
-	double backgroundResizedPx2OriginalPx = 1;
+	// Scales used to convert from px to metres and px to px in case of resizing image
+	private double mapPixels2Metres = 1;
+	private double backgroundResizedPx2OriginalPx = 1;
 
+	// Parameters - drawingFrequency in Hz
+	private double drawingFrequency = 2;
+	
 	LocalizationViewDrawThread(SurfaceHolder surfaceHolder, Context context,
 			Handler handler) {
 		Log.d(TAG, "Created thread");
@@ -84,15 +94,68 @@ public class LocalizationViewDrawThread extends Thread {
 
 			// We sleep 500 ms
 			try {
-				sleep(500, 0);
+				sleep( (long) (1000.0 / drawingFrequency), 0);
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
 		}
 	}
+	
+	public void setBuildingPlan(BuildingPlan buildingPlan_) {
+		buildingPlan = buildingPlan_;
+		mapPixels2Metres=buildingPlan_.oldMapPixels2Metres;
+		backgroundResizedPx2OriginalPx = buildingPlan_.backgroundResizedPx2OriginalPx;
+		mBackgroundImageDraw = buildingPlan_.mBackgroundImage;
+		refreshDrawingSizes();
+	}
 
+	public void increaseZoom() {
+		if ( zoom < 10.0 )
+		{
+			zoom += 0.1; 
+			refreshDrawingSizes();
+		}
+	}
+	
+	public void decreaseZoom() {
+		if ( zoom > 0.1 )
+		{
+			zoom -= 0.1; 
+			refreshDrawingSizes();
+		}
+	}
+	
+	
 	public void refreshDrawingSizes() {
-		setSurfaceSize(mCanvasWidth, mCanvasHeight);
+		if (buildingPlan.mBackgroundImage != null) {
+			double widthScale = (double) (mCanvasWidth * zoom)
+					/ buildingPlan.mBackgroundImage.getWidth();
+			double heightScale = (double) (mCanvasHeight * zoom)
+					/ buildingPlan.mBackgroundImage.getHeight();
+
+			double minimumScale = Math.min(widthScale, heightScale);
+
+			int wid = (int) (minimumScale * buildingPlan.mBackgroundImage
+					.getWidth());
+			int hei = (int) (minimumScale * buildingPlan.mBackgroundImage
+					.getHeight());
+
+			backgroundResizedPx2OriginalPx = minimumScale;
+
+			Log.d(TAG, "setSurfaceSize: old="
+					+ buildingPlan.mBackgroundImage.getWidth() + " new="
+					+ wid + " scale=" + minimumScale);
+
+			// Update
+			mapPixels2Metres = buildingPlan.oldMapPixels2Metres
+					* backgroundResizedPx2OriginalPx;
+
+			mBackgroundImageDraw = Bitmap.createScaledBitmap(
+					buildingPlan.mBackgroundImage, wid, hei, true);
+		}
+
+		mLegend = Bitmap.createScaledBitmap(mLegend, mCanvasWidth,
+				mLegend.getHeight() * mCanvasWidth / mLegend.getWidth(), true);
 	}
 
 	/* Callback invoked when the surface dimensions change. */
@@ -100,38 +163,9 @@ public class LocalizationViewDrawThread extends Thread {
 		// synchronized to make sure these all change atomically
 		synchronized (mSurfaceHolder) {
 			mCanvasWidth = width;
-			mCanvasHeight = height;
-
-			if (buildingPlan.mBackgroundImage != null) {
-				double widthScale = (double) (width * zoom)
-						/ buildingPlan.mBackgroundImage.getWidth();
-				double heightScale = (double) (height * zoom)
-						/ buildingPlan.mBackgroundImage.getHeight();
-
-				double minimumScale = Math.min(widthScale, heightScale);
-
-				int wid = (int) (minimumScale * buildingPlan.mBackgroundImage
-						.getWidth());
-				int hei = (int) (minimumScale * buildingPlan.mBackgroundImage
-						.getHeight());
-
-				backgroundResizedPx2OriginalPx = minimumScale;
-
-				Log.d(TAG, "setSurfaceSize: old="
-						+ buildingPlan.mBackgroundImage.getWidth() + " new="
-						+ wid + " scale=" + minimumScale);
-
-				// Update
-				mapPixels2Metres = buildingPlan.oldMapPixels2Metres
-						* backgroundResizedPx2OriginalPx;
-
-				mBackgroundImageDraw = Bitmap.createScaledBitmap(
-						buildingPlan.mBackgroundImage, wid, hei, true);
-			}
-
-			mLegend = Bitmap.createScaledBitmap(mLegend, width,
-					mLegend.getHeight() * width / mLegend.getWidth(), true);
+			mCanvasHeight = height;	
 		}
+		refreshDrawingSizes();
 	}
 
 	// New WiFi Scan Locations
@@ -158,9 +192,28 @@ public class LocalizationViewDrawThread extends Thread {
 			}
 		}
 	}
+	
+	public void setPathToGoal(List<Pair<Double, Double>> pathToGoalList) {
+		synchronized (pathToGoal) {
+			pathToGoal.clear();
+			for (Pair<Double, Double> item : pathToGoalList) {
+				Pair<Double, Double> tmp = new Pair<Double, Double>(item.first,
+						item.second);
+				pathToGoal.add(tmp);
+			}
+			
+		}
+		
+	}
 
 	public void setRunning(boolean b) {
 		mRun = b;
+	}
+	
+	public Pair<Double, Double> getMetresFromPixels(Pair<Double, Double> pixels) {
+		double x = (pixels.first - buildingPlan.originX * backgroundResizedPx2OriginalPx) / mapPixels2Metres;
+		double y = (pixels.second - buildingPlan.originY * backgroundResizedPx2OriginalPx) / mapPixels2Metres;
+		return new Pair<Double, Double>(x, y);
 	}
 
 	/*
@@ -206,7 +259,7 @@ public class LocalizationViewDrawThread extends Thread {
 			float secondY = (float) (e.to.getPy() * backgroundResizedPx2OriginalPx);
 			drawLine(canvas, firstX, firstY, secondX, secondY, 255, 0, 0);
 		}
-
+		
 		// Draw known WiFi scan locations as red X
 		synchronized (wifiScanLocations) {
 
@@ -216,6 +269,28 @@ public class LocalizationViewDrawThread extends Thread {
 
 				drawX(canvas, drawX, drawY, drawSize, 255, 0, 0);
 			}
+		}
+		
+		// Draw navigation plan
+		synchronized (pathToGoal) {
+			boolean firstLocation = true;
+			float prevDrawX = 0.0f, prevDrawY = 0.0f;
+			for (Pair<Double, Double> p : pathToGoal) {
+				float drawX = (float) (p.first * mapPixels2Metres + centerX);
+				float drawY = (float) (p.second * mapPixels2Metres + centerY);
+
+				drawCircle(canvas, drawX, drawY, drawSize/2, 0, 255, 0);
+
+				if (!firstLocation) {
+					drawLine(canvas, prevDrawX, prevDrawY, drawX, drawY, 0,
+							255, 0, 4);
+				} else
+					firstLocation = false;
+
+				prevDrawX = drawX;
+				prevDrawY = drawY;
+			}
+
 		}
 
 		// Draw locations as blue circles connected by blue lines
@@ -238,6 +313,8 @@ public class LocalizationViewDrawThread extends Thread {
 				prevDrawY = drawY;
 			}
 		}
+		
+		
 
 	}
 
@@ -247,11 +324,21 @@ public class LocalizationViewDrawThread extends Thread {
 	 */
 	private void drawLine(Canvas canvas, float x1, float y1, float x2,
 			float y2, int r, int g, int b) {
+		drawLine(canvas, x1, y1, x2, y2, r, g, b, 0);
+	}
+	
+	/**
+	 * Draws a line on canvas between points (x1,y1) and (x2,y2) with color
+	 * (r,g,b)
+	 */
+	private void drawLine(Canvas canvas, float x1, float y1, float x2,
+			float y2, int r, int g, int b, int strokeWidth) {
 		canvas.save();
 
 		Paint mLinePaint = new Paint();
 		mLinePaint.setAntiAlias(true);
 		mLinePaint.setARGB(255, r, g, b);
+		mLinePaint.setStrokeWidth(strokeWidth);
 
 		canvas.drawLine(x1, y1, x2, y2, mLinePaint);
 
@@ -296,12 +383,6 @@ public class LocalizationViewDrawThread extends Thread {
 		canvas.restore();
 	}
 
-	// public boolean isInsideBackgroundImage(float y) {
-	// Log.d(TAG, "isInsideBackgroundImage: " + y + " & " +
-	// mBackgroundImage.getHeight());
-	// if ( y > mBackgroundImage.getHeight())
-	// return false;
-	// return true;
-	// }
+	
 
 }

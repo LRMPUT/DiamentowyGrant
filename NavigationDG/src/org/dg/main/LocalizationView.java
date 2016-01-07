@@ -23,13 +23,12 @@ import android.view.SurfaceView;
 import android.util.Pair;
 
 public class LocalizationView extends SurfaceView implements SurfaceHolder.Callback{
-	private static final String TAG = "LocalizationView";
-	
-	
-	
+	private static final String moduleLogName = "LocalizationView";
 	
 	
 	private LocalizationViewDrawThread drawThread;
+	private double goalX = 0.0, goalY = 0.0;
+	private boolean goalSet = false;
 	
 	public LocalizationView(Context context, AttributeSet attrs) {
 		super(context, attrs);
@@ -55,11 +54,7 @@ public class LocalizationView extends SurfaceView implements SurfaceHolder.Callb
 	}
 
 	public void setBuildingPlan(BuildingPlan buildingPlan_) {
-		drawThread.buildingPlan = buildingPlan_;
-		drawThread.mapPixels2Metres=buildingPlan_.oldMapPixels2Metres;
-		drawThread.backgroundResizedPx2OriginalPx = buildingPlan_.backgroundResizedPx2OriginalPx;
-		drawThread.mBackgroundImageDraw = buildingPlan_.mBackgroundImage;
-		drawThread.refreshDrawingSizes();
+		drawThread.setBuildingPlan(buildingPlan_);
 	}
 	
 	@Override
@@ -94,13 +89,32 @@ public class LocalizationView extends SurfaceView implements SurfaceHolder.Callb
 
 	@Override
 	public boolean onTouchEvent(MotionEvent event) {
-		if ( event.getRawY() < 920)
-			drawThread.zoom += 0.1; 
-		else
-			drawThread.zoom -= 0.1; 
-		drawThread.refreshDrawingSizes();
-		Log.d(TAG, "onTouch! Zoom = " + drawThread.zoom);
+		
+		goalX = event.getX();
+		goalY = event.getY();
+		goalSet = true;
+		
+//		if ( event.getRawY() < 920)
+//			drawThread.increaseZoom();
+//		else
+//			drawThread.decreaseZoom();
+//		
+//		Log.d(TAG, "onTouch! Zoom = ");
+		Log.d(moduleLogName, "Clicked!");
 		return false;
 		
+	}
+	
+	public boolean isGoalSet() {
+		return goalSet;
+	}
+	
+	public Pair<Double, Double> getGoal() {
+		goalSet = false;
+		return drawThread.getMetresFromPixels(new Pair<Double, Double>(goalX, goalY));
+	}
+
+	public void setPathToGoal(List<Pair<Double, Double>> pathToGoal) {
+		drawThread.setPathToGoal(pathToGoal);
 	}
 }

@@ -204,7 +204,8 @@ public class PriorMapHandler {
 			Scanner mapScanner) {
 		double idFrom = mapScanner.nextInt();
 		double idTo = mapScanner.nextInt();
-		Log.d(moduleLogName, "EDGE from " + idFrom + " to " + idTo);
+		double distance = mapScanner.nextDouble();
+		Log.d(moduleLogName, "EDGE from " + idFrom + " to " + idTo + " dist: " + distance);
 
 		Node first = null, second = null;
 		for (Node n : buildingPlan.nodeLocations) {
@@ -213,7 +214,7 @@ public class PriorMapHandler {
 			else if (n.getId() == idTo)
 				second = n;
 		}
-		buildingPlan.edgeLocations.add(new Edge(first, second));
+		buildingPlan.edgeLocations.add(new Edge(first, second, distance));
 	}
 
 	/**
@@ -229,7 +230,7 @@ public class PriorMapHandler {
 		double y = mapScanner.nextDouble();
 		Log.d(moduleLogName, "NODE id=" + id + " pixel pos (" + px + ", " + py
 				+ "), metre pos (" + x + ", " + y + ")");
-		buildingPlan.nodeLocations.add(new Node(id, px, py));
+		buildingPlan.nodeLocations.add(new Node(id, px, py, x, y));
 	}
 
 	/**
