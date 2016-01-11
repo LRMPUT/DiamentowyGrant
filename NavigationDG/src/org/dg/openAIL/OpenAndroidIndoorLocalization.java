@@ -16,6 +16,7 @@ import org.dg.graphManager.Vertex;
 import org.dg.graphManager.wiFiMeasurement;
 import org.dg.inertialSensors.InertialSensors;
 import org.dg.main.LocalizationView;
+import org.dg.openAIL.Playback.RawData;
 import org.dg.wifi.WifiScanner;
 import org.opencv.core.Mat;
 import org.opencv.core.Point3;
@@ -104,7 +105,16 @@ public class OpenAndroidIndoorLocalization {
 		
 		// Create QRCodeDecoder
 		qrCodeDecoder = new QRCodeDecoderClass(context);
-
+		
+		
+		// TODO
+		Playback playback = new Playback();
+		Log.d(moduleLogName, "playbackInitialized!");
+		for (int i=0;i<10;i++) {
+			 RawData data = playback.getNextData();
+			 Log.d(moduleLogName, "Read: " + data.timestamp + " type: " + data.sourceType );
+		}
+		
 	}
 
 	/**

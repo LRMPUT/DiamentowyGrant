@@ -80,22 +80,6 @@ public class WifiScanner extends BroadcastReceiver {
 
 		// File to save results
 		saveRawData = wifiPlaceRecognitionParameters.recordRawData;
-		if (saveRawData)
-		{
-			String fileName = "";
-			fileName = Environment.getExternalStorageDirectory().toString()
-					+ "/OpenAIL/rawData/wifi.log";
-	
-			// RawMeasurements
-			FileOutputStream foutStream;
-			try {
-				foutStream = new FileOutputStream(fileName);
-				outStreamRawData = new PrintStream(foutStream);
-			} catch (FileNotFoundException e1) {
-				// TODO Auto-generated catch block
-				e1.printStackTrace();
-			}
-		}
 	}
 
 	public WifiScanner singleScan(boolean _singleScan) {
@@ -131,6 +115,24 @@ public class WifiScanner extends BroadcastReceiver {
 	}
 
 	public void startScanning() {
+		if (continuousScanning && saveRawData) {
+
+			String fileName = "";
+			fileName = Environment.getExternalStorageDirectory().toString()
+					+ "/OpenAIL/rawData/wifi.log";
+
+			// RawMeasurements
+			FileOutputStream foutStream;
+			try {
+				foutStream = new FileOutputStream(fileName);
+				outStreamRawData = new PrintStream(foutStream);
+			} catch (FileNotFoundException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+
+		}
+		
 		if (id == 0)
 			startTimestampOfWiFiScanning = System.currentTimeMillis();
 		startTimestampOfCurrentScan = System.currentTimeMillis();
@@ -276,11 +278,9 @@ public class WifiScanner extends BroadcastReceiver {
 	
 					// Save BSSID, SSID, lvl and frequency
 					for (int i = 0; i < wifiList.size(); i++) {
-						ScanResult scanResult = wifiList.get(i);
+						ScanResult scanResult = wifiList.get(i); //convertLevelToMeters(scanResult.level)  + "\t" + scanResult.frequency 
 						outStreamRawData.print(scanResult.BSSID + "\t"
-								+ convertLevelToMeters(scanResult.level) + "\t"
-								+ scanResult.SSID + "\t" + scanResult.level + "\t"
-								+ scanResult.frequency + "\n");
+								+ scanResult.SSID + "\t" + scanResult.level + "\n");
 					}
 				}
 				

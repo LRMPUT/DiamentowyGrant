@@ -292,7 +292,7 @@ public class PriorMapHandler {
 	 * @param wifiCount
 	 * @param scannedWiFisList
 	 */
-	private List<MyScanResult> extractListOfWiFiNetworksFromFile(
+	public static List<MyScanResult> extractListOfWiFiNetworksFromFile(
 			Scanner wifiScanScanner, int wifiCount) {
 
 		List<MyScanResult> scannedWiFisList = new ArrayList<MyScanResult>();
