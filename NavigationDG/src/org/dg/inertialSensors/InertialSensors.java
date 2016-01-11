@@ -421,6 +421,9 @@ public class InertialSensors {
 			closeStreams();
 	}
 
+	public void setStartTime() {
+		timestampStart = System.nanoTime();
+	}
 
 	public float[] getCurrentAEKFOrient() {
 		float[] orientToReturn = null;
@@ -487,70 +490,74 @@ public class InertialSensors {
 			folder.mkdir();
 		}
 
-		File dir = new File(String.format(
-				Environment.getExternalStorageDirectory() + "/OpenAIL/inertialSensors"));
-		if (!dir.exists()) {
-			dir.mkdirs();
+		File dirInertialSensors = new File(folder.getAbsolutePath() + "/inertialSensors");
+		if (!dirInertialSensors.exists()) {
+			dirInertialSensors.mkdirs();
+		}
+		
+		File dirRawData = new File(folder.getAbsolutePath() + "/rawData");
+		if (!dirRawData.exists()) {
+			dirRawData.mkdirs();
 		}
 
 		if ( activeStreams[ActiveStreamNames.ACCELEROMETER.ordinal()] ) {
-			String fileName = dir.toString() + "/acc.log";
+			String fileName = dirRawData.toString() + "/acc.log";
 			FileOutputStream faccStream = new FileOutputStream(fileName);
 			accStream = new PrintStream(faccStream);
 		}
 
 		if ( activeStreams[ActiveStreamNames.GYROSCOPE.ordinal()] ) {
-			String fileName = dir.toString() + "/gyro.log";
+			String fileName = dirRawData.toString() + "/gyro.log";
 			FileOutputStream fgyroStream = new FileOutputStream(fileName);
 			gyroStream = new PrintStream(fgyroStream);
 		}
 
 		if ( activeStreams[ActiveStreamNames.MAGNETOMETER.ordinal()] ) {
-			String fileName = dir.toString() + "/mag.log";
+			String fileName = dirRawData.toString() + "/mag.log";
 			FileOutputStream fmagStream = new FileOutputStream(fileName);
 			magStream = new PrintStream(fmagStream);
 		}
 
 		if ( activeStreams[ActiveStreamNames.ACCELEROMETER_WITHOUT_GRAVITY.ordinal()] ) {
-			String fileName = dir.toString() + "/accwog.log";
+			String fileName = dirRawData.toString() + "/accwog.log";
 			FileOutputStream faccwogStream = new FileOutputStream(fileName);
 			accwogStream = new PrintStream(faccwogStream);
 		}
 
 		if ( activeStreams[ActiveStreamNames.ORIENTATION_ANDROID.ordinal()] ) {
-			String fileName = dir.toString() + "/orientAndroid.log";
+			String fileName = dirRawData.toString() + "/orientAndroid.log";
 			FileOutputStream forientAndroidStream = new FileOutputStream(fileName);
 			orientAndroidStream = new PrintStream(forientAndroidStream);
 		}
 		
 		if ( activeStreams[ActiveStreamNames.ORIENTATION_ANDROID_EULER.ordinal()] ) {
-			String fileName = dir.toString() + "/orientAndroidEuler.log";
+			String fileName = dirRawData.toString() + "/orientAndroidEuler.log";
 			FileOutputStream forientAndroidEulerStream = new FileOutputStream(fileName);
 			orientAndroidEulerStream = new PrintStream(forientAndroidEulerStream);
 		}
 
 		if (performOrientationEstimation) {
 			if ( activeStreams[ActiveStreamNames.ORIENTATION_AEKF.ordinal()] ) {
-				String fileName = dir.toString() + "/myOrientAEKF.log";
+				String fileName = dirInertialSensors.toString() + "/myOrientAEKF.log";
 				FileOutputStream fmyOrientStream = new FileOutputStream(fileName);
 				myOrientAEKFStream = new PrintStream(fmyOrientStream);
 			}
 
 			if (activeStreams[ActiveStreamNames.ORIENTATION_AEKF_EULER.ordinal()]) {
-				String fileName = dir.toString() + "/myOrientAEKFEuler.log";
+				String fileName = dirInertialSensors.toString() + "/myOrientAEKFEuler.log";
 				FileOutputStream fmyOrientEulerStream = new FileOutputStream(
 						fileName);
 				myOrientAEKFEulerStream = new PrintStream(fmyOrientEulerStream);
 			}
 			
 			if ( activeStreams[ActiveStreamNames.ORIENTATION_COMPLEMENTARY.ordinal()] ) {
-				String fileName = dir.toString() + "/myOrientComplementary.log";
+				String fileName = dirInertialSensors.toString() + "/myOrientComplementary.log";
 				FileOutputStream fmyOrientComplementaryStream = new FileOutputStream(fileName);
 				myOrientComplementaryStream = new PrintStream(fmyOrientComplementaryStream);
 			}
 
 			if ( activeStreams[ActiveStreamNames.ORIENTATION_COMPLEMENTARY_EULER.ordinal()] ) {
-				String fileName = dir.toString() + "/myOrientComplementaryEuler.log";
+				String fileName = dirInertialSensors.toString() + "/myOrientComplementaryEuler.log";
 				FileOutputStream fmyOrientComplementaryEulerStream = new FileOutputStream(
 						fileName);
 				myOrientComplementaryEulerStream = new PrintStream(fmyOrientComplementaryEulerStream);
@@ -559,7 +566,7 @@ public class InertialSensors {
 		}
 		
 		if ( activeStreams[ActiveStreamNames.PRESSURE.ordinal()] ) {
-			String fileName = dir.toString() + "/pressure.log";
+			String fileName = dirRawData.toString() + "/pressure.log";
 			FileOutputStream fpressureStream = new FileOutputStream(fileName);
 			pressureStream = new PrintStream(fpressureStream);
 		}

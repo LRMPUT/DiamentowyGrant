@@ -204,6 +204,9 @@ public class ScreenSlidePageFragment extends Fragment {
 			// Side View 8 - Decode QR code
 			initButtonQRCode(rootView, R.id.buttonSideView8);
 			
+			// Record All
+			initButtonRecordAll(rootView, R.id.buttonRecordAll);
+			
 
 		} else if (mPageNumber == 2 ) {
 			rootView = (ViewGroup) inflater.inflate(
@@ -613,6 +616,29 @@ public class ScreenSlidePageFragment extends Fragment {
 			}
 		});
 	}
+	
+	// Button record all
+	private void initButtonRecordAll(final ViewGroup rootView, final int id) {
+		Button buttonRecordAll = (Button) rootView.findViewById(id);
+		buttonRecordAll.setText("Start record all");
+		buttonRecordAll.setOnClickListener(new OnClickListener() {
+			public void onClick(View v) {
+				
+				Button buttonRecordAll = (Button) rootView
+						.findViewById(id);
+				if (buttonRecordAll.getText()
+						.toString()
+						.equals("Start record all")) {
+					buttonRecordAll
+							.setText("Stop record all");
+				} else {
+					buttonRecordAll
+							.setText("Start record all");
+				}
+				onSomeClick(v, "Record all");
+			}
+		});
+		}
 
 	/**
 	 * Returns the page number represented by this fragment object.

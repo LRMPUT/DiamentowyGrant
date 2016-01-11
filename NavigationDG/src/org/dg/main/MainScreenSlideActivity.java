@@ -418,10 +418,35 @@ public class MainScreenSlideActivity extends Activity implements
 			
 			Mat image = getCurPreviewImage();
 			
-			Log.e(TAG, "Calling decode");
+			Log.v(TAG, "Calling decode");
 			Integer positionId = openAIL.graphManager.getCurrentPoseId();
 			openAIL.qrCodeDecoder.decode(positionId, image);
 			
+			
+		}
+		
+		// Button record all
+		if (link.contains("Record all")) {
+			Log.v(TAG, "RECORDING ALL!");
+			
+			openAIL.synchronizeModuleTime();
+			
+			if (openAIL.inertialSensors.getState() == false) {
+
+				openAIL.inertialSensors.save2file(true);
+				openAIL.inertialSensors.start();
+
+			} else {
+
+				openAIL.inertialSensors.stop();
+			}
+			
+			if (openAIL.wifiScanner.getRunningState()) {
+				openAIL.wifiScanner.stopScanning();
+			} else {
+				openAIL.wifiScanner.singleScan(false).continuousScanning(true);
+				openAIL.wifiScanner.startScanning();
+			}
 			
 		}
 

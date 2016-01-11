@@ -54,6 +54,9 @@ public class WifiScanner extends BroadcastReceiver {
 
 	// File to save data
 	PrintStream outStreamRawData = null;
+	
+	// Should we save raw WiFi data
+	boolean saveRawData = false;
 
 	public WifiScanner(
 			WifiManager _wifiManager,
@@ -76,19 +79,22 @@ public class WifiScanner extends BroadcastReceiver {
 		}
 
 		// File to save results
-		String fileName = "";
-		fileName = String.format(Locale.getDefault(), Environment
-				.getExternalStorageDirectory().toString()
-				+ "/OpenAIL/WiFi/rawMeasurements.wifi", id);
-
-		// RawMeasurements
-		FileOutputStream foutStream;
-		try {
-			foutStream = new FileOutputStream(fileName);
-			outStreamRawData = new PrintStream(foutStream);
-		} catch (FileNotFoundException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
+		saveRawData = wifiPlaceRecognitionParameters.recordRawData;
+		if (saveRawData)
+		{
+			String fileName = "";
+			fileName = Environment.getExternalStorageDirectory().toString()
+					+ "/OpenAIL/rawData/wifi.log";
+	
+			// RawMeasurements
+			FileOutputStream foutStream;
+			try {
+				foutStream = new FileOutputStream(fileName);
+				outStreamRawData = new PrintStream(foutStream);
+			} catch (FileNotFoundException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
 		}
 	}
 
@@ -240,74 +246,81 @@ public class WifiScanner extends BroadcastReceiver {
 		tmp = tmp / 40;
 		return Math.pow(10, tmp);
 	}
+	
+	public void setStartTime() {
+		startTimestampOfGlobalTime = System.currentTimeMillis();
+	}
 
 	@Override
 	public void onReceive(Context arg0, Intent arg1) {
 		Log.d("WiFi", "Scan finished\n");
-		try {
+		if (waitingForScan) {
+			try {
 
-			// Save the timestamp of start + length of the scan
-			outStreamRawData.print(Integer.toString(graphPoseId)
-					+ "\t"
-					+ Integer.toString(id)
-					+ "\t"
-					+ Long.toString(startTimestampOfCurrentScan
-							- startTimestampOfWiFiScanning
-							+ startTimestampOfGlobalTime)
-					+ "\t"
-					+ Long.toString(System.currentTimeMillis()
-							- startTimestampOfCurrentScan) + "\t");
-
-			// Process list of detected WiFis
-			List<ScanResult> wifiList = wifiManager.getScanResults();
-			Log.d("WiFi", "Found " + wifiList.size() + " wifis \n");
-			outStreamRawData.print(wifiList.size() + "\n");
-
-			// Save BSSID, SSID, lvl and frequency
-			for (int i = 0; i < wifiList.size(); i++) {
-				ScanResult scanResult = wifiList.get(i);
-				outStreamRawData.print(scanResult.BSSID + "\t"
-						+ convertLevelToMeters(scanResult.level) + "\t"
-						+ scanResult.SSID + "\t" + scanResult.level + "\t"
-						+ scanResult.frequency + "\n");
-			}
-
-			// Save data for graph
-			graphWiFiList.clear();
-			for (int i = 0; i < wifiList.size(); i++) {
-				// Getting network
-				ScanResult scanResult = wifiList.get(i);
-				// Convert MAC to index
-				int index = bssid2name.indexOf(scanResult.BSSID);
-				if (index == -1) {
-					bssid2name.add(scanResult.BSSID);
-					index = bssid2name.indexOf(scanResult.BSSID);
+				// Process list of detected WiFis
+				List<ScanResult> wifiList = wifiManager.getScanResults();
+				Log.d("WiFi", "Found " + wifiList.size() + " wifis \n");
+				
+				if (saveRawData)
+				{
+					outStreamRawData.print(Integer.toString(graphPoseId)
+							+ "\t"
+							+ Integer.toString(id)
+							+ "\t"
+							+ Long.toString(startTimestampOfCurrentScan
+									- startTimestampOfGlobalTime)
+							+ "\t"
+							+ Long.toString(System.currentTimeMillis()
+									- startTimestampOfGlobalTime) + "\t");
+					outStreamRawData.print(wifiList.size() + "\n");
+	
+					// Save BSSID, SSID, lvl and frequency
+					for (int i = 0; i < wifiList.size(); i++) {
+						ScanResult scanResult = wifiList.get(i);
+						outStreamRawData.print(scanResult.BSSID + "\t"
+								+ convertLevelToMeters(scanResult.level) + "\t"
+								+ scanResult.SSID + "\t" + scanResult.level + "\t"
+								+ scanResult.frequency + "\n");
+					}
 				}
-				// Convert lvl to meters
-				double distance = convertLevelToMeters(scanResult.level);
-				// Add to list
-				graphWiFiList.add(new wiFiMeasurement(index + 10000, distance));
+				
+				// Save data for graph
+				graphWiFiList.clear();
+				for (int i = 0; i < wifiList.size(); i++) {
+					// Getting network
+					ScanResult scanResult = wifiList.get(i);
+					// Convert MAC to index
+					int index = bssid2name.indexOf(scanResult.BSSID);
+					if (index == -1) {
+						bssid2name.add(scanResult.BSSID);
+						index = bssid2name.indexOf(scanResult.BSSID);
+					}
+					// Convert lvl to meters
+					double distance = convertLevelToMeters(scanResult.level);
+					// Add to list
+					graphWiFiList.add(new wiFiMeasurement(index + 10000,
+							distance));
+				}
+				graphWiFiListReady = true;
+
+				// Save measurement
+				previousScanMtx.acquire();
+				previousWiFiList = wifiList;
+				previousScanMtx.release();
+
+				newMeasurement = true;
+
+				Toast toast = Toast.makeText(arg0.getApplicationContext(),
+						"WiFi scan finished", Toast.LENGTH_SHORT);
+				toast.show();
+			} catch (Exception e) {
+				Log.d("WiFi", "Scanning failed: " + e.getMessage() + "\n");
+
+				Toast toast = Toast.makeText(arg0.getApplicationContext(),
+						"WiFi scan FAILED", Toast.LENGTH_SHORT);
+				toast.show();
 			}
-			graphWiFiListReady = true;
-
-			// Save measurement
-			previousScanMtx.acquire();
-			previousWiFiList = wifiList;
-			previousScanMtx.release();
-
-			newMeasurement = true;
-			
-			Toast toast = Toast.makeText(arg0.getApplicationContext(),
-					"WiFi scan finished", Toast.LENGTH_SHORT);
-			toast.show();
-		} catch (Exception e) {
-			Log.d("WiFi", "Scanning failed: " + e.getMessage() + "\n");
-			
-			Toast toast = Toast.makeText(arg0.getApplicationContext(),
-					"WiFi scan FAILED", Toast.LENGTH_SHORT);
-			toast.show();
 		}
-
 		
 
 		// Prepare for next measurement

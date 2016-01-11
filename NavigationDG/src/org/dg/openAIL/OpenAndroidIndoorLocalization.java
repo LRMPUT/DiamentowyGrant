@@ -15,7 +15,6 @@ import org.dg.graphManager.GraphManager;
 import org.dg.graphManager.Vertex;
 import org.dg.graphManager.wiFiMeasurement;
 import org.dg.inertialSensors.InertialSensors;
-import org.dg.main.Edge;
 import org.dg.main.LocalizationView;
 import org.dg.wifi.WifiScanner;
 import org.opencv.core.Mat;
@@ -70,6 +69,9 @@ public class OpenAndroidIndoorLocalization {
 	
 	// Context for toasts
 	Context context;
+	
+	// Timestamp
+	long processingStartTimestamp = 0;
 
 	/*
 	 * Creates OpenAIL, loads settings and initializes graph optimization, 
@@ -128,7 +130,9 @@ public class OpenAndroidIndoorLocalization {
 		// Let's read map plan
 		BuildingPlan buildingPlan = priorMapHandler.loadCorridorMap(parameters.mainProcessing.priorMapName);
 		localizationView.setBuildingPlan(buildingPlan);
-		navigation = new Navigation(buildingPlan);
+		
+		if (parameters.mainProcessing.useNavigation)
+			navigation = new Navigation(buildingPlan);
 		
 		// Creating new graph
 		graphManager.start();
@@ -158,6 +162,9 @@ public class OpenAndroidIndoorLocalization {
 			}
 			localizationView.setWiFiScanLocations(wifiScanLocations);
 		}
+		
+		// Synchronize times
+		synchronizeModuleTime();
 
 		// Start WiFi recognition
 		wifiScanner.startNewPlaceRecognitionThread();
@@ -179,6 +186,15 @@ public class OpenAndroidIndoorLocalization {
 			Mat image = preview.getCurPreviewImage();
 			visualPlaceRecognition.savePlace(0, 0, 0, image);
 		}
+	}
+
+	/**
+	 * We set the same time for all modules
+	 */
+	public void synchronizeModuleTime() {
+		processingStartTimestamp = getCurrentTimestamp();
+		inertialSensors.setStartTime();
+		wifiScanner.setStartTime();
 	}
 
 	/*
@@ -379,7 +395,7 @@ public class OpenAndroidIndoorLocalization {
 			
 			
 			// Navigation part TODO: STILL TESTING
-			if( localizationView.isGoalSet() ) {
+			if( parameters.mainProcessing.useNavigation && localizationView.isGoalSet() ) {
 				Pair<Double, Double> goal = localizationView.getGoal();
 				
 				Vertex v = graphManager.getCurrentPoseEstimate();
@@ -451,6 +467,9 @@ public class OpenAndroidIndoorLocalization {
 		return null;
 	}
 
+	private long getCurrentTimestamp() {
+		return System.currentTimeMillis();
+	}
 
 	/**
 	 *  Method used to create directories if those do not exist

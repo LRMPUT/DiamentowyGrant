@@ -26,6 +26,7 @@ public class ConfigurationReader {
 			public boolean usePriorMap;
 			int imageCaptureStep;
 			double imageCaptureVarianceThreshold;
+			public boolean useNavigation;
 		}	
 		
 		public class InertialSensors {
@@ -56,6 +57,7 @@ public class ConfigurationReader {
 		
 		public class WiFiPlaceRecognition {
 			public boolean useModule;
+			public boolean recordRawData;
 			public int	maxPlaceDatabaseSize;
 			public int	maxQueueSize; 
 			public double fractionOfQueueAfterReduction;
@@ -113,7 +115,8 @@ public class ConfigurationReader {
 				"\n--- priorMapName=" + parameters.mainProcessing.priorMapName + 
 				"\n--- usePriorMap=" + parameters.mainProcessing.usePriorMap +
 				"\n--- imageCaptureStep=" + parameters.mainProcessing.imageCaptureStep +
-				"\n--- imageCaptureVarianceThreshold=" + parameters.mainProcessing.imageCaptureVarianceThreshold);
+				"\n--- imageCaptureVarianceThreshold=" + parameters.mainProcessing.imageCaptureVarianceThreshold + 
+				"\n--- useNavigation=" + parameters.mainProcessing.useNavigation);
 		
 		Log.d(moduleLogName, "InertialSensors:" +
 				"\n--- useModule=" + parameters.inertialSensors.useModule + 
@@ -146,6 +149,7 @@ public class ConfigurationReader {
 				
 		Log.d(moduleLogName, "WiFiPlaceRecognition:" +
 				"\n--- useModule=" + parameters.wifiPlaceRecognition.useModule +
+				"\n--- recordRawData=" + parameters.wifiPlaceRecognition.recordRawData +
 				"\n--- maxPlaceDatabaseSize=" + parameters.wifiPlaceRecognition.maxPlaceDatabaseSize +
 				"\n--- maxQueueSize=" + parameters.wifiPlaceRecognition.maxQueueSize +
 				"\n--- fractionOfQueueAfterReduction=" + parameters.wifiPlaceRecognition.fractionOfQueueAfterReduction +
@@ -202,6 +206,7 @@ public class ConfigurationReader {
 		String usePriorMapString = parser.getAttributeValue(null, "usePriorMap");
 		String imageCaptureStepString = parser.getAttributeValue(null, "imageCaptureStep");
 		String imageCaptureVarianceThresholdString = parser.getAttributeValue(null, "imageCaptureVarianceThreshold");
+		String useNavigationString = parser.getAttributeValue(null, "useNavigation");
 		
 		// Logging those values
 		Log.d(moduleLogName, "frequencyOfNewDataQuery = " + frequencyOfNewDataQueryString);
@@ -209,12 +214,14 @@ public class ConfigurationReader {
 		Log.d(moduleLogName, "usePriorMap = " + usePriorMapString);
 		Log.d(moduleLogName, "imageCaptureStep = " + imageCaptureStepString);
 		Log.d(moduleLogName, "imageCaptureVarianceThreshold = " + imageCaptureVarianceThresholdString);
+		Log.d(moduleLogName, "useNavigation = " + useNavigationString);
 
 		// Storing read values
 		parameters.mainProcessing.frequencyOfNewDataQuery =  Double.parseDouble(frequencyOfNewDataQueryString);
 		parameters.mainProcessing.usePriorMap = usePriorMapString.equals("True");
 		parameters.mainProcessing.imageCaptureStep = Integer.parseInt(imageCaptureStepString);
 		parameters.mainProcessing.imageCaptureVarianceThreshold =  Double.parseDouble(imageCaptureVarianceThresholdString);
+		parameters.mainProcessing.useNavigation = useNavigationString.equals("True");
 		
 		parser.nextTag();
 		parser.require(XmlPullParser.END_TAG, ns, "MainProcessing");
@@ -353,6 +360,7 @@ public class ConfigurationReader {
 
 		// Reading attributes
 		String useModuleString = parser.getAttributeValue(null, "useModule");
+		String recordRawDataString = parser.getAttributeValue(null, "recordRawData");
 		String maxPlaceDatabaseSizeString = parser.getAttributeValue(null, "maxPlaceDatabaseSize"); 
 		String maxQueueSizeString = parser.getAttributeValue(null, "maxQueueSize"); 
 		String fractionOfQueueAfterReductionString = parser.getAttributeValue(null, "fractionOfQueueAfterReduction");
@@ -362,6 +370,7 @@ public class ConfigurationReader {
 		
 		// Logging those values
 		Log.d(moduleLogName, "useModule = " + useModuleString);
+		Log.d(moduleLogName, "recordRawData = " + recordRawDataString);
 		Log.d(moduleLogName, "maxPlaceDatabaseSize = " + maxPlaceDatabaseSizeString);
 		Log.d(moduleLogName, "maxQueueSize = " + maxQueueSizeString);
 		Log.d(moduleLogName, "fractionOfQueueAfterReduction = " + fractionOfQueueAfterReductionString);
@@ -371,6 +380,7 @@ public class ConfigurationReader {
 		
 		// Storing read values
 		parameters.wifiPlaceRecognition.useModule = useModuleString.equals("True");
+		parameters.wifiPlaceRecognition.recordRawData = recordRawDataString.equals("True");
 		parameters.wifiPlaceRecognition.maxPlaceDatabaseSize = Integer.parseInt(maxPlaceDatabaseSizeString);
 		parameters.wifiPlaceRecognition.maxQueueSize = Integer.parseInt(maxQueueSizeString);
 		parameters.wifiPlaceRecognition.fractionOfQueueAfterReduction = Double.parseDouble(fractionOfQueueAfterReductionString);
