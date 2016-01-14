@@ -205,6 +205,7 @@ public class OpenAndroidIndoorLocalization {
 		processingStartTimestamp = getCurrentTimestamp();
 		inertialSensors.setStartTime();
 		wifiScanner.setStartTime();
+		graphManager.setStartTime();
 	}
 
 	/*
@@ -294,6 +295,7 @@ public class OpenAndroidIndoorLocalization {
 				// We need to change yawZ into radians and change direction
 				yawZ = (float) (yawZ * Math.PI / 180.0f);
 
+				graphManager.createNewPose();
 				graphManager.addStepometerMeasurement(distance, yawZ);
 			}
 			
@@ -322,7 +324,8 @@ public class OpenAndroidIndoorLocalization {
 					.getAndClearRecognizedPlacesList();
 			Log.d(moduleLogName, "The placeRecognition thread found "
 					+ recognizedPlaces.size() + " connections");
-			graphManager.addMultipleWiFiFingerprints(recognizedPlaces);
+			if (recognizedPlaces!=null && recognizedPlaces.size() > 0)
+				graphManager.addMultipleWiFiFingerprints(recognizedPlaces);
 			
 			// Check if there is new measurement
 			if (wifiScanner.isNewMeasurement()) {
@@ -339,15 +342,13 @@ public class OpenAndroidIndoorLocalization {
 				// Add new pose to search
 				wifiScanner.addLastScanToRecognition(currentPoseId);
 
-				// TODO!!!!!!
-				// TEMPORAILY DISABLED OPTIMIZATION WITH WIFI FEATURES (BUT
-				// STILL SAVE TO FILE)
-				if (WiFiFeatures) {
+				// Should we add direct links to WiFi networks to the graph
+				if (parameters.wifiPlaceRecognition.directWiFiMeasurements) {
 					// Adding WiFi measurements
 					List<wiFiMeasurement> wifiList = wifiScanner
 							.getGraphWiFiList();
-					// if (wifiList != null)
-					// graphManager.addMultipleWiFiMeasurements(wifiList);
+					 if (wifiList != null)
+						 graphManager.addMultipleWiFiMeasurements(wifiList);
 				}
 			} else if (wifiScanner.getRunningState()) {
 
@@ -379,6 +380,10 @@ public class OpenAndroidIndoorLocalization {
 			if ( recognizedQRCodes.size() > 0) {
 				graphManager.addMultipleQRCodes(recognizedQRCodes);
 			}
+			
+			// Should we show the background plan?
+			boolean showBackgroundPlan = parameters.mainProcessing.showMapWithoutMapConnection || graphManager.isMapConnected() ;
+			localizationView.showBackgroundPlan(showBackgroundPlan);
 			
 			// TODO: Get current estimate of vertices
 			if (graphManager.changeInOptimizedData)

@@ -109,6 +109,10 @@ public class LocalizationView extends SurfaceView implements SurfaceHolder.Callb
 		return goalSet;
 	}
 	
+	public void showBackgroundPlan (boolean showBackgroundPlan) {
+		drawThread.showBackgroundPlan (showBackgroundPlan);
+	}
+	
 	public Pair<Double, Double> getGoal() {
 		goalSet = false;
 		return drawThread.getMetresFromPixels(new Pair<Double, Double>(goalX, goalY));

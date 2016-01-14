@@ -27,6 +27,7 @@ public class ConfigurationReader {
 			int imageCaptureStep;
 			double imageCaptureVarianceThreshold;
 			public boolean useNavigation;
+			public boolean showMapWithoutMapConnection;
 		}	
 		
 		public class InertialSensors {
@@ -64,6 +65,7 @@ public class ConfigurationReader {
 			public int	minNumberOfSharedNetworks;
 			public double minPercentOfSharedNetworks;
 			public double maxAvgErrorThreshold;
+			public boolean directWiFiMeasurements;
 		}
 
 		MainProcessing mainProcessing = new MainProcessing();
@@ -116,7 +118,8 @@ public class ConfigurationReader {
 				"\n--- usePriorMap=" + parameters.mainProcessing.usePriorMap +
 				"\n--- imageCaptureStep=" + parameters.mainProcessing.imageCaptureStep +
 				"\n--- imageCaptureVarianceThreshold=" + parameters.mainProcessing.imageCaptureVarianceThreshold + 
-				"\n--- useNavigation=" + parameters.mainProcessing.useNavigation);
+				"\n--- useNavigation=" + parameters.mainProcessing.useNavigation + 
+				"\n--- showMapWithoutMapConnection=" + parameters.mainProcessing.showMapWithoutMapConnection);
 		
 		Log.d(moduleLogName, "InertialSensors:" +
 				"\n--- useModule=" + parameters.inertialSensors.useModule + 
@@ -207,6 +210,7 @@ public class ConfigurationReader {
 		String imageCaptureStepString = parser.getAttributeValue(null, "imageCaptureStep");
 		String imageCaptureVarianceThresholdString = parser.getAttributeValue(null, "imageCaptureVarianceThreshold");
 		String useNavigationString = parser.getAttributeValue(null, "useNavigation");
+		String showMapWithoutMapConnectionString = parser.getAttributeValue(null, "showMapWithoutMapConnection");
 		
 		// Logging those values
 		Log.d(moduleLogName, "frequencyOfNewDataQuery = " + frequencyOfNewDataQueryString);
@@ -215,6 +219,7 @@ public class ConfigurationReader {
 		Log.d(moduleLogName, "imageCaptureStep = " + imageCaptureStepString);
 		Log.d(moduleLogName, "imageCaptureVarianceThreshold = " + imageCaptureVarianceThresholdString);
 		Log.d(moduleLogName, "useNavigation = " + useNavigationString);
+		Log.d(moduleLogName, "showMapWithoutMapConnection = " + showMapWithoutMapConnectionString);
 
 		// Storing read values
 		parameters.mainProcessing.frequencyOfNewDataQuery =  Double.parseDouble(frequencyOfNewDataQueryString);
@@ -222,6 +227,7 @@ public class ConfigurationReader {
 		parameters.mainProcessing.imageCaptureStep = Integer.parseInt(imageCaptureStepString);
 		parameters.mainProcessing.imageCaptureVarianceThreshold =  Double.parseDouble(imageCaptureVarianceThresholdString);
 		parameters.mainProcessing.useNavigation = useNavigationString.equals("True");
+		parameters.mainProcessing.showMapWithoutMapConnection = showMapWithoutMapConnectionString.equals("True");
 		
 		parser.nextTag();
 		parser.require(XmlPullParser.END_TAG, ns, "MainProcessing");
@@ -367,6 +373,8 @@ public class ConfigurationReader {
 		String minNumberOfSharedNetworksString = parser.getAttributeValue(null, "minNumberOfSharedNetworks");
 		String minPercentOfSharedNetworksString = parser.getAttributeValue(null, "minPercentOfSharedNetworks");
 		String maxAvgErrorThresholdString = parser.getAttributeValue(null, "maxAvgErrorThreshold");
+		String directWiFiMeasurementsString = parser.getAttributeValue(null, "directWiFiMeasurements");
+
 		
 		// Logging those values
 		Log.d(moduleLogName, "useModule = " + useModuleString);
@@ -377,6 +385,7 @@ public class ConfigurationReader {
 		Log.d(moduleLogName, "minNumberOfSharedNetworks = " + minNumberOfSharedNetworksString);
 		Log.d(moduleLogName, "minPercentOfSharedNetworks = " + minPercentOfSharedNetworksString);
 		Log.d(moduleLogName, "maxAvgErrorThreshold = " + maxAvgErrorThresholdString);
+		Log.d(moduleLogName, "directWiFiMeasurements = " + directWiFiMeasurementsString);
 		
 		// Storing read values
 		parameters.wifiPlaceRecognition.useModule = useModuleString.equals("True");
@@ -387,6 +396,7 @@ public class ConfigurationReader {
 		parameters.wifiPlaceRecognition.minNumberOfSharedNetworks = Integer.parseInt(minNumberOfSharedNetworksString);
 		parameters.wifiPlaceRecognition.minPercentOfSharedNetworks = Double.parseDouble(minPercentOfSharedNetworksString);
 		parameters.wifiPlaceRecognition.maxAvgErrorThreshold = Double.parseDouble(maxAvgErrorThresholdString);
+		parameters.wifiPlaceRecognition.directWiFiMeasurements = directWiFiMeasurementsString.equals("True");
 				
 		parser.nextTag();
 		parser.require(XmlPullParser.END_TAG, ns, "WiFiPlaceRecognition");

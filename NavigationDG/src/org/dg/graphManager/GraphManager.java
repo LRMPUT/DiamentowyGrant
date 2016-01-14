@@ -53,6 +53,9 @@ public class GraphManager {
 	// Id of the last user vertex
 	int currentPoseId = 0;
 	
+	// Is graph connected to map
+	boolean mapConnected = false;
+	
 	// The starting ids of qr edges
 	int qrCodeId = 20000;
 	
@@ -74,6 +77,10 @@ public class GraphManager {
 	// Current estimate
 	static final Object currentEstimateMtx = new Object();
 	List<Vertex> currentEstimate = new ArrayList<Vertex>();
+	
+	// Timestamps
+	long timestampStart = 0;
+	List<Long> timestamps = new ArrayList<Long>();
 	
 	///
 	/// Methods -- creation/start/destruction
@@ -101,6 +108,9 @@ public class GraphManager {
 	public void start() {
 		Log.d(moduleLogName, "start()");
 		
+		timestamps.clear();
+		currentEstimate.clear();
+		
 		try {
 			File folder = new File(Environment.getExternalStorageDirectory()
 					+ "/OpenAIL");
@@ -125,6 +135,7 @@ public class GraphManager {
 			e.printStackTrace();
 		}
 		
+		mapConnected = false;
 		startOptimizeOnlineThread();
 	}
 	
@@ -148,6 +159,10 @@ public class GraphManager {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		
+		getVerticesEstimates();
+		
+		saveEstimates2file();
 		
 		destroyGraph();
 		
@@ -197,6 +212,11 @@ public class GraphManager {
 		destroyGraph();
 	}
 	
+	public void setStartTime() {
+		timestampStart = System.nanoTime();
+		timestamps.add(Long.valueOf(0));
+	}
+	
 	///
 	/// Methods -- adding positions and measurements
 	/// 
@@ -210,8 +230,13 @@ public class GraphManager {
 		checkGraphExistance();
 		
 		String g2oString = "VERTEX_SE2 " + id + " " + X + " " + Y + " " + Z +"\n";
-		save2file(g2oString);
+		saveGraph2file(g2oString);
 		NDKGraphAddVertexEdge(addrGraph, g2oString);
+	}
+	
+	public void createNewPose() {
+		currentPoseId++;
+		timestamps.add(System.nanoTime() - timestampStart);
 	}
 	
 	/*
@@ -220,7 +245,7 @@ public class GraphManager {
 	public void addStepometerMeasurement(double distance, double theta) {
 		checkGraphExistance();
 		
-		currentPoseId++;
+		
 		// The information value of angle depends on angle
 		float infValueTheta = (float) (Math.PI/2 - theta);
 		if ( infValueTheta  < 0.1f )
@@ -229,7 +254,7 @@ public class GraphManager {
 		String informatiomMatrixOfStep = "1.0 0.0 " + infValueTheta;
 		String edgeStep ="EDGE_SE2:STEP " + (currentPoseId-1) + " " + currentPoseId + " " + distance + " " + theta + " " + informatiomMatrixOfStep + "\n";
 		
-		save2file(edgeStep);
+		saveGraph2file(edgeStep);
 		NDKGraphAddVertexEdge(addrGraph, edgeStep);
 	}
 	
@@ -237,13 +262,17 @@ public class GraphManager {
 	 * adds WiFi fingerprint matches to the graph
 	 */
 	public void addMultipleWiFiFingerprints(List<org.dg.openAIL.IdPair<Integer, Integer>> foundWiFiFingerprintMatches) {
+		checkGraphExistance();
+		Log.d(moduleLogName, "addMultipleWiFiFingerprints - mapConnected");
+		mapConnected = true;
+		
 		String g2oString = "";
 		for (org.dg.openAIL.IdPair<Integer, Integer> placeIds : foundWiFiFingerprintMatches)
 		{
 			String edgeWiFiFingerprint = createWiFiFingerprintEdgeString(placeIds.getFirst(), placeIds.getSecond());
 			g2oString = g2oString + edgeWiFiFingerprint;
 		}
-		save2file(g2oString);
+		saveGraph2file(g2oString);
 		
 		NDKGraphAddVertexEdge(addrGraph, g2oString);
 	}
@@ -252,13 +281,17 @@ public class GraphManager {
 	 * adds VPR matches to the graph
 	 */
 	public void addMultipleVPRMatches(List<org.dg.openAIL.IdPair<Integer, Integer>> foundVPRMatches) {
+		checkGraphExistance();
+		Log.d(moduleLogName, "addMultipleVPRMatches - mapConnected");
+		mapConnected = true;
+		
 		String g2oString = "";
 		for (org.dg.openAIL.IdPair<Integer, Integer> placeIds : foundVPRMatches)
 		{
 			String edgeWiFiFingerprint = createVPRVicinityEdgeString(placeIds.getFirst(), placeIds.getSecond());
 			g2oString = g2oString + edgeWiFiFingerprint;
 		}
-		save2file(g2oString);
+		saveGraph2file(g2oString);
 		
 		NDKGraphAddVertexEdge(addrGraph, g2oString);
 	}
@@ -268,6 +301,8 @@ public class GraphManager {
 	 */
 	public void addMultipleQRCodes(List<Pair<Integer, Point3>> listOfPositions) {
 		checkGraphExistance();
+		Log.d(moduleLogName, "addMultipleQRCodes - mapConnected");
+		mapConnected = true;
 		
 		String g2oString = "";
 		for (Pair<Integer, Point3> measurement: listOfPositions)
@@ -281,7 +316,7 @@ public class GraphManager {
 		
 		Log.d(moduleLogName, g2oString);
 		
-		save2file(g2oString);
+		saveGraph2file(g2oString);
 		NDKGraphAddVertexEdge(addrGraph, g2oString);
 	}
 	
@@ -300,7 +335,7 @@ public class GraphManager {
 		}
 		
 		
-		save2file(g2oString);
+		saveGraph2file(g2oString);
 		NDKGraphAddVertexEdge(addrGraph, g2oString);
 	}
 		
@@ -343,6 +378,14 @@ public class GraphManager {
 		return v;
 	}
 
+	/*
+	 * Checks if we can provide user position on a map
+	 */
+	public boolean isMapConnected() {
+		Log.d(moduleLogName, "isMapConnected: " + mapConnected);
+		return mapConnected;
+	}
+	
 	///
 	/// Methods -- private
 	///
@@ -471,12 +514,55 @@ public class GraphManager {
 	/*
 	 * save string to g2o file
 	 */
-	private void save2file(String g2oString)
+	private void saveGraph2file(String g2oString)
 	{
 		if (graphStream!=null)
 		{
 			graphStream.print(g2oString);
 		}
+	}
+	
+	/*
+	 * Saves the graph position estimates with timestamps to the file
+	 */
+	private void saveEstimates2file()
+	{
+		Log.d(moduleLogName, "saveEstimates2file");
+		Log.d(moduleLogName, "currentEstimate.size()=" + currentEstimate.size() + " vs timestamps.size()=" + timestamps.size());
+		
+		File folder = new File(Environment.getExternalStorageDirectory()
+				+ "/OpenAIL");
+
+		if (!folder.exists()) {
+			folder.mkdir();
+		}
+
+		File dirResult = new File(folder.getAbsolutePath() + "/result");
+		if (!dirResult.exists()) {
+			dirResult.mkdirs();
+		}
+
+
+		try {
+			FileOutputStream faccStream = new FileOutputStream(dirResult
+					+ "/positionEstimates.log");
+			PrintStream positionEstimatesStream = new PrintStream(faccStream);
+			
+			for (int i=0, j=0;i<currentEstimate.size() && j<timestamps.size(); i++)
+			{
+				Vertex v = currentEstimate.get(i);
+				if (v.id < 10000) {
+					positionEstimatesStream.println(timestamps.get(j) + " " + v.id + " " + v.X + " " + v.Y + " " + v.Z);
+					j++;
+				}
+			}
+		
+			positionEstimatesStream.close();
+			
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}
+		
 	}
 
 	/**

@@ -94,7 +94,7 @@ public class WifiScanner extends BroadcastReceiver {
 
 	public WifiScanner startTimestampOfGlobalTime(
 			long _startTimestampOfGlobalTime) {
-		this.startTimestampOfGlobalTime = _startTimestampOfGlobalTime / 1000000;
+		this.startTimestampOfGlobalTime = _startTimestampOfGlobalTime ;
 		return this;
 	}
 
@@ -250,7 +250,7 @@ public class WifiScanner extends BroadcastReceiver {
 	}
 	
 	public void setStartTime() {
-		startTimestampOfGlobalTime = System.currentTimeMillis();
+		startTimestampOfGlobalTime = System.nanoTime();
 	}
 
 	@Override
@@ -272,7 +272,7 @@ public class WifiScanner extends BroadcastReceiver {
 							+ Long.toString(startTimestampOfCurrentScan
 									- startTimestampOfGlobalTime)
 							+ "\t"
-							+ Long.toString(System.currentTimeMillis()
+							+ Long.toString(System.nanoTime()
 									- startTimestampOfGlobalTime) + "\t");
 					outStreamRawData.print(wifiList.size() + "\n");
 	
@@ -326,7 +326,7 @@ public class WifiScanner extends BroadcastReceiver {
 		// Prepare for next measurement
 		waitingForScan = false;
 		if (continuousScanning) {
-			startTimestampOfCurrentScan = System.currentTimeMillis();
+			startTimestampOfCurrentScan = System.nanoTime();
 			boolean value = wifiManager.startScan();
 			waitingForScan = true;
 			Log.d("WiFi",

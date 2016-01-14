@@ -65,6 +65,9 @@ public class LocalizationViewDrawThread extends Thread {
 	// Parameters - drawingFrequency in Hz
 	private double drawingFrequency = 2;
 	
+	// Informs if estimates are w.r.t map
+	private boolean showBackgroundPlan = false;
+	
 	LocalizationViewDrawThread(SurfaceHolder surfaceHolder, Context context,
 			Handler handler) {
 		Log.d(TAG, "Created thread");
@@ -210,6 +213,10 @@ public class LocalizationViewDrawThread extends Thread {
 		mRun = b;
 	}
 	
+	public void showBackgroundPlan (boolean _showBackgroundPlan) {
+		showBackgroundPlan = _showBackgroundPlan;
+	}
+	
 	public Pair<Double, Double> getMetresFromPixels(Pair<Double, Double> pixels) {
 		double x = (pixels.first - buildingPlan.originX * backgroundResizedPx2OriginalPx) / mapPixels2Metres;
 		double y = (pixels.second - buildingPlan.originY * backgroundResizedPx2OriginalPx) / mapPixels2Metres;
@@ -231,7 +238,7 @@ public class LocalizationViewDrawThread extends Thread {
 		canvas.drawColor(Color.BLACK);
 
 		// Draw the background image.
-		if (mBackgroundImageDraw != null)
+		if (mBackgroundImageDraw != null && showBackgroundPlan)
 			canvas.drawBitmap(mBackgroundImageDraw, 0, 0, null);
 
 		// Draw the legend
