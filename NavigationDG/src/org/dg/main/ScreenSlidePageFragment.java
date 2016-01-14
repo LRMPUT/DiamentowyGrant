@@ -21,8 +21,11 @@ import android.view.ViewGroup;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup.LayoutParams;
 import android.widget.Button;
+import android.widget.CompoundButton;
+import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.EditText;
 import android.widget.FrameLayout;
+import android.widget.Switch;
 import android.widget.TextView;
 
 /**
@@ -149,51 +152,36 @@ public class ScreenSlidePageFragment extends Fragment {
 					R.layout.fragment_screen_slide_page1, container, false);
 
 			// 1. Take picute
-			initButtonTakePicture(rootView, R.id.buttonMainView1);
+			initButtonTakePicture(rootView, R.id.buttonTakePicture);
 
 			// 2. Start presenting orientation
-			initButtonStartOrientation(rootView, R.id.buttonMainView2,
-					R.id.buttonMainView3);
+			initSwitchInertialSensors(rootView, R.id.switchInertialSensors);
 
 			// 3. Record inertial sensors
-			initButtonRecordinertialSensors(rootView, R.id.buttonMainView3,
-					R.id.buttonMainView2);
-
-			// 4. Do a single WiFi scan
-			initButtonRecordSingleWiFiScan(rootView, R.id.buttonMainView4);
-
-			// 5. Record continuous WiFi scans
-			initButtonRecordContinuousWiFiScans(rootView, R.id.buttonMainView5,
-					R.id.buttonMainView4);
-
-			// 6. Add WiFi scan to recognition list
-			initButtonAddWiFiScanToRecognition(rootView, R.id.buttonMainView6);
+			initButtonRecordinertialSensors(rootView, R.id.buttonMainView3);
+			
+			// 5. Record continuous WiFi scans TODO!!!
+			initSwitchWiFi(rootView, R.id.switchWiFi);
 
 			// 7. Run stepometer
-			initButtonRunStepometer(rootView, R.id.buttonMainView7);
+			initSwitchStepometer(rootView, R.id.switchStepometer);
 
-			// Side View 1
-			initButtonStartFloorDetection(rootView, R.id.buttonSideView1);
-
+			// Barometer
+			initSwitchBarometer(rootView, R.id.switchBarometer);
+			
 			// Side View 2
-			initButtonStartGraphOnline(rootView, R.id.buttonSideView2);
+			initButtonStartLocalization(rootView, R.id.buttonStartLocalization);
 
 			// Side View 3
 			initButtonStartGraphTestFromFile(rootView, R.id.buttonSideView3);
+			
 
-			// Side View 4 - Add magnetic place to recognition
-			initButtonAddMagneticPlaceToRecognition(rootView,
-					R.id.buttonSideView4);
-
-			// Side View 5 - Run/Stop complementary filter
-			initButtonStartStopComplementaryFilter(rootView,
-					R.id.buttonSideView5);
+			
 			
 			// Side View 6 - Process orientation estimation data from file
 			initButtonStartOrientationEstimationFromFile(rootView, R.id.buttonSideView6);
 			
-			// Side View 7 - Process Visual Place Recognition
-			initButtonVisualPlaceRecognition(rootView, R.id.buttonSideView7);
+
 			
 			// Save WiFi Map
 			initButtonSaveMapPoint(rootView, R.id.buttonSaveMapPoint);
@@ -201,11 +189,30 @@ public class ScreenSlidePageFragment extends Fragment {
 			// Save VPR
 			initButtonSaveVPR(rootView, R.id.buttonSaveVPR);
 			
-			// Side View 8 - Decode QR code
-			initButtonQRCode(rootView, R.id.buttonSideView8);
+	
 			
 			// Record All
 			initButtonRecordAll(rootView, R.id.buttonRecordAll);
+			
+			
+			// 4. Do a single WiFi scan
+//			initButtonRecordSingleWiFiScan(rootView, R.id.buttonMainView4);
+
+			// 6. Add WiFi scan to recognition list
+//			initButtonAddWiFiScanToRecognition(rootView, R.id.buttonMainView6);
+
+			// Side View 4 - Add magnetic place to recognition
+//			initButtonAddMagneticPlaceToRecognition(rootView,
+//					R.id.buttonSideView4);
+
+			// Side View 5 - Run/Stop complementary filter
+//			initButtonStartStopComplementaryFilter(rootView,
+//					R.id.buttonSideView5);
+			// Side View 7 - Process Visual Place Recognition
+//			initButtonVisualPlaceRecognition(rootView, R.id.buttonSideView7);
+			
+			// Side View 8 - Decode QR code
+//			initButtonQRCode(rootView, R.id.buttonSideView8);
 			
 
 		} else if (mPageNumber == 2 ) {
@@ -270,26 +277,19 @@ public class ScreenSlidePageFragment extends Fragment {
 	/**
 	 * @param rootView
 	 */
-	private void initButtonStartOrientation(final ViewGroup rootView,
-			final int id, final int idToBlock) {
-		Button buttonStartOrientation = (Button) rootView.findViewById(id);
-		buttonStartOrientation.setText("Run inertial sensors");
-		buttonStartOrientation.setOnClickListener(new OnClickListener() {
-			public void onClick(View v) {
-				Button inertialSensors = (Button) rootView
-						.findViewById(idToBlock);
-				Button buttonStartOrientation = (Button) rootView
-						.findViewById(id);
-				if (inertialSensors.isEnabled()) {
-					inertialSensors.setEnabled(false);
-					buttonStartOrientation.setText("Stop inertial sensors");
-					onSomeClick(v, "Run inertial sensors");
-				} else {
-					inertialSensors.setEnabled(true);
-					buttonStartOrientation.setText("Run inertial sensors");
-					onSomeClick(v, "Stop inertial sensors");
-				}
-
+	private void initSwitchInertialSensors(final ViewGroup rootView,
+			final int id) {
+		
+		Switch switchInterialSensors = (Switch) rootView.findViewById(id);
+		switchInterialSensors.setChecked(false);
+		switchInterialSensors.setText("Inertial sensors");
+		switchInterialSensors.setOnCheckedChangeListener(new OnCheckedChangeListener() {
+			@Override
+			public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+				if (isChecked)
+					onSomeClick(buttonView, "Run inertial sensors");
+				else
+					onSomeClick(buttonView, "Stop inertial sensors");
 			}
 		});
 	}
@@ -298,7 +298,7 @@ public class ScreenSlidePageFragment extends Fragment {
 	 * 
 	 */
 	private void initButtonRecordinertialSensors(final ViewGroup rootView,
-			final int id, final int idToBlock) {
+			final int id) {
 		Button buttonRecordinertialSensors = (Button) rootView.findViewById(id);
 		buttonRecordinertialSensors.setText("Record inertial sensors");
 
@@ -306,16 +306,14 @@ public class ScreenSlidePageFragment extends Fragment {
 			public void onClick(View v) {
 				Button buttonRecordinertialSensors = (Button) rootView
 						.findViewById(id);
-				Button buttonStartOrientation = (Button) rootView
-						.findViewById(idToBlock);
-				if (buttonStartOrientation.isEnabled()) {
-					buttonStartOrientation.setEnabled(false);
+				if (buttonRecordinertialSensors.isEnabled()) {
+					buttonRecordinertialSensors.setEnabled(false);
 					buttonRecordinertialSensors
 							.setText("Stop record inertial sensors");
 					onSomeClick(v, "Start record inertial sensors");
 
 				} else {
-					buttonStartOrientation.setEnabled(true);
+					buttonRecordinertialSensors.setEnabled(true);
 					buttonRecordinertialSensors
 							.setText("Record inertial sensors");
 					onSomeClick(v, "Stop record inertial sensors");
@@ -325,104 +323,29 @@ public class ScreenSlidePageFragment extends Fragment {
 		});
 	}
 
-	private void initButtonRecordSingleWiFiScan(final ViewGroup rootView, int id) {
-		Button buttonRecordSingleWiFiScan = (Button) rootView.findViewById(id);
-		buttonRecordSingleWiFiScan.setText("Do a single WiFi scan");
-		buttonRecordSingleWiFiScan.setOnClickListener(new OnClickListener() {
-			public void onClick(View v) {
-				onSomeClick(v, "Do a single WiFi scan");
-			}
-		});
-	}
+//	private void initButtonRecordSingleWiFiScan(final ViewGroup rootView, int id) {
+//		Button buttonRecordSingleWiFiScan = (Button) rootView.findViewById(id);
+//		buttonRecordSingleWiFiScan.setText("Do a single WiFi scan");
+//		buttonRecordSingleWiFiScan.setOnClickListener(new OnClickListener() {
+//			public void onClick(View v) {
+//				onSomeClick(v, "Do a single WiFi scan");
+//			}
+//		});
+//	}
 
-	private void initButtonRecordContinuousWiFiScans(final ViewGroup rootView,
-			final int id, final int idToBlock) {
-		Button buttonRecordContinuousWiFiScans = (Button) rootView
-				.findViewById(id);
-		buttonRecordContinuousWiFiScans.setText("Start WiFi scans");
-		buttonRecordContinuousWiFiScans
-				.setOnClickListener(new OnClickListener() {
-					public void onClick(View v) {
-						Button buttonRecordContinuousWiFiScans = (Button) rootView
-								.findViewById(id);
-						Button buttonRecordSingleWiFiScan = (Button) rootView
-								.findViewById(idToBlock);
-
-						if (buttonRecordContinuousWiFiScans.getText()
-								.toString().equals("Stop WiFi scans")) {
-							buttonRecordContinuousWiFiScans
-									.setText("Start WiFi scans");
-							buttonRecordSingleWiFiScan.setEnabled(true);
-							onSomeClick(v, "Stop WiFi scans");
-
-						} else {
-							buttonRecordContinuousWiFiScans
-									.setText("Stop WiFi scans");
-							buttonRecordSingleWiFiScan.setEnabled(false);
-							onSomeClick(v, "Start WiFi scans");
-						}
-					}
-				});
-	}
-
-	/**
-	 * 
-	 */
-	private void initButtonRunStepometer(final ViewGroup rootView, final int id) {
-		Button buttonRunStepometer = (Button) rootView.findViewById(id);
-		buttonRunStepometer.setText("Run stepometer");
-		buttonRunStepometer.setOnClickListener(new OnClickListener() {
-			public void onClick(View v) {
-				Button buttonRunStepometer = (Button) rootView.findViewById(id);
-				if (buttonRunStepometer.getText().toString()
-						.equals("Stop stepometer")) {
-					buttonRunStepometer.setText("Start stepometer");
-					onSomeClick(v, "Stop stepometer");
-				} else {
-					buttonRunStepometer.setText("Stop stepometer");
-					onSomeClick(v, "Start stepometer");
-				}
-
-			}
-		});
-	}
-
-	/**
-	 * 
-	 */
-	private void initButtonAddWiFiScanToRecognition(final ViewGroup rootView,
-			int id) {
-		Button buttonAddWiFiScanToRecognition = (Button) rootView
-				.findViewById(id);
-		buttonAddWiFiScanToRecognition.setText("Add WiFi to recognition");
-		buttonAddWiFiScanToRecognition
-				.setOnClickListener(new OnClickListener() {
-					public void onClick(View v) {
-						onSomeClick(v, "Add WiFi to recognition");
-					}
-				});
-	}
-
-	/**
-	 * 
-	 */
-	private void initButtonStartFloorDetection(final ViewGroup rootView,
+	private void initSwitchWiFi(final ViewGroup rootView,
 			final int id) {
-		Button buttonStartFloorDetection = (Button) rootView.findViewById(id);
-		buttonStartFloorDetection.setText("Start barometer");
-		buttonStartFloorDetection.setOnClickListener(new OnClickListener() {
-			public void onClick(View v) {
-				Button buttonStartFloorDetection = (Button) rootView
-						.findViewById(id);
-				if (buttonStartFloorDetection.getText().toString()
-						.equals("Stop barometer")) {
-					buttonStartFloorDetection.setText("Start barometer");
-					onSomeClick(v, "Stop barometer");
-				} else {
-					buttonStartFloorDetection.setText("Stop barometer");
-					onSomeClick(v, "Start barometer");
-				}
-
+		
+		Switch switchWiFi = (Switch) rootView.findViewById(id);
+		switchWiFi.setChecked(false);
+		switchWiFi.setText("WiFi");
+		switchWiFi.setOnCheckedChangeListener(new OnCheckedChangeListener() {
+			@Override
+			public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+				if (isChecked)
+					onSomeClick(buttonView, "Start WiFi scans");
+				else
+					onSomeClick(buttonView, "Stop WiFi scans");
 			}
 		});
 	}
@@ -430,21 +353,76 @@ public class ScreenSlidePageFragment extends Fragment {
 	/**
 	 * 
 	 */
-	private void initButtonStartGraphOnline(final ViewGroup rootView,
+	private void initSwitchStepometer(final ViewGroup rootView, final int id) {
+		
+		Switch switchStepometer = (Switch) rootView.findViewById(id);
+		switchStepometer.setChecked(false);
+		switchStepometer.setText("Stepometer");
+		switchStepometer.setOnCheckedChangeListener(new OnCheckedChangeListener() {
+			@Override
+			public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+				if (isChecked)
+					onSomeClick(buttonView, "Start stepometer");
+				else
+					onSomeClick(buttonView, "Stop stepometer");
+			}
+		});
+	}
+
+	/**
+	 * 
+	 */
+//	private void initButtonAddWiFiScanToRecognition(final ViewGroup rootView,
+//			int id) {
+//		Button buttonAddWiFiScanToRecognition = (Button) rootView
+//				.findViewById(id);
+//		buttonAddWiFiScanToRecognition.setText("Add WiFi to recognition");
+//		buttonAddWiFiScanToRecognition
+//				.setOnClickListener(new OnClickListener() {
+//					public void onClick(View v) {
+//						onSomeClick(v, "Add WiFi to recognition");
+//					}
+//				});
+//	}
+
+	/**
+	 * 
+	 */
+	private void initSwitchBarometer(final ViewGroup rootView,
+			final int id) {
+		Switch switchStartFloorDetection = (Switch) rootView.findViewById(id);
+		switchStartFloorDetection.setChecked(false);
+		switchStartFloorDetection.setText("Barometer");
+		switchStartFloorDetection.setOnCheckedChangeListener(new OnCheckedChangeListener() {
+			@Override
+			public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
+				if (isChecked)
+					onSomeClick(buttonView, "Start barometer");
+				else
+					onSomeClick(buttonView, "Stop barometer");
+			}
+		});
+
+	}
+
+	/**
+	 * 
+	 */
+	private void initButtonStartLocalization(final ViewGroup rootView,
 			final int id) {
 		Button buttonStartGraphOnline = (Button) rootView.findViewById(id);
-		buttonStartGraphOnline.setText("Start graph");
+		buttonStartGraphOnline.setText("Start Localization");
 		buttonStartGraphOnline.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
 				{
 					Button buttonStartGraphOnline = (Button) rootView
 							.findViewById(id);
 					if (buttonStartGraphOnline.getText().toString()
-							.equals("Start graph")) {
-						buttonStartGraphOnline.setText("Optimize graph");
+							.equals("Start Localization")) {
+						buttonStartGraphOnline.setText("Stop Localization");
 						onSomeClick(v, "Start graph");
 					} else {
-						buttonStartGraphOnline.setText("Start graph");
+						buttonStartGraphOnline.setText("Start Localization");
 						onSomeClick(v, "Optimize graph");
 					}
 
@@ -474,48 +452,48 @@ public class ScreenSlidePageFragment extends Fragment {
 	/**
 	 * 
 	 */
-	private void initButtonAddMagneticPlaceToRecognition(
-			final ViewGroup rootView, final int id) {
-		Button buttonAddMagneticPlaceToRecognition = (Button) rootView
-				.findViewById(id);
-		buttonAddMagneticPlaceToRecognition
-				.setText("Add magnetic place to recognition");
-		buttonAddMagneticPlaceToRecognition
-				.setOnClickListener(new OnClickListener() {
-					public void onClick(View v) {
-						onSomeClick(v, "Add magnetic place to recognition");
-					}
-				});
-	}
+//	private void initButtonAddMagneticPlaceToRecognition(
+//			final ViewGroup rootView, final int id) {
+//		Button buttonAddMagneticPlaceToRecognition = (Button) rootView
+//				.findViewById(id);
+//		buttonAddMagneticPlaceToRecognition
+//				.setText("Add magnetic place to recognition");
+//		buttonAddMagneticPlaceToRecognition
+//				.setOnClickListener(new OnClickListener() {
+//					public void onClick(View v) {
+//						onSomeClick(v, "Add magnetic place to recognition");
+//					}
+//				});
+//	}
 
 	/**
 	 * 
 	 */
-	private void initButtonStartStopComplementaryFilter(
-			final ViewGroup rootView, final int id) {
-		Button buttonStartStopComplementaryFilter = (Button) rootView
-				.findViewById(id);
-		buttonStartStopComplementaryFilter
-				.setText("Start complementary filter");
-		buttonStartStopComplementaryFilter
-				.setOnClickListener(new OnClickListener() {
-					public void onClick(View v) {
-						Button buttonStartStopComplementaryFilter = (Button) rootView
-								.findViewById(id);
-						if (buttonStartStopComplementaryFilter.getText()
-								.toString()
-								.equals("Start complementary filter")) {
-							buttonStartStopComplementaryFilter
-									.setText("Stop complementary filter");
-							onSomeClick(v, "Start complementary filter");
-						} else {
-							buttonStartStopComplementaryFilter
-									.setText("Start complementary filter");
-							onSomeClick(v, "Stop complementary filter");
-						}
-					}
-				});
-	}
+//	private void initButtonStartStopComplementaryFilter(
+//			final ViewGroup rootView, final int id) {
+//		Button buttonStartStopComplementaryFilter = (Button) rootView
+//				.findViewById(id);
+//		buttonStartStopComplementaryFilter
+//				.setText("Start complementary filter");
+//		buttonStartStopComplementaryFilter
+//				.setOnClickListener(new OnClickListener() {
+//					public void onClick(View v) {
+//						Button buttonStartStopComplementaryFilter = (Button) rootView
+//								.findViewById(id);
+//						if (buttonStartStopComplementaryFilter.getText()
+//								.toString()
+//								.equals("Start complementary filter")) {
+//							buttonStartStopComplementaryFilter
+//									.setText("Stop complementary filter");
+//							onSomeClick(v, "Start complementary filter");
+//						} else {
+//							buttonStartStopComplementaryFilter
+//									.setText("Start complementary filter");
+//							onSomeClick(v, "Stop complementary filter");
+//						}
+//					}
+//				});
+//	}
 	
 	/**
 	 * 
@@ -536,16 +514,16 @@ public class ScreenSlidePageFragment extends Fragment {
 	 * 
 	 */
 	// Side View 7 - Process Visual Place Recognition
-	private void initButtonVisualPlaceRecognition(
-			final ViewGroup rootView, int id) {
-		Button buttonStartOrientFromFile = (Button) rootView.findViewById(id);
-		buttonStartOrientFromFile.setText("Visual Place Recognition");
-		buttonStartOrientFromFile.setOnClickListener(new OnClickListener() {
-			public void onClick(View v) {
-				onSomeClick(v, "Visual Place Recognition");
-			}
-		});
-	}
+//	private void initButtonVisualPlaceRecognition(
+//			final ViewGroup rootView, int id) {
+//		Button buttonStartOrientFromFile = (Button) rootView.findViewById(id);
+//		buttonStartOrientFromFile.setText("Visual Place Recognition");
+//		buttonStartOrientFromFile.setOnClickListener(new OnClickListener() {
+//			public void onClick(View v) {
+//				onSomeClick(v, "Visual Place Recognition");
+//			}
+//		});
+//	}
 	
 	// Save map point
 	private void initButtonSaveMapPoint(
@@ -606,16 +584,16 @@ public class ScreenSlidePageFragment extends Fragment {
 	 * 
 	 */
 	// Side View 8 - Decode QR Code
-	private void initButtonQRCode(
-			final ViewGroup rootView, int id) {
-		Button buttonQRCode = (Button) rootView.findViewById(id);
-		buttonQRCode.setText("Decode QR");
-		buttonQRCode.setOnClickListener(new OnClickListener() {
-			public void onClick(View v) {
-				onSomeClick(v, "Decode QR");
-			}
-		});
-	}
+//	private void initButtonQRCode(
+//			final ViewGroup rootView, int id) {
+//		Button buttonQRCode = (Button) rootView.findViewById(id);
+//		buttonQRCode.setText("Decode QR");
+//		buttonQRCode.setOnClickListener(new OnClickListener() {
+//			public void onClick(View v) {
+//				onSomeClick(v, "Decode QR");
+//			}
+//		});
+//	}
 	
 	// Button record all
 	private void initButtonRecordAll(final ViewGroup rootView, final int id) {
