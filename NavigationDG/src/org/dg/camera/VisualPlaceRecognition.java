@@ -227,9 +227,8 @@ public class VisualPlaceRecognition implements Runnable {
 		String path = String.format(Locale.getDefault(), Environment
 				.getExternalStorageDirectory().toString()
 				+ "/OpenAIL"
-				+ "/VPR"
-				+ "/images"
-				+ "/rec/");
+				+ "/rawData"
+				+ "/images/");
 		
 		String imagePath = path + String.format("img%04d.png", id);
 		

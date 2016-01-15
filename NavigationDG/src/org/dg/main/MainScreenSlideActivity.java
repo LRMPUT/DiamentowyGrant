@@ -3,7 +3,6 @@ package org.dg.main;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.PrintStream;
 import java.text.NumberFormat;
 import java.text.ParseException;
@@ -13,61 +12,34 @@ import java.util.Locale;
 import java.util.Scanner;
 import java.util.Timer;
 import java.util.TimerTask;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 import org.dg.camera.CameraSaver;
 import org.dg.camera.Preview;
-import org.dg.camera.QRCodeDecoderClass;
-import org.dg.camera.VisualPlaceRecognition;
-import org.dg.inertialSensors.InertialSensors;
 import org.dg.inertialSensors.ProcessRecorded;
-import org.dg.openAIL.MapPosition;
 import org.dg.openAIL.OpenAndroidIndoorLocalization;
-import org.dg.wifi.WifiScanner;
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
-import org.opencv.android.Utils;
-import org.opencv.core.CvType;
 import org.opencv.core.Mat;
-import org.opencv.highgui.Highgui;
-import org.opencv.imgproc.Imgproc;
 
 import android.app.Activity;
 import android.app.Fragment;
 import android.app.FragmentManager;
 import android.content.Context;
-import android.content.Intent;
 import android.content.IntentFilter;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.ImageFormat;
-import android.graphics.Rect;
 import android.hardware.SensorManager;
 import android.hardware.Camera;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Environment;
-import android.os.Handler;
 import android.support.v13.app.FragmentStatePagerAdapter;
-import android.support.v4.app.FragmentActivity;
-import android.support.v4.app.NavUtils;
 import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.util.Log;
-import android.util.Pair;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.Surface;
-import android.view.SurfaceView;
-import android.view.View;
-import android.view.ViewGroup;
-import android.view.View.OnClickListener;
-import android.view.ViewGroup.LayoutParams;
-import android.widget.Button;
-import android.widget.FrameLayout;
-import android.widget.TextView;
 import android.widget.Toast;
 
 public class MainScreenSlideActivity extends Activity implements
@@ -147,7 +119,7 @@ public class MainScreenSlideActivity extends Activity implements
 		if (link.contains("Run inertial sensors")
 				|| link.contains("Stop inertial sensors")) {
 			if (openAIL.inertialSensors.getState() == false) {
-				openAIL.inertialSensors.save2file(false);
+				openAIL.inertialSensors.save2file(true);
 				openAIL.inertialSensors.start();
 			} else {
 				openAIL.inertialSensors.stop();
@@ -155,18 +127,18 @@ public class MainScreenSlideActivity extends Activity implements
 		}
 
 		// 3. Start/Stop record inertial sensors
-		if (link.contains("Start record inertial sensors")
-				|| link.contains("Stop record inertial sensors")) {
-			if (openAIL.inertialSensors.getState() == false) {
-
-				openAIL.inertialSensors.save2file(true);
-				openAIL.inertialSensors.start();
-
-			} else {
-
-				openAIL.inertialSensors.stop();
-			}
-		}
+//		if (link.contains("Start record inertial sensors")
+//				|| link.contains("Stop record inertial sensors")) {
+//			if (openAIL.inertialSensors.getState() == false) {
+//
+//				openAIL.inertialSensors.save2file(true);
+//				openAIL.inertialSensors.start();
+//
+//			} else {
+//
+//				openAIL.inertialSensors.stop();
+//			}
+//		}
 
 		// 4. Do a single WiFi Scan
 		if (link.contains("Do a single WiFi scan")) {
@@ -433,12 +405,14 @@ public class MainScreenSlideActivity extends Activity implements
 			
 			if (openAIL.inertialSensors.getState() == false) {
 
-				openAIL.inertialSensors.save2file(true);
+				// ADD
+				openAIL.inertialSensors.recordAll(true);
 				openAIL.inertialSensors.start();
 
 			} else {
 
 				openAIL.inertialSensors.stop();
+				openAIL.inertialSensors.recordAll(false);
 			}
 			
 			if (openAIL.wifiScanner.getRunningState()) {
@@ -448,6 +422,18 @@ public class MainScreenSlideActivity extends Activity implements
 				openAIL.wifiScanner.startScanning();
 			}
 			
+		}
+		
+		// Button clear new map
+		if (link.contains("Clear new map")) {
+			Log.v(TAG, "Clear new map");
+			
+			// Getting mapName, X, Y, Z which are separated by '&'
+			String[] separated = link.split("&");
+						
+			openAIL.clearNewMap(separated[1]);
+			
+
 		}
 
 	}

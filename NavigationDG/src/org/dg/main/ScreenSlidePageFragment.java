@@ -194,10 +194,13 @@ public class ScreenSlidePageFragment extends Fragment {
 			initButtonRecordAll(rootView, R.id.buttonRecordAll);
 
 			// Take picute
-			initButtonTakePicture(rootView, R.id.buttonTakePicture);
+//			initButtonTakePicture(rootView, R.id.buttonTakePicture);
 
 			// Record inertial sensors
-			initButtonRecordinertialSensors(rootView, R.id.buttonRecordInertial);
+//			initButtonRecordinertialSensors(rootView, R.id.buttonRecordInertial);
+			
+			// Clear map
+			initButtonClearNewMap(rootView, R.id.buttonClearNewMap);
 
 			/**
 			 * OLD: 
@@ -214,6 +217,11 @@ public class ScreenSlidePageFragment extends Fragment {
 			 * onSomeClick(v, "Do a single WiFi scan");
 			 * 
 			 * onSomeClick(v, "Add WiFi to recognition");
+			 * 
+			 * onSomeClick(v, "Take picture");
+			 * 
+			 * onSomeClick(v, "Start record inertial sensors");
+			 * onSomeClick(v, "Stop record inertial sensors");
 			 */
 
 		} else if (mPageNumber == 2) {
@@ -268,15 +276,6 @@ public class ScreenSlidePageFragment extends Fragment {
 		return rootView;
 	}
 
-	private void initButtonTakePicture(final ViewGroup rootView, int id) {
-		Button buttonTakePicture = (Button) rootView.findViewById(id);
-		buttonTakePicture.setText("Take picture");
-		buttonTakePicture.setOnClickListener(new OnClickListener() {
-			public void onClick(View v) {
-				onSomeClick(v, "Take picture");
-			}
-		});
-	}
 
 	/**
 	 * @param rootView
@@ -300,31 +299,21 @@ public class ScreenSlidePageFragment extends Fragment {
 				});
 	}
 
+	
+	
 	/**
 	 * 
 	 */
-	private void initButtonRecordinertialSensors(final ViewGroup rootView,
+	private void initButtonClearNewMap(final ViewGroup rootView,
 			final int id) {
-		Button buttonRecordinertialSensors = (Button) rootView.findViewById(id);
-		buttonRecordinertialSensors.setText("Record inertial sensors");
+		Button buttonClearNewMap = (Button) rootView.findViewById(id);
+		buttonClearNewMap.setText("Clear new map");
 
-		buttonRecordinertialSensors.setOnClickListener(new OnClickListener() {
+		buttonClearNewMap.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
-				Button buttonRecordinertialSensors = (Button) rootView
-						.findViewById(id);
-				if (buttonRecordinertialSensors.isEnabled()) {
-					buttonRecordinertialSensors.setEnabled(false);
-					buttonRecordinertialSensors
-							.setText("Stop record inertial sensors");
-					onSomeClick(v, "Start record inertial sensors");
-
-				} else {
-					buttonRecordinertialSensors.setEnabled(true);
-					buttonRecordinertialSensors
-							.setText("Record inertial sensors");
-					onSomeClick(v, "Stop record inertial sensors");
-				}
-
+					EditText mapName = (EditText) rootView
+						.findViewById(R.id.editTextMapName);
+					onSomeClick(v, "Clear new map &"+mapName.getText());
 			}
 		});
 	}
@@ -498,7 +487,7 @@ public class ScreenSlidePageFragment extends Fragment {
 		z.setText("0.0");
 
 		Button buttonStartOrientFromFile = (Button) rootView.findViewById(id);
-		buttonStartOrientFromFile.setText("Save VPR place");
+		buttonStartOrientFromFile.setText("Save image");
 		buttonStartOrientFromFile.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
 				EditText x = (EditText) rootView

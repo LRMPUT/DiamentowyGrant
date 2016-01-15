@@ -66,6 +66,7 @@ public class ConfigurationReader {
 			public double minPercentOfSharedNetworks;
 			public double maxAvgErrorThreshold;
 			public boolean directWiFiMeasurements;
+			public boolean addUserWiFiToRecognition;
 		}
 
 		MainProcessing mainProcessing = new MainProcessing();
@@ -158,9 +159,10 @@ public class ConfigurationReader {
 				"\n--- fractionOfQueueAfterReduction=" + parameters.wifiPlaceRecognition.fractionOfQueueAfterReduction +
 				"\n--- minNumberOfSharedNetworks=" + parameters.wifiPlaceRecognition.minNumberOfSharedNetworks +
 				"\n--- minPercentOfSharedNetworks=" + parameters.wifiPlaceRecognition.minPercentOfSharedNetworks +
-				"\n--- maxAvgErrorThreshold=" + parameters.wifiPlaceRecognition.maxAvgErrorThreshold);		
+				"\n--- maxAvgErrorThreshold=" + parameters.wifiPlaceRecognition.maxAvgErrorThreshold +
+				"\n--- addUserWiFiToRecognition=" + parameters.wifiPlaceRecognition.addUserWiFiToRecognition);		
 	}
-
+	
 
 	private void readFeed(XmlPullParser parser) throws XmlPullParserException,
 			IOException {
@@ -374,7 +376,7 @@ public class ConfigurationReader {
 		String minPercentOfSharedNetworksString = parser.getAttributeValue(null, "minPercentOfSharedNetworks");
 		String maxAvgErrorThresholdString = parser.getAttributeValue(null, "maxAvgErrorThreshold");
 		String directWiFiMeasurementsString = parser.getAttributeValue(null, "directWiFiMeasurements");
-
+		String addUserWiFiToRecognitionString = parser.getAttributeValue(null, "addUserWiFiToRecognition");
 		
 		// Logging those values
 		Log.d(moduleLogName, "useModule = " + useModuleString);
@@ -386,6 +388,8 @@ public class ConfigurationReader {
 		Log.d(moduleLogName, "minPercentOfSharedNetworks = " + minPercentOfSharedNetworksString);
 		Log.d(moduleLogName, "maxAvgErrorThreshold = " + maxAvgErrorThresholdString);
 		Log.d(moduleLogName, "directWiFiMeasurements = " + directWiFiMeasurementsString);
+		Log.d(moduleLogName, "addUserWiFiToRecognition = " + addUserWiFiToRecognitionString);
+		
 		
 		// Storing read values
 		parameters.wifiPlaceRecognition.useModule = useModuleString.equals("True");
@@ -397,6 +401,7 @@ public class ConfigurationReader {
 		parameters.wifiPlaceRecognition.minPercentOfSharedNetworks = Double.parseDouble(minPercentOfSharedNetworksString);
 		parameters.wifiPlaceRecognition.maxAvgErrorThreshold = Double.parseDouble(maxAvgErrorThresholdString);
 		parameters.wifiPlaceRecognition.directWiFiMeasurements = directWiFiMeasurementsString.equals("True");
+		parameters.wifiPlaceRecognition.addUserWiFiToRecognition = addUserWiFiToRecognitionString.equals("True");
 				
 		parser.nextTag();
 		parser.require(XmlPullParser.END_TAG, ns, "WiFiPlaceRecognition");

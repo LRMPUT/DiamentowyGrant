@@ -29,6 +29,8 @@ public class WiFiPlaceRecognition implements Runnable {
 	// The database of places
 	List<List<MyScanResult>> placeDatabase = new ArrayList<List<MyScanResult>>();
 	List<Integer> placeIds = new ArrayList<Integer>();
+	
+	List<Pair<Integer,List<MyScanResult>>> newPlaces = new ArrayList<Pair<Integer,List<MyScanResult>>>();
 
 	// File to save data
 	PrintStream outStreamPlaceRecognitionData = null;
@@ -39,13 +41,11 @@ public class WiFiPlaceRecognition implements Runnable {
 	
 	// List of recognized places
 	List<IdPair<Integer, Integer>> recognizedPlaces = new ArrayList<IdPair<Integer, Integer>>();
-	private final Semaphore recognizedPlacesMtx = new Semaphore(1, true);
+		private final Semaphore recognizedPlacesMtx = new Semaphore(1, true);
 	
 	// Recognition thread
 	Thread recognizePlacesThread;
 	boolean performRecognition = false;
-	boolean newPlaceToProcess = false;
-	int indexOfNewPlaceToProcess = -1;
 
 	public WiFiPlaceRecognition(org.dg.openAIL.ConfigurationReader.Parameters.WiFiPlaceRecognition wifiPlaceRecognitionParameters) {
 		
@@ -87,11 +87,15 @@ public class WiFiPlaceRecognition implements Runnable {
 				"Added new place - now recognition thread needs to process the data");
 		sortListByMAC(wiFiList);
 
-		indexOfNewPlaceToProcess = placeDatabase.size();
-		placeDatabase.add(wiFiList);
-		placeIds.add(id);
-		
-		newPlaceToProcess = true;
+		//indexOfNewPlaceToProcess = placeDatabase.size();
+
+//		TODO: newPlace		
+//		placeDatabase.add(wiFiList);
+//		placeIds.add(id);
+	
+		synchronized(newPlaces) {
+			newPlaces.add(new Pair<Integer,List<MyScanResult>>(id, wiFiList ));
+		}
 		
 		if ( !newThread ) {
 			addNewPlaceInRecognitionThread();
@@ -217,7 +221,8 @@ public class WiFiPlaceRecognition implements Runnable {
 		}
 		
 		queueOfWiFiMatchesToCheck.clear();
-		indexOfNewPlaceToProcess = -1;
+		//indexOfNewPlaceToProcess = -1;
+		newPlaces.clear();
 		placeDatabase.clear();
 		placeIds.clear();
 	}
@@ -275,7 +280,11 @@ public class WiFiPlaceRecognition implements Runnable {
 					Thread.sleep(500);
 					
 					// NEW place had been added
-					if ( newPlaceToProcess )
+					int newPlacesSize = -1;
+					synchronized(newPlaces) {
+						newPlacesSize = newPlaces.size();
+					}
+					if ( newPlacesSize > 0 )
 					{
 						addNewPlaceInRecognitionThread();
 					}
@@ -304,7 +313,12 @@ public class WiFiPlaceRecognition implements Runnable {
 //				}
 						
 				// NEW place had been added
-				if ( newPlaceToProcess )
+				int newPlacesSize = -1;
+				synchronized(newPlaces) {
+					newPlacesSize = newPlaces.size();
+				}
+				
+				if ( newPlacesSize > 0 )
 				{
 					addNewPlaceInRecognitionThread();
 				}
@@ -349,22 +363,41 @@ public class WiFiPlaceRecognition implements Runnable {
 	 * 
 	 */
 	private void addNewPlaceInRecognitionThread() {
-		List<MyScanResult> wiFiList = placeDatabase.get(indexOfNewPlaceToProcess);
-		int indexA = placeIds.get(indexOfNewPlaceToProcess);
 		
-		int index = 0;
-		for (List<MyScanResult> list : placeDatabase)	
-		{
-			int indexB = placeIds.get(index);
-			
-			if ( indexA != indexB && indexA < 10000) {
-				WiFiPlaceLink linkToTest = new WiFiPlaceLink(wiFiList, indexA, list, indexB, 0.0f);
-				addToQueue(linkToTest);
-			}
-				
-			index++;
+		//TODO: newPlace
+//		List<MyScanResult> wiFiList = placeDatabase.get(indexOfNewPlaceToProcess);
+//		int indexA = placeIds.get(indexOfNewPlaceToProcess);
+		
+		int indexA = -1;
+		List<MyScanResult> wiFiList;
+		synchronized(newPlaces) {
+			indexA = newPlaces.get(0).first;
+			wiFiList = newPlaces.get(0).second;
+			newPlaces.remove(0);
 		}
-		newPlaceToProcess = false;
+		
+		if ( indexA >= 0)
+		{
+			int index = 0;
+			for (List<MyScanResult> list : placeDatabase)	
+			{
+				int indexB = placeIds.get(index);
+				
+				if ( indexA != indexB && indexA < 10000) {
+					WiFiPlaceLink linkToTest = new WiFiPlaceLink(wiFiList, indexA, list, indexB, 0.0f);
+					addToQueue(linkToTest);
+				}
+					
+				index++;
+			}
+		}
+		
+		
+		if ( parameters.addUserWiFiToRecognition ) {
+			placeDatabase.add(wiFiList);
+			placeIds.add(indexA);
+		}
+		
 	}
 
 }

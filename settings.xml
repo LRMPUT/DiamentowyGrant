@@ -7,9 +7,11 @@
 								imageAccVarianceThreshold="0.1"
 								imageCaptureStep="2"
 								imageCaptureVarianceThreshold="0.15"
+								useNavigation="False"
+								showMapWithoutMapConnection="True"
 								/>
 
-	<InertialSensors useModule="True" stepometer="True" verticalOrientation="True" priorMapStepometerBiasVertical="-20" priorMapStepometerBiasHorizontal="0">
+	<InertialSensors useModule="True" stepometer="True" verticalOrientation="False" priorMapStepometerBiasVertical="75" priorMapStepometerBiasHorizontal="75">
 		<Record 
 						accelerometer="True"
 						gyroscope="False"
@@ -18,7 +20,7 @@
 						accelerometerWithoutGravity="False"
 						orientationAndroid="True"
 						orientationAndroidEuler="False"
-						orientationAEKF="True"
+						orientationAEKF="False"
 						orientationAEKFEuler="False"
 						orientationCF="False"
 						orientationCFEuler="False"		/>
@@ -32,12 +34,15 @@
 								optimizeFromFileIterationCount="100"/>	
 	
 	<WiFiPlaceRecognition 	useModule="True" 
+										recordRawData="True"
 										maxPlaceDatabaseSize="500" 
 										maxQueueSize="200" 
 										fractionOfQueueAfterReduction="0.3" 
 										minNumberOfSharedNetworks="7"
 										minPercentOfSharedNetworks="0.75"
-										maxAvgErrorThreshold="8" /> 
+										maxAvgErrorThreshold="8" 
+										directWiFiMeasurements="False"
+										addUserWiFiToRecognition="False"/> 
 										
 	<VisualOdometry useModule="True"/>
 	<VisualPlaceRecognition useModule="True"/>

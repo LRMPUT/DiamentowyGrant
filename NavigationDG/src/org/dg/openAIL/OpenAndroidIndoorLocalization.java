@@ -108,12 +108,12 @@ public class OpenAndroidIndoorLocalization {
 		
 		
 		// TODO
-		Playback playback = new Playback();
-		Log.d(moduleLogName, "playbackInitialized!");
-		for (int i=0;i<10;i++) {
-			 RawData data = playback.getNextData();
-			 Log.d(moduleLogName, "Read: " + data.timestamp + " type: " + data.sourceType );
-		}
+//		Playback playback = new Playback();
+//		Log.d(moduleLogName, "playbackInitialized!");
+//		for (int i=0;i<10;i++) {
+//			 RawData data = playback.getNextData();
+//			 Log.d(moduleLogName, "Read: " + data.timestamp + " type: " + data.sourceType );
+//		}
 		
 	}
 
@@ -458,6 +458,10 @@ public class OpenAndroidIndoorLocalization {
 		
 		// Save this point to files
 		priorMapHandler.saveMapPoint(mapName, mapPos);
+	}
+	
+	public void clearNewMap(String mapName) {
+		priorMapHandler.clearNewMap(mapName);
 	}
 	
 	/**

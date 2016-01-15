@@ -11,13 +11,11 @@
         android:layout_height="match_parent"
         android:orientation="vertical" >
 
-       
-
         <Button
             android:id="@+id/buttonStartLocalization"
             android:layout_width="200dp"
             android:layout_height="45dp"
-            android:text="Nothing" />
+            android:text="Start Localization" />
 
         <Switch
             android:id="@+id/switchBarometer"
@@ -42,8 +40,8 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="WiFi" />
-        
-         <View
+
+        <View
             android:layout_width="match_parent"
             android:layout_height="1dp"
             android:background="@android:color/darker_gray" />
@@ -95,6 +93,18 @@
                     android:id="@+id/editTextMapPosID"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content" />
+
+                <Button
+                    android:id="@+id/buttonSaveMapPoint"
+                    android:layout_width="160dp"
+                    android:layout_height="45dp"
+                    android:text="Save map point" />
+
+                <Button
+                    android:id="@+id/buttonClearNewMap"
+                    android:layout_width="160dp"
+                    android:layout_height="45dp"
+                    android:text="Clear new map" />
             </LinearLayout>
 
             <LinearLayout
@@ -105,47 +115,28 @@
 
                 <Button
                     android:id="@+id/buttonOptimizeGraphFromFile"
-                    android:layout_width="120dp"
+                    android:layout_width="160dp"
                     android:layout_height="45dp"
-                    android:text="Nothing" />
+                    android:text="Graph from file" />
 
                 <Button
                     android:id="@+id/buttonOrientationTestFromFile"
-                    android:layout_width="120dp"
+                    android:layout_width="160dp"
                     android:layout_height="45dp"
-                    android:text="Nothing" />
-
-                <Button
-                    android:id="@+id/buttonSaveMapPoint"
-                    android:layout_width="wrap_content"
-                    android:layout_height="45dp"
-                    android:text="Nothing" />
+                    android:text="Orient file test" />
 
                 <Button
                     android:id="@+id/buttonSaveVPR"
-                    android:layout_width="wrap_content"
+                    android:layout_width="160dp"
                     android:layout_height="45dp"
-                    android:text="Nothing" />
+                    android:text="Save image" />
 
                 <Button
                     android:id="@+id/buttonRecordAll"
-                    android:layout_width="wrap_content"
+                    android:layout_width="160dp"
                     android:layout_height="45dp"
-                    android:text="Nothing" />
+                    android:text="Record all" />
 
-                <Button
-                    android:id="@+id/buttonTakePicture"
-                    android:layout_width="120dp"
-                    android:layout_height="45dp"
-                    android:layout_weight="0.14"
-                    android:text="Nothing" />
-
-                <Button
-                    android:id="@+id/buttonRecordInertial"
-                    android:layout_width="120dp"
-                    android:layout_height="45dp"
-                    android:layout_weight="0.14"
-                    android:text="Nothing" />
             </LinearLayout>
         </LinearLayout>
     </LinearLayout>

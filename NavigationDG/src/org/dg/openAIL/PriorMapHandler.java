@@ -284,6 +284,29 @@ public class PriorMapHandler {
 		// Increase Id for next point
 		// mapPointId++;
 	}
+	
+	public void clearNewMap(String mapName) {
+		String pathName = String.format(Locale.getDefault(), Environment
+				.getExternalStorageDirectory().toString()
+				+ "/OpenAIL/PriorData/" + mapName + "/");
+		
+		Log.d(moduleLogName, "mapName = " + mapName);
+		
+		File dir = new File(pathName + "images/");
+		File[] children = dir.listFiles();
+		for (int i = 0; i < children.length; i++) {
+			children[i].delete();
+		}
+		
+		dir = new File(pathName + "wifiScans/");
+		children = dir.listFiles();
+		for (int i = 0; i < children.length; i++) {
+			children[i].delete();
+		}
+		
+		dir = new File(pathName + "positions.list");
+		dir.delete();
+	}
 
 	/**
 	 * Reads the Wifi list from map-compatible format

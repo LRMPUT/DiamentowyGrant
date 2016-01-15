@@ -129,6 +129,14 @@ public class InertialSensors {
 		/// Choose which filters to save
 		activeStreams = new boolean[11];
 		
+		activateStreamBasedOnParams();	
+		
+	}
+
+	/**
+	 * 
+	 */
+	private void activateStreamBasedOnParams() {
 		// Basic sensors
 		activeStreams[ActiveStreamNames.ACCELEROMETER.ordinal()] = parameters.record.accelerometer;
 		activeStreams[ActiveStreamNames.GYROSCOPE.ordinal()] = parameters.record.gyroscope;
@@ -146,8 +154,7 @@ public class InertialSensors {
 		
 		// CF
 		activeStreams[ActiveStreamNames.ORIENTATION_COMPLEMENTARY.ordinal()] = parameters.record.orientationCF;
-		activeStreams[ActiveStreamNames.ORIENTATION_COMPLEMENTARY_EULER.ordinal()] = parameters.record.orientationCFEuler;	
-		
+		activeStreams[ActiveStreamNames.ORIENTATION_COMPLEMENTARY_EULER.ordinal()] = parameters.record.orientationCFEuler;
 	}
 
 	public InertialSensors save2file(boolean _save2file) {
@@ -465,6 +472,35 @@ public class InertialSensors {
 	}
 
 
+	public void recordAll(boolean value) {
+		save2file = true;
+		if(value)
+		{
+			// Basic sensors
+			activeStreams[ActiveStreamNames.ACCELEROMETER.ordinal()] = true;
+			activeStreams[ActiveStreamNames.GYROSCOPE.ordinal()] = true;
+			activeStreams[ActiveStreamNames.MAGNETOMETER.ordinal()] = true;
+			activeStreams[ActiveStreamNames.ACCELEROMETER_WITHOUT_GRAVITY.ordinal()] = false;
+			activeStreams[ActiveStreamNames.PRESSURE.ordinal()] = true;
+			
+			// Android estimation
+			activeStreams[ActiveStreamNames.ORIENTATION_ANDROID.ordinal()] = true;
+			activeStreams[ActiveStreamNames.ORIENTATION_ANDROID_EULER.ordinal()] = false;
+			
+			// AEKF
+			activeStreams[ActiveStreamNames.ORIENTATION_AEKF.ordinal()] = true;
+			activeStreams[ActiveStreamNames.ORIENTATION_AEKF_EULER.ordinal()] = false;
+			
+			// CF
+			activeStreams[ActiveStreamNames.ORIENTATION_COMPLEMENTARY.ordinal()] = false;
+			activeStreams[ActiveStreamNames.ORIENTATION_COMPLEMENTARY_EULER.ordinal()] = false;
+		}
+		else
+		{
+			activateStreamBasedOnParams();
+		}
+	}
+	
 	public long getTimestamp() {
 		return (currentTimestamp - timestampStart);
 	}
