@@ -153,7 +153,7 @@ public class WifiScanner extends BroadcastReceiver {
 	public void stopScanning() {
 		continuousScanning = false;
 
-		placeRecognition.closeStream();
+//		placeRecognition.closeSaveStream();
 
 		// Close cleanly
 		if (outStreamRawData != null) {
@@ -204,7 +204,7 @@ public class WifiScanner extends BroadcastReceiver {
 				for (ScanResult sr : previousWiFiList) {
 					myList.add(new MyScanResult(sr.BSSID, sr.level));
 				}
-				placeRecognition.addPlace(myList, id, true);
+				placeRecognition.addPlace(myList, id);
 			}
 			previousScanMtx.release();
 		} catch (InterruptedException e) {
@@ -215,7 +215,7 @@ public class WifiScanner extends BroadcastReceiver {
 
 	public void addScanToRecognition(int id, List<MyScanResult> wifiScan) {
 		if (wifiScan.size() > 0)
-			placeRecognition.addPlace(wifiScan, id, false);
+			placeRecognition.addPlace(wifiScan, id);
 	}
 
 	public List<org.dg.openAIL.IdPair<Integer, Integer>> getAndClearRecognizedPlacesList() {

@@ -10,7 +10,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.PriorityQueue;
-import java.util.concurrent.Semaphore;
 
 import org.dg.openAIL.IdPair;
 import org.dg.wifi.MyScanResult;
@@ -19,43 +18,200 @@ import android.os.Environment;
 import android.util.Log;
 import android.util.Pair;
 
-
 public class WiFiPlaceRecognition implements Runnable {
 
 	private static final String moduleLogName = "WiFiPlaceRecognition";
 
 	org.dg.openAIL.ConfigurationReader.Parameters.WiFiPlaceRecognition parameters;
-	
+
 	// The database of places
-	List<List<MyScanResult>> placeDatabase = new ArrayList<List<MyScanResult>>();
-	List<Integer> placeIds = new ArrayList<Integer>();
-	
-	List<Pair<Integer,List<MyScanResult>>> newPlaces = new ArrayList<Pair<Integer,List<MyScanResult>>>();
+	List<Pair<Integer, List<MyScanResult>>> placeDatabase = new ArrayList<Pair<Integer, List<MyScanResult>>>();
 
-	// File to save data
-	PrintStream outStreamPlaceRecognitionData = null;
+	// The waiting list of places to process
+	List<Pair<Integer, List<MyScanResult>>> newPlaces = new ArrayList<Pair<Integer, List<MyScanResult>>>();
 
-	// Queue Mutex
-	PriorityQueue<WiFiPlaceLink> queueOfWiFiMatchesToCheck;
-	private final Semaphore queueMtx = new Semaphore(1, true);
-	
+	// Queue of matches
+	PriorityQueue<WiFiPlaceMatch> queueOfWiFiMatchesToCheck;
+
 	// List of recognized places
 	List<IdPair<Integer, Integer>> recognizedPlaces = new ArrayList<IdPair<Integer, Integer>>();
-		private final Semaphore recognizedPlacesMtx = new Semaphore(1, true);
 	
+	// File to save data
+	PrintStream outStreamPlaceRecognitionData = null;
+		
 	// Recognition thread
 	Thread recognizePlacesThread;
 	boolean performRecognition = false;
 
-	public WiFiPlaceRecognition(org.dg.openAIL.ConfigurationReader.Parameters.WiFiPlaceRecognition wifiPlaceRecognitionParameters) {
-		
+	public WiFiPlaceRecognition(
+			org.dg.openAIL.ConfigurationReader.Parameters.WiFiPlaceRecognition wifiPlaceRecognitionParameters) {
+		// Storing passed parameters
 		parameters = wifiPlaceRecognitionParameters;
-				
-		// Creating queue
-		Comparator<WiFiPlaceLink> wiFiPlaceComparator = new WiFiPlaceComparator();
-		queueOfWiFiMatchesToCheck = new PriorityQueue<WiFiPlaceLink>(parameters.maxQueueSize,
-				wiFiPlaceComparator);
 
+		// Creating queue
+		Comparator<WiFiPlaceMatch> wiFiPlaceComparator = new WiFiPlaceMatchIdComparator();
+		queueOfWiFiMatchesToCheck = new PriorityQueue<WiFiPlaceMatch>(
+				parameters.maxQueueSize, wiFiPlaceComparator);		
+	}
+
+	/*
+	 * Adds place with id and wiFiList
+	 */
+	public void addPlace(List<MyScanResult> wiFiList, int id) {
+		Log.d(moduleLogName,
+				"Added new place - now recognition thread needs to process the data");
+		
+		// Sorting WiFis by MACs
+		sortListByMAC(wiFiList);
+
+		// Adding to waiting list
+		synchronized (newPlaces) {
+			newPlaces.add(new Pair<Integer, List<MyScanResult>>(id, wiFiList));
+		}
+	}
+
+	/*
+	 * Returns the size of place database
+	 * TODO: it is not thread save
+	 */
+	public int getSizeOfPlaceDatabase() {
+		int placeDatabaseSize = -1;
+		synchronized (placeDatabase) {
+			placeDatabaseSize = placeDatabase.size();
+		}
+		return placeDatabaseSize;
+	}
+	
+
+	/*
+	 * Starts the recognition thread
+	 */
+	public void startRecognition() {
+
+		openSaveStream();
+		
+		performRecognition = true;
+		recognizePlacesThread = new Thread(this, "Recognition thread");
+		recognizePlacesThread.start();
+	}
+
+	/*
+	 * Stops the recognition thread
+	 */
+	public void stopRecognition() {
+		performRecognition = false;
+		try {
+			recognizePlacesThread.join();
+		} catch (InterruptedException e) {
+			Log.d(moduleLogName, "Failed to join recognizePlacesThread");
+		}
+
+		queueOfWiFiMatchesToCheck.clear();
+		newPlaces.clear();
+		placeDatabase.clear();
+		
+		closeSaveStream();
+	}
+
+	/*
+	 * Returns the list of recognized places (pairs of matched ids) and clears the recognized list
+	 * TODO: we can omit new I think
+	 */
+	public List<IdPair<Integer, Integer>> getAndClearRecognizedPlacesList() {
+		List<IdPair<Integer, Integer>> returnList = new ArrayList<IdPair<Integer, Integer>>();
+
+		synchronized (recognizedPlaces) {
+			// Copy each match
+			for (IdPair<Integer, Integer> item : recognizedPlaces)
+				returnList.add(new IdPair<Integer, Integer>(item));
+			
+			// Clear the list
+			recognizedPlaces.clear();
+		}
+
+		return returnList;
+	}
+
+	/*
+	 * Used to add new data to placeDatabase, find possible matches, verify them and put them in recognizedList
+	 * 
+	 * @see java.lang.Runnable#run()
+	 */
+	@Override
+	public void run() {
+		// We look for potential matches as long as performRecognition is true
+		while (performRecognition) {
+
+			try {
+
+				// There are 0 links to check, so we wait
+				while (queueOfWiFiMatchesToCheck.size() == 0
+						&& performRecognition == true) {
+
+					Log.d(moduleLogName, "Sleeping ...");
+					Thread.sleep(500);
+
+					// Let's see if we there is a new place to add
+					int newPlacesSize = -1;
+					synchronized (newPlaces) {
+						newPlacesSize = newPlaces.size();
+					}
+					if (newPlacesSize > 0) {
+						addNewPlaceInRecognitionThread();
+					}
+				}
+
+				// We were asked to stop
+				if (!performRecognition)
+					break;
+
+				Log.d(moduleLogName, "Queue size : "
+						+ queueOfWiFiMatchesToCheck.size());
+				WiFiPlaceMatch linkToTest = queueOfWiFiMatchesToCheck.poll();
+				
+				// Computing similarity measure
+				Pair<Integer, Double> x = computeBSSIDSimilarity(
+						linkToTest.listA, linkToTest.listB);
+
+				// Compute average error
+				float value = x.first;
+				Double avgError = x.second;
+
+				// Saving computed values to file
+				outStreamPlaceRecognitionData.print(linkToTest.indexA + " "
+						+ linkToTest.indexB + " " + value + " "
+						+ parameters.minPercentOfSharedNetworks + " "
+						+ linkToTest.listA.size() + " "
+						+ linkToTest.listB.size() + " " + avgError + " "
+						+ parameters.maxAvgErrorThreshold + "\n");
+
+				// Should we add this match to the list of recognized places?
+				if (value > parameters.minNumberOfSharedNetworks
+						&& value > parameters.minPercentOfSharedNetworks
+								* linkToTest.listA.size()
+						&& value > parameters.minPercentOfSharedNetworks
+								* linkToTest.listB.size()
+						&& avgError < parameters.maxAvgErrorThreshold) {
+
+					Log.d(moduleLogName,
+							"Found local connection - adding it to list of recognized places");
+					synchronized (recognizedPlaces) {
+						recognizedPlaces.add(new IdPair<Integer, Integer>(
+								linkToTest.indexA, linkToTest.indexB));
+					}
+					
+				}
+			} catch (InterruptedException e) {
+				Log.d("RecognizedPlaces", "Failed to acquire mutex");
+			}
+		}
+	}
+
+	
+	/**
+	 * Open stream to save all checked matches to /OpenAIL/WiFi/WiFiPlaceRecognition
+	 */
+	private void openSaveStream() {
 		// Getting place to save data
 		File folder = new File(Environment.getExternalStorageDirectory()
 				+ "/OpenAIL/WiFi");
@@ -63,7 +219,7 @@ public class WiFiPlaceRecognition implements Runnable {
 		if (!folder.exists()) {
 			folder.mkdir();
 		}
-		
+
 		// File to save results
 		String fileName = "";
 		fileName = String.format(Locale.getDefault(), Environment
@@ -80,43 +236,73 @@ public class WiFiPlaceRecognition implements Runnable {
 			e1.printStackTrace();
 		}
 	}
-
-	public void addPlace(List<MyScanResult> wiFiList, int id, boolean newThread) {
-
-		Log.d(moduleLogName,
-				"Added new place - now recognition thread needs to process the data");
-		sortListByMAC(wiFiList);
-
-		//indexOfNewPlaceToProcess = placeDatabase.size();
-
-//		TODO: newPlace		
-//		placeDatabase.add(wiFiList);
-//		placeIds.add(id);
 	
-		synchronized(newPlaces) {
-			newPlaces.add(new Pair<Integer,List<MyScanResult>>(id, wiFiList ));
-		}
-		
-		if ( !newThread ) {
-			addNewPlaceInRecognitionThread();
-		}
-	}
-
-
-
-	
-
-	public int getSizeOfPlaceDatabase() {
-		return placeDatabase.size();
-	}
-
-	public void closeStream() {
+	/*
+	 * Close stream
+	 */
+	private void closeSaveStream() {
 		if (outStreamPlaceRecognitionData != null) {
 			outStreamPlaceRecognitionData.close();
 			outStreamPlaceRecognitionData = null;
 		}
 	}
+	
+	/**
+	 * Creates WiFi matches that new to be tested and adds place to database (if
+	 * the proper parameter(addUserWiFiToRecognition) in settings.xml is set)
+	 */
+	private void addNewPlaceInRecognitionThread() {
+		// Places to store information about place to add
+		int indexA = -1;
+		List<MyScanResult> wiFiList;
 
+		// We process the places on the waiting list
+		while(true) {
+			synchronized (newPlaces) {
+				if ( newPlaces.size() == 0)
+					break;
+				
+				indexA = newPlaces.get(0).first;
+				wiFiList = newPlaces.get(0).second;
+				newPlaces.remove(0);
+			}
+	
+			// look for potential matches
+			if (indexA < 10000) {
+				for (Pair<Integer, List<MyScanResult>> place : placeDatabase) {
+					int indexB = place.first;
+	
+					// We skip if WiFis are from the same place
+					if (indexA != indexB) {
+	
+						// Adding a WiFi match to queue in order to test it
+						WiFiPlaceMatch linkToTest = new WiFiPlaceMatch(wiFiList,
+								indexA, place.second, indexB, 0.0f);
+						addToQueue(linkToTest);
+					}
+				}
+			}
+	
+			// Depending on addUserWiFiToRecognition parameter, we add new user
+			// place to placeDatabase
+			if (indexA >= 10000 || parameters.addUserWiFiToRecognition) {
+				Log.d(moduleLogName, "Adding to placeDatabase: id=" + indexA + " wifiList.size()=" + wiFiList.size());
+				placeDatabase.add(new Pair<Integer, List<MyScanResult>>(indexA,
+						wiFiList));
+				
+
+				// We need to reduce the size of the database
+				if (placeDatabase.size() > parameters.maxPlaceDatabaseSize) {
+					reduceTheSizeOfPlaceDatabase();
+				}
+	
+			}
+		}
+	}
+
+	/*
+	 * Sorts the list of wifis according to MAC addresses
+	 */
 	private void sortListByMAC(List<MyScanResult> wiFiList) {
 		Comparator<MyScanResult> comparator = new Comparator<MyScanResult>() {
 			@Override
@@ -127,12 +313,10 @@ public class WiFiPlaceRecognition implements Runnable {
 		Collections.sort(wiFiList, comparator);
 	}
 
-	
-	
 	// Compute average error over shared networks
 	// TODO: Can be done faster as lists are sorted!
-	private Pair<Integer, Double> computeBSSIDSimilarity(List<MyScanResult> listA,
-			List<MyScanResult> listB) {
+	private Pair<Integer, Double> computeBSSIDSimilarity(
+			List<MyScanResult> listA, List<MyScanResult> listB) {
 		float result = 0.0f;
 		int count = 0;
 		for (MyScanResult scanA : listA) {
@@ -143,261 +327,59 @@ public class WiFiPlaceRecognition implements Runnable {
 				}
 			}
 		}
-		
-		return new Pair<Integer, Double>(count, Math.sqrt(result / count));
-	}
 
-	// Method used by priority queue to order elements
-	// TODO: X, Y !!!
-	// Now it is based on indices
-	public class WiFiPlaceComparator implements Comparator<WiFiPlaceLink> {
-		@Override
-		public int compare(WiFiPlaceLink x, WiFiPlaceLink y) {
-//			if (x.positionDifferance < y.positionDifferance)
-//				return -1;
-//			else if (x.positionDifferance > y.positionDifferance)
-//				return 1;
-//			else return 0;
-			if (x.indexA < y.indexA)
-				return -1;
-			else if (x.indexA > y.indexA)
-				return 1;
-			else
-				return 0;
-		}
+		Double avgError = 1000.0;
+		if (count != 0)
+			avgError = Math.sqrt(result / count);
+
+		return new Pair<Integer, Double>(count, avgError);
 	}
 
 	// We try to add element to queue
-	public void addToQueue(WiFiPlaceLink linkToTest) {
+	private void addToQueue(WiFiPlaceMatch linkToTest) {
 
-		try {
-			queueMtx.acquire();
-
-			// We reached the maximal size of queue
-			if (queueOfWiFiMatchesToCheck.size() >= parameters.maxQueueSize) {
-				reduceTheSizeOfQueue();
-			}
-			
-			// We add the element
-			queueOfWiFiMatchesToCheck.add(linkToTest);
-
-			queueMtx.release();
-		} catch (InterruptedException e) {
-			Log.d(moduleLogName, "Failed to access queue mutex");
+		// We reached the maximal size of queue
+		if (queueOfWiFiMatchesToCheck.size() >= parameters.maxQueueSize) {
+			reduceTheSizeOfQueue();
 		}
+
+		// We add the element
+		queueOfWiFiMatchesToCheck.add(linkToTest);
 
 	}
 
 	/**
-	 * Method used to reduce the size of queue 
+	 * Method used to reduce the size of queue
 	 */
 	private void reduceTheSizeOfQueue() {
 		Log.d(moduleLogName, "There is a need to clear queue, size : "
 				+ queueOfWiFiMatchesToCheck.size());
 
-		Comparator<WiFiPlaceLink> wiFiPlaceComparator = new WiFiPlaceComparator();
-		PriorityQueue<WiFiPlaceLink> newQueue = new PriorityQueue<WiFiPlaceLink>(
+		Comparator<WiFiPlaceMatch> wiFiPlaceComparator = new WiFiPlaceMatchIdComparator();
+		PriorityQueue<WiFiPlaceMatch> newQueue = new PriorityQueue<WiFiPlaceMatch>(
 				parameters.maxQueueSize, wiFiPlaceComparator);
-		for (int i = 0; i < parameters.fractionOfQueueAfterReduction * parameters.maxQueueSize; i++) {
+		for (int i = 0; i < parameters.fractionOfQueueAfterReduction
+				* parameters.maxQueueSize; i++) {
 			newQueue.add(queueOfWiFiMatchesToCheck.poll());
 		}
 		queueOfWiFiMatchesToCheck = newQueue;
-		Log.d(moduleLogName, "Reduced queue size: " + queueOfWiFiMatchesToCheck.size());
-	}
-	
-	void startRecognition() {
-		
-		performRecognition = true;
-		recognizePlacesThread = new Thread(this, "Recognition thread");
-		recognizePlacesThread.start();
-	}
-	
-	void stopRecognition() {
-		performRecognition = false;
-		try {
-			recognizePlacesThread.join();
-		} catch (InterruptedException e) {
-			Log.d(moduleLogName, "Failed to join recognizePlacesThread");
-		}
-		
-		queueOfWiFiMatchesToCheck.clear();
-		//indexOfNewPlaceToProcess = -1;
-		newPlaces.clear();
-		placeDatabase.clear();
-		placeIds.clear();
-	}
-	
-	List<IdPair<Integer, Integer>> getAndClearRecognizedPlacesList() {
-		try {
-			recognizedPlacesMtx.acquire();
-			List<IdPair<Integer, Integer>> returnList = new ArrayList<IdPair<Integer, Integer>>(recognizedPlaces.size());
-			for(IdPair<Integer, Integer> item: recognizedPlaces) 
-				returnList.add( new IdPair<Integer, Integer>(item) );
-			recognizedPlaces.clear();
-			
-			recognizedPlacesMtx.release();
-			return returnList;
-		} catch (InterruptedException e) {
-			Log.d(moduleLogName, "Failed to acquire recognizedList Mtx in getRecognizedPlaces");
-		}
-		return new ArrayList<IdPair<Integer, Integer>>();
-	}
-
-	class WiFiPlaceLink {
-		List<MyScanResult> listA;
-		List<MyScanResult> listB;
-		int indexA, indexB;
-		float positionDifferance;
-
-		public WiFiPlaceLink(List<MyScanResult> _listA, int _indexA, 
-				List<MyScanResult> _listB, int _indexB, float _positionDifferance) {
-			listA = _listA;
-			listB = _listB;
-			indexA = _indexA;
-			indexB = _indexB;
-			
-			positionDifferance = _positionDifferance;
-		}
-	}
-	
-	
-
-	@Override
-	public void run() {
-		// We start with some delay
-		try {
-			Thread.sleep(500);
-		} catch (InterruptedException e1) {
-			// TODO Auto-generated catch block
-			e1.printStackTrace();
-		}
-		while (performRecognition) {
-			 
-			try {
-				// Just sleep so we do not use CPU
-				while (queueOfWiFiMatchesToCheck.size() == 0 && performRecognition == true) {
-					Log.d(moduleLogName, "Sleeping ...");
-					Thread.sleep(500);
-					
-					// NEW place had been added
-					int newPlacesSize = -1;
-					synchronized(newPlaces) {
-						newPlacesSize = newPlaces.size();
-					}
-					if ( newPlacesSize > 0 )
-					{
-						addNewPlaceInRecognitionThread();
-					}
-				}
-				
-				if (!performRecognition)
-					break;
-				
-				
-				
-				// parameters.maxPlaceDatabaseSize
-				
-				
-				// We need to reduce the size of the database
-//				if (placeDatabase.size() > maxPlaceDatabaseSize) {
-//					int i = 0;
-//					Iterator<Integer> itPlace = placeIds.iterator();
-//					for (Iterator<List<ScanResult>> it = placeDatabase.iterator(); it
-//							.hasNext(); i++) {
-//						if (i % 3 == 0) {
-//							it.remove();
-//							itPlace.remove();
-//						}
-//					}
-		//
-//				}
-						
-				// NEW place had been added
-				int newPlacesSize = -1;
-				synchronized(newPlaces) {
-					newPlacesSize = newPlaces.size();
-				}
-				
-				if ( newPlacesSize > 0 )
-				{
-					addNewPlaceInRecognitionThread();
-				}
-				
-				Log.d(moduleLogName, "Queue size : " + queueOfWiFiMatchesToCheck.size());
-				
-				queueMtx.acquire();
-				WiFiPlaceLink linkToTest = queueOfWiFiMatchesToCheck.poll();
-				queueMtx.release();
-				
-				// Computing similarity measure
-				Pair<Integer, Double> x = computeBSSIDSimilarity(linkToTest.listA,
-						linkToTest.listB);
-				
-				// Compute average error
-				float value = x.first;
-				Double avgError = x.second;
-
-				// Finding the most probable place
-				outStreamPlaceRecognitionData.print(linkToTest.indexA + " "
-						+ linkToTest.indexB + " " + value + " "
-						+ parameters.minPercentOfSharedNetworks + " " + linkToTest.listA.size()
-						+ " " + linkToTest.listB.size() + " " + avgError + " "
-						+ parameters.maxAvgErrorThreshold + "\n");
-
-				if (value > parameters.minNumberOfSharedNetworks && value > parameters.minPercentOfSharedNetworks * linkToTest.listA.size()
-						&& value > parameters.minPercentOfSharedNetworks * linkToTest.listB.size()
-						&& avgError < parameters.maxAvgErrorThreshold) {
-
-					Log.d(moduleLogName, "Found local connection - adding it to list of recognized places");
-					recognizedPlacesMtx.acquire();
-					recognizedPlaces.add(new IdPair<Integer, Integer>(linkToTest.indexA, linkToTest.indexB));
-					recognizedPlacesMtx.release();
-				}
-			} catch (InterruptedException e) {
-				Log.d("RecognizedPlaces", "Failed to acquire mutex");
-			}
-		}
+		Log.d(moduleLogName,
+				"Reduced queue size: " + queueOfWiFiMatchesToCheck.size());
 	}
 
 	/**
-	 * 
+	 * Method used to reduce the size of the place database
 	 */
-	private void addNewPlaceInRecognitionThread() {
-		
-		//TODO: newPlace
-//		List<MyScanResult> wiFiList = placeDatabase.get(indexOfNewPlaceToProcess);
-//		int indexA = placeIds.get(indexOfNewPlaceToProcess);
-		
-		int indexA = -1;
-		List<MyScanResult> wiFiList;
-		synchronized(newPlaces) {
-			indexA = newPlaces.get(0).first;
-			wiFiList = newPlaces.get(0).second;
-			newPlaces.remove(0);
-		}
-		
-		if ( indexA >= 0)
-		{
-			int index = 0;
-			for (List<MyScanResult> list : placeDatabase)	
-			{
-				int indexB = placeIds.get(index);
-				
-				if ( indexA != indexB && indexA < 10000) {
-					WiFiPlaceLink linkToTest = new WiFiPlaceLink(wiFiList, indexA, list, indexB, 0.0f);
-					addToQueue(linkToTest);
-				}
-					
-				index++;
+	private void reduceTheSizeOfPlaceDatabase() {
+		Log.d(moduleLogName, "We need to reduce the database size as it is =" + placeDatabase.size());
+		List<Pair<Integer, List<MyScanResult>>> tmp = new ArrayList<Pair<Integer, List<MyScanResult>>>();
+		int i = 0;
+		for (Pair<Integer, List<MyScanResult>> place : placeDatabase) {
+			if (i++ % 2 == 0) {
+				tmp.add(place);
 			}
 		}
-		
-		
-		if ( parameters.addUserWiFiToRecognition ) {
-			placeDatabase.add(wiFiList);
-			placeIds.add(indexA);
-		}
-		
+		placeDatabase = tmp;
+		Log.d(moduleLogName, "New database size=" + placeDatabase.size());
 	}
-
 }
