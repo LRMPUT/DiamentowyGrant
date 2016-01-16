@@ -27,7 +27,7 @@ public class WifiScanner extends BroadcastReceiver {
 
 	WifiManager wifiManager;
 	boolean continuousScanning = false, singleScan = true;
-	boolean waitingForScan = false;
+	public boolean waitingForScan = false;
 	long startTimestampOfWiFiScanning, startTimestampOfCurrentScan,
 			startTimestampOfGlobalTime;
 

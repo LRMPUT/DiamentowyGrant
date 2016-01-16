@@ -59,6 +59,10 @@ final String moduleLogName = "WiFiPlayback";
 	@Override
 	public void run() {
 		Log.e(moduleLogName, "Starting simulation");
+		
+		wifiScanner.waitingForScan = true;
+		wifiScanner.saveRawData = false;
+		
 		long startTime = System.nanoTime();
 		RawData rawData = readWiFi();
 		
