@@ -136,6 +136,12 @@
                     android:layout_width="160dp"
                     android:layout_height="45dp"
                     android:text="Record all" />
+                
+                <Button
+                    android:id="@+id/buttonPlayback"
+                    android:layout_width="160dp"
+                    android:layout_height="45dp"
+                    android:text="Playback!" />
 
             </LinearLayout>
         </LinearLayout>

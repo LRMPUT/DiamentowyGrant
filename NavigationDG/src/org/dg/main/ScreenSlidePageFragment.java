@@ -201,6 +201,9 @@ public class ScreenSlidePageFragment extends Fragment {
 			
 			// Clear map
 			initButtonClearNewMap(rootView, R.id.buttonClearNewMap);
+			
+			// Clear map
+			initButtonPlayback(rootView, R.id.buttonPlayback);
 
 			/**
 			 * OLD: 
@@ -314,6 +317,21 @@ public class ScreenSlidePageFragment extends Fragment {
 					EditText mapName = (EditText) rootView
 						.findViewById(R.id.editTextMapName);
 					onSomeClick(v, "Clear new map &"+mapName.getText());
+			}
+		});
+	}
+	
+	/**
+	 * 
+	 */
+	private void initButtonPlayback(final ViewGroup rootView,
+			final int id) {
+		Button buttonPlayback = (Button) rootView.findViewById(id);
+		buttonPlayback.setText("Playback");
+
+		buttonPlayback.setOnClickListener(new OnClickListener() {
+			public void onClick(View v) {
+					onSomeClick(v, "Playback");
 			}
 		});
 	}

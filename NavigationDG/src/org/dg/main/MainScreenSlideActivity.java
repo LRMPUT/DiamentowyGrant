@@ -127,18 +127,18 @@ public class MainScreenSlideActivity extends Activity implements
 		}
 
 		// 3. Start/Stop record inertial sensors
-//		if (link.contains("Start record inertial sensors")
-//				|| link.contains("Stop record inertial sensors")) {
-//			if (openAIL.inertialSensors.getState() == false) {
-//
-//				openAIL.inertialSensors.save2file(true);
-//				openAIL.inertialSensors.start();
-//
-//			} else {
-//
-//				openAIL.inertialSensors.stop();
-//			}
-//		}
+		// if (link.contains("Start record inertial sensors")
+		// || link.contains("Stop record inertial sensors")) {
+		// if (openAIL.inertialSensors.getState() == false) {
+		//
+		// openAIL.inertialSensors.save2file(true);
+		// openAIL.inertialSensors.start();
+		//
+		// } else {
+		//
+		// openAIL.inertialSensors.stop();
+		// }
+		// }
 
 		// 4. Do a single WiFi Scan
 		if (link.contains("Do a single WiFi scan")) {
@@ -201,7 +201,7 @@ public class MainScreenSlideActivity extends Activity implements
 
 		// Side View 2 - Start/Optimize Graph
 		if (link.contains("Start graph") || link.contains("Optimize graph")) {
-	
+
 			if (!openAIL.graphManager.isOptimizationInProgress()) {
 
 				// We need to update the preview
@@ -375,34 +375,35 @@ public class MainScreenSlideActivity extends Activity implements
 				Log.e(TAG, "Save VPR position - image == null");
 			}
 		}
-		
+
 		// Decode QR code
 		if (link.contains("Decode QR")) {
-//			Mat image = getCurPreviewImage();
-//			String text = QRCode.decodeQRImage(image);
-//			Toast.makeText(getApplicationContext(), text, Toast.LENGTH_LONG).show();
-			
+			// Mat image = getCurPreviewImage();
+			// String text = QRCode.decodeQRImage(image);
+			// Toast.makeText(getApplicationContext(), text,
+			// Toast.LENGTH_LONG).show();
+
 			Log.e(TAG, "Reading image");
-//			File file = new File(
-//					Environment.getExternalStorageDirectory() + "/OpenAIL/exemplaryQRCode.png");
-//			
-//			Mat image = Highgui.imread(file.toString());
-			
+			// File file = new File(
+			// Environment.getExternalStorageDirectory() +
+			// "/OpenAIL/exemplaryQRCode.png");
+			//
+			// Mat image = Highgui.imread(file.toString());
+
 			Mat image = getCurPreviewImage();
-			
+
 			Log.v(TAG, "Calling decode");
 			Integer positionId = openAIL.graphManager.getCurrentPoseId();
 			openAIL.qrCodeDecoder.decode(positionId, image);
-			
-			
+
 		}
-		
+
 		// Button record all
 		if (link.contains("Record all")) {
 			Log.v(TAG, "RECORDING ALL!");
-			
+
 			openAIL.synchronizeModuleTime();
-			
+
 			if (openAIL.inertialSensors.getState() == false) {
 
 				// ADD
@@ -414,25 +415,32 @@ public class MainScreenSlideActivity extends Activity implements
 				openAIL.inertialSensors.stop();
 				openAIL.inertialSensors.recordAll(false);
 			}
-			
+
 			if (openAIL.wifiScanner.getRunningState()) {
 				openAIL.wifiScanner.stopScanning();
 			} else {
 				openAIL.wifiScanner.singleScan(false).continuousScanning(true);
 				openAIL.wifiScanner.startScanning();
 			}
-			
+
 		}
-		
+
 		// Button clear new map
 		if (link.contains("Clear new map")) {
 			Log.v(TAG, "Clear new map");
-			
+
 			// Getting mapName, X, Y, Z which are separated by '&'
 			String[] separated = link.split("&");
-						
+
 			openAIL.clearNewMap(separated[1]);
-			
+
+		}
+
+		// Button clear new map
+		if (link.contains("Playback")) {
+			Log.v(TAG, "Playback");
+
+			openAIL.startPlayback();
 
 		}
 
@@ -486,7 +494,8 @@ public class MainScreenSlideActivity extends Activity implements
 		wifiManager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
 
 		// Init library
-		openAIL = new OpenAndroidIndoorLocalization(getApplicationContext(), sensorManager, wifiManager);
+		openAIL = new OpenAndroidIndoorLocalization(getApplicationContext(),
+				sensorManager, wifiManager);
 
 		// Reguster wifi scanner
 		registerReceiver(openAIL.wifiScanner, new IntentFilter(

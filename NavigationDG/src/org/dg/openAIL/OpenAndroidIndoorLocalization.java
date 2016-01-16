@@ -17,6 +17,8 @@ import org.dg.graphManager.wiFiMeasurement;
 import org.dg.inertialSensors.InertialSensors;
 import org.dg.main.LocalizationView;
 import org.dg.openAIL.Playback.RawData;
+import org.dg.wifi.WiFiPlaceMatch;
+import org.dg.wifi.WiFiPlayback;
 import org.dg.wifi.WifiScanner;
 import org.opencv.core.Mat;
 import org.opencv.core.Point3;
@@ -74,6 +76,9 @@ public class OpenAndroidIndoorLocalization {
 	// Timestamp
 	long processingStartTimestamp = 0;
 
+	// TODO STILL TESTING!
+	WiFiPlayback wifiPlayback;
+	
 	/*
 	 * Creates OpenAIL, loads settings and initializes graph optimization, 
 	 * inertial sensors and WiFi scanner
@@ -106,6 +111,8 @@ public class OpenAndroidIndoorLocalization {
 		// Create QRCodeDecoder
 		qrCodeDecoder = new QRCodeDecoderClass(context);
 		
+		// TODO
+		wifiPlayback = new WiFiPlayback(wifiScanner);
 		
 		// TODO
 //		Playback playback = new Playback();
@@ -198,6 +205,12 @@ public class OpenAndroidIndoorLocalization {
 		}
 	}
 
+	
+	// TODO
+	public void startPlayback() {
+		wifiPlayback.start();
+	}
+	
 	/**
 	 * We set the same time for all modules
 	 */

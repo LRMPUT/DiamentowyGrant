@@ -22,6 +22,8 @@ import android.util.Log;
 import android.widget.Toast;
 
 public class WifiScanner extends BroadcastReceiver {
+	
+	final String moduleLogName = "WiFiScanner";
 
 	WifiManager wifiManager;
 	boolean continuousScanning = false, singleScan = true;
@@ -35,7 +37,7 @@ public class WifiScanner extends BroadcastReceiver {
 	WiFiPlaceRecognition placeRecognition;
 
 	// Last results
-	List<ScanResult> previousWiFiList = new ArrayList<ScanResult>();
+	List<MyScanResult> previousWiFiList = new ArrayList<MyScanResult>();
 	private final Semaphore previousScanMtx = new Semaphore(1, true);
 
 	// Graph result
@@ -171,10 +173,10 @@ public class WifiScanner extends BroadcastReceiver {
 		int bestLvl = -150;
 
 		for (int i = 0; i < previousWiFiList.size(); i++) {
-			ScanResult scanResult = previousWiFiList.get(i);
+			MyScanResult scanResult = previousWiFiList.get(i);
 			if (scanResult.level > bestLvl) {
 				bestLvl = scanResult.level;
-				bestName = scanResult.SSID;
+				bestName = scanResult.networkName;
 			}
 		}
 		return bestName;
@@ -185,8 +187,8 @@ public class WifiScanner extends BroadcastReceiver {
 		List<MyScanResult> myList = new ArrayList<MyScanResult>();
 		try {
 			previousScanMtx.acquire();
-			for (ScanResult sr : previousWiFiList) {
-				myList.add(new MyScanResult(sr.BSSID, sr.level, sr.SSID));
+			for (MyScanResult sr : previousWiFiList) {
+				myList.add(new MyScanResult(sr.BSSID, sr.level, sr.networkName));
 			}
 			previousScanMtx.release();
 		} catch (InterruptedException e) {
@@ -200,11 +202,11 @@ public class WifiScanner extends BroadcastReceiver {
 		try {
 			previousScanMtx.acquire();
 			if (previousWiFiList.size() > 0) {
-				List<MyScanResult> myList = new ArrayList<MyScanResult>();
-				for (ScanResult sr : previousWiFiList) {
-					myList.add(new MyScanResult(sr.BSSID, sr.level));
-				}
-				placeRecognition.addPlace(myList, id);
+//				List<MyScanResult> myList = new ArrayList<MyScanResult>();
+//				for (ScanResult sr : previousWiFiList) {
+//					myList.add(new MyScanResult(sr.BSSID, sr.level));
+//				}
+				placeRecognition.addPlace(previousWiFiList, id);
 			}
 			previousScanMtx.release();
 		} catch (InterruptedException e) {
@@ -255,66 +257,26 @@ public class WifiScanner extends BroadcastReceiver {
 
 	@Override
 	public void onReceive(Context arg0, Intent arg1) {
-		Log.d("WiFi", "Scan finished\n");
+		Log.d(moduleLogName, "Scan finished\n");
 		if (waitingForScan) {
 			try {
-
 				// Process list of detected WiFis
-				List<ScanResult> wifiList = wifiManager.getScanResults();
-				Log.d("WiFi", "Found " + wifiList.size() + " wifis \n");
+				List<ScanResult> tmp = wifiManager.getScanResults();
+				Log.d(moduleLogName, "Found " + tmp.size() + " wifis \n");
 				
-				if (saveRawData)
-				{
-					outStreamRawData.print(Integer.toString(graphPoseId)
-							+ "\t"
-							+ Integer.toString(id)
-							+ "\t"
-							+ Long.toString(startTimestampOfCurrentScan
-									- startTimestampOfGlobalTime)
-							+ "\t"
-							+ Long.toString(System.nanoTime()
-									- startTimestampOfGlobalTime) + "\t");
-					outStreamRawData.print(wifiList.size() + "\n");
-	
-					// Save BSSID, SSID, lvl and frequency
-					for (int i = 0; i < wifiList.size(); i++) {
-						ScanResult scanResult = wifiList.get(i); //convertLevelToMeters(scanResult.level)  + "\t" + scanResult.frequency 
-						outStreamRawData.print(scanResult.BSSID + "\t"
-								+ scanResult.SSID + "\t" + scanResult.level + "\n");
-					}
+				List<MyScanResult> wifiList = new ArrayList<MyScanResult>();
+				for (ScanResult network : tmp) {
+					wifiList.add(new MyScanResult(network.BSSID, network.level, network.SSID));
 				}
 				
-				// Save data for graph
-				graphWiFiList.clear();
-				for (int i = 0; i < wifiList.size(); i++) {
-					// Getting network
-					ScanResult scanResult = wifiList.get(i);
-					// Convert MAC to index
-					int index = bssid2name.indexOf(scanResult.BSSID);
-					if (index == -1) {
-						bssid2name.add(scanResult.BSSID);
-						index = bssid2name.indexOf(scanResult.BSSID);
-					}
-					// Convert lvl to meters
-					double distance = convertLevelToMeters(scanResult.level);
-					// Add to list
-					graphWiFiList.add(new wiFiMeasurement(index + 10000,
-							distance));
-				}
-				graphWiFiListReady = true;
-
-				// Save measurement
-				previousScanMtx.acquire();
-				previousWiFiList = wifiList;
-				previousScanMtx.release();
-
-				newMeasurement = true;
-
+				processNewScan(wifiList);
+				
+				
 				Toast toast = Toast.makeText(arg0.getApplicationContext(),
 						"WiFi scan finished", Toast.LENGTH_SHORT);
 				toast.show();
 			} catch (Exception e) {
-				Log.d("WiFi", "Scanning failed: " + e.getMessage() + "\n");
+				Log.d(moduleLogName, "Scanning failed: " + e.getMessage() + "\n");
 
 				Toast toast = Toast.makeText(arg0.getApplicationContext(),
 						"WiFi scan FAILED", Toast.LENGTH_SHORT);
@@ -329,12 +291,79 @@ public class WifiScanner extends BroadcastReceiver {
 			startTimestampOfCurrentScan = System.nanoTime();
 			boolean value = wifiManager.startScan();
 			waitingForScan = true;
-			Log.d("WiFi",
+			Log.d(moduleLogName,
 					"Called start, waiting on next scan - startScan value: "
 							+ value + "\n");
 		}
 		id++;
 
+	}
+	
+	
+	public void playback(List<MyScanResult> wifiScans) {
+		try {
+			processNewScan(wifiScans);
+			
+			Log.d(moduleLogName, "WiFi scan finished");
+
+		} catch (Exception e) {
+			Log.e(moduleLogName, "WiFi scan FAILED");
+		}
+	}
+
+	/**
+	 * @param arg0
+	 * @throws InterruptedException 
+	 */
+	private void processNewScan(List<MyScanResult> wifiScans) throws InterruptedException {
+			if (saveRawData)
+			{
+				outStreamRawData.print(Integer.toString(graphPoseId)
+						+ "\t"
+						+ Integer.toString(id)
+						+ "\t"
+						+ Long.toString(startTimestampOfCurrentScan
+								- startTimestampOfGlobalTime)
+						+ "\t"
+						+ Long.toString(System.nanoTime()
+								- startTimestampOfGlobalTime) + "\t");
+				outStreamRawData.print(wifiScans.size() + "\n");
+
+				// Save BSSID, SSID, lvl and frequency
+				for (int i = 0; i < wifiScans.size(); i++) {
+					MyScanResult scanResult = wifiScans.get(i); //convertLevelToMeters(scanResult.level)  + "\t" + scanResult.frequency 
+					outStreamRawData.print(scanResult.BSSID + "\t"
+							+ scanResult.networkName + "\t" + scanResult.level + "\n");
+				}
+			}
+			
+			// Save data for graph
+			graphWiFiList.clear();
+			for (int i = 0; i < wifiScans.size(); i++) {
+				// Getting network
+				MyScanResult scanResult = wifiScans.get(i);
+				// Convert MAC to index
+				int index = bssid2name.indexOf(scanResult.BSSID);
+				if (index == -1) {
+					bssid2name.add(scanResult.BSSID);
+					index = bssid2name.indexOf(scanResult.BSSID);
+				}
+				// Convert lvl to meters
+				double distance = convertLevelToMeters(scanResult.level);
+				// Add to list
+				graphWiFiList.add(new wiFiMeasurement(index + 10000,
+						distance));
+			}
+			graphWiFiListReady = true;
+
+			// Save measurement
+			previousScanMtx.acquire();
+			previousWiFiList = wifiScans;
+			previousScanMtx.release();
+
+			newMeasurement = true;
+
+			
 	}
 
 }
