@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Scanner;
 
+import org.dg.openAIL.ConfigurationReader.Parameters;
 import org.dg.openAIL.PriorMapHandler;
 
 import android.hardware.Sensor;
@@ -29,8 +30,12 @@ final String moduleLogName = "WiFiPlayback";
 	Scanner rawDataScanner;
 	WifiScanner wifiScanner;
 	
-	public WiFiPlayback(WifiScanner _wifiScanner) {
+	Parameters.Playback parameters;
+	
+	public WiFiPlayback(Parameters.Playback _parameters, WifiScanner _wifiScanner) {
 		wifiScanner = _wifiScanner;
+		parameters = _parameters;
+		
 		File folder = new File(Environment.getExternalStorageDirectory()
 				+ "/OpenAIL/rawData");
 	
@@ -60,6 +65,7 @@ final String moduleLogName = "WiFiPlayback";
 	public void run() {
 		Log.e(moduleLogName, "Starting simulation");
 		
+		wifiScanner.setPlaybackState(true);
 		wifiScanner.waitingForScan = true;
 		wifiScanner.saveRawData = false;
 		
@@ -68,15 +74,17 @@ final String moduleLogName = "WiFiPlayback";
 		
 		while(rawData != null) {
 			
-			Log.e(moduleLogName, "rawData.timestampEnd = " + rawData.timestampEnd + " vs " + (System.nanoTime() - startTime));
-			if ( rawData.timestampEnd < System.nanoTime() - startTime) {
+			long currentTime = (long) ((System.nanoTime() - startTime) * parameters.simulationSpeed);
+			
+			Log.e(moduleLogName, "rawData.timestampEnd = " + rawData.timestampEnd + " vs " + currentTime);
+			if ( rawData.timestampEnd < currentTime) {
 				wifiScanner.playback(rawData.wifiScans);
 				rawData = readWiFi();
 			}
 			else
 			{
 				try {
-					Thread.sleep(200, 0);
+					Thread.sleep(parameters.wifiSleepTimeInMs, 0);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}

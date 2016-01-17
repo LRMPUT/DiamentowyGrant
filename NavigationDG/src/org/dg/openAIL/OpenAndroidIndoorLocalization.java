@@ -112,7 +112,7 @@ public class OpenAndroidIndoorLocalization {
 		qrCodeDecoder = new QRCodeDecoderClass(context);
 		
 		// TODO
-		wifiPlayback = new WiFiPlayback(wifiScanner);
+		wifiPlayback = new WiFiPlayback(parameters.playback, wifiScanner);
 		inertialSensorsPlayback = new InertialSensorsPlayback(parameters.playback, inertialSensors);
 		
 		// TODO
@@ -209,7 +209,7 @@ public class OpenAndroidIndoorLocalization {
 	
 	// TODO
 	public void startPlayback() {
-//		wifiPlayback.start();
+		wifiPlayback.start();
 		
 		inertialSensors.startPlayback();
 		inertialSensors.startStepometer();
@@ -367,12 +367,13 @@ public class OpenAndroidIndoorLocalization {
 					 if (wifiList != null)
 						 graphManager.addMultipleWiFiMeasurements(wifiList);
 				}
-			} else if (wifiScanner.getRunningState()) {
+			} else if (wifiScanner.getWaitingForScan() && !wifiScanner.getPlaybackState()) {
 
+				Log.d(moduleLogName,"WiFi waiting for scan = " + wifiScanner.getWaitingForScan());
 				detectWiFiIssue++;
 
 				// Bad scan received - need to restart
-				if (detectWiFiIssue > 20) {
+				if (detectWiFiIssue > parameters.mainProcessing.frequencyOfNewDataQuery * 4) {
 					Log.d(moduleLogName,
 							"Restarting WiFi due to continuous scan issue");
 					wifiScanner.startScanning();

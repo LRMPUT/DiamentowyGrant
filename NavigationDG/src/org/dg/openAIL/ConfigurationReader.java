@@ -32,8 +32,9 @@ public class ConfigurationReader {
 
 		public class Playback {
 			public double simulationSpeed;
-			public double maxDelay;
-			public long sleepTimeInMs;
+			public double inertialMaxDelay;
+			public long inertialSleepTimeInMs;
+			public long wifiSleepTimeInMs;
 		}
 
 		public class InertialSensors {
@@ -134,9 +135,10 @@ public class ConfigurationReader {
 				+ parameters.mainProcessing.showMapWithoutMapConnection);
 
 		Log.d(moduleLogName, "Playback:" + "\n--- SimulationSpeed="
-				+ parameters.playback.simulationSpeed + "\n--- maxDelay="
-				+ parameters.playback.maxDelay + "\n--- sleepTimeInMs="
-				+ parameters.playback.sleepTimeInMs);
+				+ parameters.playback.simulationSpeed + "\n--- inertialSleepTimeInMs="
+				+ parameters.playback.inertialSleepTimeInMs + "\n--- wifiSleepTimeInMs="
+						+ parameters.playback.wifiSleepTimeInMs + "\n--- inertialMaxDelay="
+				+ parameters.playback.inertialMaxDelay);
 
 		Log.d(moduleLogName, "InertialSensors:" + "\n--- useModule="
 				+ parameters.inertialSensors.useModule + "\n--- stepometer="
@@ -309,23 +311,28 @@ public class ConfigurationReader {
 		// Reading attributes
 		String simulationSpeedString = parser.getAttributeValue(null,
 				"simulationSpeed");
-		String maxDelayString = parser.getAttributeValue(null,
-				"maxDelay");
-		String sleepTimeInMsString = parser.getAttributeValue(null,
-				"sleepTimeInMs");
+		
+		String inertialSleepTimeInMsString = parser.getAttributeValue(null,
+				"inertialSleepTimeInMs");
+		String wifiSleepTimeInMsString = parser.getAttributeValue(null,
+				"wifiSleepTimeInMs");
+		String inertialMaxDelayString = parser.getAttributeValue(null,
+				"inertialMaxDelay");
 
 		// Logging those values
 		Log.d(moduleLogName, "simulationSpeed = " + simulationSpeedString);
-		Log.d(moduleLogName, "maxDelay = " + maxDelayString);
-		Log.d(moduleLogName, "sleepTimeInMs = " + sleepTimeInMsString);
+		Log.d(moduleLogName, "inertialSleepTimeInMs = " + inertialSleepTimeInMsString);
+		Log.d(moduleLogName, "wifiSleepTimeInMs = " + wifiSleepTimeInMsString);
+		Log.d(moduleLogName, "inertialMaxDelay = " + inertialMaxDelayString);
 
 		// Storing read values
 		parameters.playback.simulationSpeed = Double
 				.parseDouble(simulationSpeedString);
-		parameters.playback.maxDelay = Double
-				.parseDouble(maxDelayString);
-		parameters.playback.sleepTimeInMs = Long.parseLong(sleepTimeInMsString);
-
+		parameters.playback.inertialSleepTimeInMs = Long.parseLong(inertialSleepTimeInMsString);
+		parameters.playback.wifiSleepTimeInMs = Long.parseLong(wifiSleepTimeInMsString);
+		parameters.playback.inertialMaxDelay = Double
+				.parseDouble(inertialMaxDelayString);
+		
 		parser.nextTag();
 		parser.require(XmlPullParser.END_TAG, ns, "Playback");
 		Log.d(moduleLogName, "</Playback>");

@@ -144,7 +144,7 @@ public class InertialSensorsPlayback implements Runnable {
 
 			long currentTime = (long) ((System.nanoTime() - startTime)*parameters.simulationSpeed);
 			
-			if ( (currentTime - rawData.timestamp) / 10e6 > parameters.maxDelay )
+			if ( (currentTime - rawData.timestamp) / 10e6 > parameters.inertialMaxDelay )
 				Log.e(moduleLogName, "We are processing data too slow! Lower simulationSpeed! " + rawData.timestamp
 						+ " vs " + currentTime + " DIFF=" + (currentTime - rawData.timestamp));
 			
@@ -156,7 +156,7 @@ public class InertialSensorsPlayback implements Runnable {
 				rawData = getNextData();
 			} else {
 				try {
-					Thread.sleep(parameters.sleepTimeInMs, 0);
+					Thread.sleep(parameters.inertialSleepTimeInMs, 0);
 				} catch (InterruptedException e) {
 					e.printStackTrace();
 				}

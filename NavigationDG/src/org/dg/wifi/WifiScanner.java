@@ -31,6 +31,9 @@ public class WifiScanner extends BroadcastReceiver {
 	// Are we waiting for the scan?
 	public boolean waitingForScan = false;
 	
+	// Was start called?
+	public boolean playbackActive = false;
+	
 	// Timestamps
 	long startTimestampOfWiFiScanning, startTimestampOfCurrentScan,
 			startTimestampOfGlobalTime;
@@ -139,12 +142,21 @@ public class WifiScanner extends BroadcastReceiver {
 	}
 
 	// Are we waiting for the WiFi scan?
-	public boolean getRunningState() {
+	public boolean getWaitingForScan() {
 		return waitingForScan;
+	}
+	
+	public boolean getPlaybackState() {
+		return playbackActive;
+	}
+	
+	public void setPlaybackState(boolean playbackState) {
+		playbackActive = playbackState;
 	}
 
 	// Starts scanning
 	public void startScanning() {
+				
 		if (continuousScanning && saveRawData) {
 
 			String fileName = "";
@@ -300,21 +312,19 @@ public class WifiScanner extends BroadcastReceiver {
 						"WiFi scan FAILED", Toast.LENGTH_SHORT);
 				toast.show();
 			}
+			
+			// Prepare for next measurement
+			waitingForScan = false;
+			if (continuousScanning) {
+				startTimestampOfCurrentScan = System.nanoTime();
+				boolean value = wifiManager.startScan();
+				waitingForScan = true;
+				Log.d(moduleLogName,
+						"Called start, waiting on next scan - startScan value: "
+								+ value + "\n");
+			}
+			id++;
 		}
-		
-
-		// Prepare for next measurement
-		waitingForScan = false;
-		if (continuousScanning) {
-			startTimestampOfCurrentScan = System.nanoTime();
-			boolean value = wifiManager.startScan();
-			waitingForScan = true;
-			Log.d(moduleLogName,
-					"Called start, waiting on next scan - startScan value: "
-							+ value + "\n");
-		}
-		id++;
-
 	}
 	
 	// Simulate working with provided scan

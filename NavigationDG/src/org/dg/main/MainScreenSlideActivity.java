@@ -153,7 +153,7 @@ public class MainScreenSlideActivity extends Activity implements
 		// 5. Record continuous WiFi Scans
 		if (link.contains("Stop WiFi scans")
 				|| link.contains("Start WiFi scans")) {
-			if (openAIL.wifiScanner.getRunningState()) {
+			if (openAIL.wifiScanner.getWaitingForScan()) {
 				openAIL.wifiScanner.stopScanning();
 			} else {
 				if (openAIL.inertialSensors.getState()) {
@@ -416,7 +416,7 @@ public class MainScreenSlideActivity extends Activity implements
 				openAIL.inertialSensors.recordAll(false);
 			}
 
-			if (openAIL.wifiScanner.getRunningState()) {
+			if (openAIL.wifiScanner.getWaitingForScan()) {
 				openAIL.wifiScanner.stopScanning();
 			} else {
 				openAIL.wifiScanner.singleScan(false).continuousScanning(true);
