@@ -4,11 +4,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.PrintStream;
-import java.nio.channels.AlreadyConnectedException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
-import java.util.concurrent.Semaphore;
 
 import org.dg.graphManager.wiFiMeasurement;
 
@@ -25,24 +22,29 @@ public class WifiScanner extends BroadcastReceiver {
 	
 	final String moduleLogName = "WiFiScanner";
 
+	// Class to access physical sensor
 	WifiManager wifiManager;
+	
+	// Operation mode - single/continuous
 	boolean continuousScanning = false, singleScan = true;
+	
+	// Are we waiting for the scan?
 	public boolean waitingForScan = false;
+	
+	// Timestamps
 	long startTimestampOfWiFiScanning, startTimestampOfCurrentScan,
 			startTimestampOfGlobalTime;
 
 	// Scan id and graphId
 	private int id, graphPoseId;
 
+	// Class used to process wifi scans
 	WiFiPlaceRecognition placeRecognition;
 
 	// Last results
 	List<MyScanResult> previousWiFiList = new ArrayList<MyScanResult>();
-	private final Semaphore previousScanMtx = new Semaphore(1, true);
-
-	// Graph result
-	List<wiFiMeasurement> graphWiFiList = new ArrayList<wiFiMeasurement>();
-	boolean graphWiFiListReady = false;
+	
+	
 
 	// / G2O
 	// Position index
@@ -51,28 +53,53 @@ public class WifiScanner extends BroadcastReceiver {
 	// Variable indicating new measurement
 	boolean newMeasurement = false;
 
-	// List of already found networks
-	List<String> bssid2name = new ArrayList<String>();
-
+	
 	// File to save data
 	PrintStream outStreamRawData = null;
 	
 	// Should we save raw WiFi data
 	boolean saveRawData = false;
 
+	//// --------
+	
+	// Graph result
+	List<wiFiMeasurement> graphWiFiList = new ArrayList<wiFiMeasurement>();
+	boolean graphWiFiListReady = false;
+	
+	// List of already found networks
+	List<String> bssid2name = new ArrayList<String>();
+
+	// Wifi direct measurements
+		public List<wiFiMeasurement> getGraphWiFiList() {
+			if (graphWiFiListReady) {
+				graphWiFiListReady = false;
+				return new ArrayList<wiFiMeasurement>(graphWiFiList);
+			}
+			return null;
+		}
+		
+		
+	
 	public WifiScanner(
 			WifiManager _wifiManager,
 			org.dg.openAIL.ConfigurationReader.Parameters.WiFiPlaceRecognition wifiPlaceRecognitionParameters) {
+		// Save physical access to sensor
 		wifiManager = _wifiManager;
-		continuousScanning = false;
-		singleScan = true;
+		
+		// We operate in continuous mode
+		continuousScanning = true;
+		singleScan = false;
+		
+		// Let's assume 0's
 		id = 0;
 		graphPoseId = 0;
 		startTimestampOfGlobalTime = 0;
 
+		// Creating wifi place recognition
 		placeRecognition = new WiFiPlaceRecognition(
 				wifiPlaceRecognitionParameters);
 
+		// Directory to story results
 		File folder = new File(Environment.getExternalStorageDirectory()
 				+ "/OpenAIL/WiFi");
 
@@ -84,6 +111,7 @@ public class WifiScanner extends BroadcastReceiver {
 		saveRawData = wifiPlaceRecognitionParameters.recordRawData;
 	}
 
+	// Nicely setting parameters
 	public WifiScanner singleScan(boolean _singleScan) {
 		this.singleScan = _singleScan;
 		return this;
@@ -100,22 +128,22 @@ public class WifiScanner extends BroadcastReceiver {
 		return this;
 	}
 
+	// We start the recognition of places
 	public void startNewPlaceRecognitionThread() {
 		placeRecognition.startRecognition();
 	}
 
+	// We stop the recognition of places
 	public void stopNewPlaceRecognitionThread() {
 		placeRecognition.stopRecognition();
 	}
 
-	public void setGraphPoseId(int _id) {
-		graphPoseId = _id;
-	}
-
+	// Are we waiting for the WiFi scan?
 	public boolean getRunningState() {
 		return waitingForScan;
 	}
 
+	// Starts scanning
 	public void startScanning() {
 		if (continuousScanning && saveRawData) {
 
@@ -152,6 +180,7 @@ public class WifiScanner extends BroadcastReceiver {
 		}
 	}
 
+	// Stops scanning - we still wait for started scan
 	public void stopScanning() {
 		continuousScanning = false;
 
@@ -164,10 +193,14 @@ public class WifiScanner extends BroadcastReceiver {
 		}
 	}
 
+	
+	
+	// Info for GUI
 	public int getNetworkCount() {
 		return previousWiFiList.size();
 	}
 
+	// Info for GUI
 	public String getStrongestNetwork() {
 		String bestName = "";
 		int bestLvl = -150;
@@ -181,80 +214,65 @@ public class WifiScanner extends BroadcastReceiver {
 		}
 		return bestName;
 	}
+	
+	// Return the size of place database
+	public int getSizeOfPlaceDatabase() {
+		return placeRecognition.getSizeOfPlaceDatabase();
+	}
 
+	// Returns the last scan
 	public List<MyScanResult> getLastScan()
 	{
 		List<MyScanResult> myList = new ArrayList<MyScanResult>();
-		try {
-			previousScanMtx.acquire();
+		synchronized (previousWiFiList) {
 			for (MyScanResult sr : previousWiFiList) {
 				myList.add(new MyScanResult(sr.BSSID, sr.level, sr.networkName));
 			}
-			previousScanMtx.release();
-		} catch (InterruptedException e) {
-			e.printStackTrace();
 		}
 		
 		return myList;
 	}
 	
+	// Adds last scan to place recognition
 	public void addLastScanToRecognition(int id) {
-		try {
-			previousScanMtx.acquire();
-			if (previousWiFiList.size() > 0) {
-//				List<MyScanResult> myList = new ArrayList<MyScanResult>();
-//				for (ScanResult sr : previousWiFiList) {
-//					myList.add(new MyScanResult(sr.BSSID, sr.level));
-//				}
-				placeRecognition.addPlace(previousWiFiList, id);
-			}
-			previousScanMtx.release();
-		} catch (InterruptedException e) {
-			e.printStackTrace();
+		graphPoseId = id; 
+		synchronized (previousWiFiList) {
+			addScanToRecognition(id, previousWiFiList);
 		}
-
 	}
 
+	// Adding scan to place rec
 	public void addScanToRecognition(int id, List<MyScanResult> wifiScan) {
 		if (wifiScan.size() > 0)
 			placeRecognition.addPlace(wifiScan, id);
 	}
 
+	// Returns the places that we recognized and clears the list
 	public List<org.dg.openAIL.IdPair<Integer, Integer>> getAndClearRecognizedPlacesList() {
 		return placeRecognition.getAndClearRecognizedPlacesList();
 	}
 
-	public int getSizeOfPlaceDatabase() {
-		return placeRecognition.getSizeOfPlaceDatabase();
-	}
+	
+	
 
-	public List<wiFiMeasurement> getGraphWiFiList() {
-		if (graphWiFiListReady) {
-			graphWiFiListReady = false;
-			return new ArrayList<wiFiMeasurement>(graphWiFiList);
-		}
-		return null;
-	}
+	
 
+	// Are there new Wifi scans?
 	public boolean isNewMeasurement() {
 		return newMeasurement;
 	}
 
+	// we set the value of new measurement
 	public void newMeasurement(boolean value) {
 		newMeasurement = value;
 	}
 
-	// Convert measurement from dBm to meters
-	private double convertLevelToMeters(double level) {
-		double tmp = -40 + Math.abs(level);
-		tmp = tmp / 40;
-		return Math.pow(10, tmp);
-	}
-	
+	// Setting the start of the time
 	public void setStartTime() {
 		startTimestampOfGlobalTime = System.nanoTime();
 	}
 
+	// When data from physical sensors is received
 	@Override
 	public void onReceive(Context arg0, Intent arg1) {
 		Log.d(moduleLogName, "Scan finished\n");
@@ -299,7 +317,7 @@ public class WifiScanner extends BroadcastReceiver {
 
 	}
 	
-	
+	// Simulate working with provided scan
 	public void playback(List<MyScanResult> wifiScans) {
 		try {
 			processNewScan(wifiScans);
@@ -312,30 +330,14 @@ public class WifiScanner extends BroadcastReceiver {
 	}
 
 	/**
-	 * @param arg0
-	 * @throws InterruptedException 
+	 * Processes new scan coming either from real sensor manager or from playback
 	 */
 	private void processNewScan(List<MyScanResult> wifiScans) throws InterruptedException {
-			if (saveRawData)
-			{
-				outStreamRawData.print(Integer.toString(graphPoseId)
-						+ "\t"
-						+ Integer.toString(id)
-						+ "\t"
-						+ Long.toString(startTimestampOfCurrentScan
-								- startTimestampOfGlobalTime)
-						+ "\t"
-						+ Long.toString(System.nanoTime()
-								- startTimestampOfGlobalTime) + "\t");
-				outStreamRawData.print(wifiScans.size() + "\n");
 
-				// Save BSSID, SSID, lvl and frequency
-				for (int i = 0; i < wifiScans.size(); i++) {
-					MyScanResult scanResult = wifiScans.get(i); //convertLevelToMeters(scanResult.level)  + "\t" + scanResult.frequency 
-					outStreamRawData.print(scanResult.BSSID + "\t"
-							+ scanResult.networkName + "\t" + scanResult.level + "\n");
-				}
-			}
+			// Saving raw data
+			if (saveRawData)
+				saveScanToRawStream(wifiScans);
+
 			
 			// Save data for graph
 			graphWiFiList.clear();
@@ -357,13 +359,44 @@ public class WifiScanner extends BroadcastReceiver {
 			graphWiFiListReady = true;
 
 			// Save measurement
-			previousScanMtx.acquire();
-			previousWiFiList = wifiScans;
-			previousScanMtx.release();
+			synchronized (previousWiFiList) {
+				previousWiFiList = wifiScans;
+			}
 
 			newMeasurement = true;
 
 			
 	}
 
+	/**
+	 * @param wifiScans
+	 */
+	private void saveScanToRawStream(List<MyScanResult> wifiScans) {
+		outStreamRawData.print(Integer.toString(graphPoseId)
+				+ "\t"
+				+ Integer.toString(id)
+				+ "\t"
+				+ Long.toString(startTimestampOfCurrentScan
+						- startTimestampOfGlobalTime)
+				+ "\t"
+				+ Long.toString(System.nanoTime()
+						- startTimestampOfGlobalTime) + "\t");
+		outStreamRawData.print(wifiScans.size() + "\n");
+
+		// Save BSSID, SSID, lvl and frequency
+		for (int i = 0; i < wifiScans.size(); i++) {
+			MyScanResult scanResult = wifiScans.get(i); //convertLevelToMeters(scanResult.level)  + "\t" + scanResult.frequency 
+			outStreamRawData.print(scanResult.BSSID + "\t"
+					+ scanResult.networkName + "\t" + scanResult.level + "\n");
+		}
+	}
+
+	/*
+	 *  Convert measurement from dBm to meters with some propagation model
+	 */
+	private double convertLevelToMeters(double level) {
+		double tmp = -40 + Math.abs(level);
+		tmp = tmp / 40;
+		return Math.pow(10, tmp);
+	}
 }

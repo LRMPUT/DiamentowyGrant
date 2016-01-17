@@ -15,9 +15,9 @@ public class ConfigurationReader {
 	private static final String moduleLogName = "ConfigurationReader";
 
 	public enum Modules {
-		MAINPROCESSING, INERTIALSENSORS, GRAPHMANAGER, WIFIPLACERECOGNITION, VISUALODOMETRY, VISUALPLACERECOGNITION,
+		MAINPROCESSING, PLAYBACK, INERTIALSENSORS, GRAPHMANAGER, WIFIPLACERECOGNITION, VISUALODOMETRY, VISUALPLACERECOGNITION,
 	}
-	
+
 	// Class to store all parameters used in OpenAIL
 	public class Parameters {
 		public class MainProcessing {
@@ -28,8 +28,14 @@ public class ConfigurationReader {
 			double imageCaptureVarianceThreshold;
 			public boolean useNavigation;
 			public boolean showMapWithoutMapConnection;
-		}	
-		
+		}
+
+		public class Playback {
+			public double simulationSpeed;
+			public double maxDelay;
+			public long sleepTimeInMs;
+		}
+
 		public class InertialSensors {
 			public class Record {
 				public boolean accelerometer, gyroscope, magnetometer,
@@ -46,7 +52,7 @@ public class ConfigurationReader {
 			public double priorMapStepometerBiasHorizontal;
 			public Record record = new Record();
 		}
-		
+
 		public class GraphManager {
 			public double vprVicinityDeadBandRadius;
 			public double informationMatrixOfVPRVicinity;
@@ -55,14 +61,14 @@ public class ConfigurationReader {
 			public double informationMatrixOfWiFi;
 			public int optimizeFromFileIterationCount;
 		}
-		
+
 		public class WiFiPlaceRecognition {
 			public boolean useModule;
 			public boolean recordRawData;
-			public int	maxPlaceDatabaseSize;
-			public int	maxQueueSize; 
+			public int maxPlaceDatabaseSize;
+			public int maxQueueSize;
 			public double fractionOfQueueAfterReduction;
-			public int	minNumberOfSharedNetworks;
+			public int minNumberOfSharedNetworks;
 			public double minPercentOfSharedNetworks;
 			public double maxAvgErrorThreshold;
 			public boolean directWiFiMeasurements;
@@ -70,6 +76,7 @@ public class ConfigurationReader {
 		}
 
 		MainProcessing mainProcessing = new MainProcessing();
+		Playback playback = new Playback();
 		InertialSensors inertialSensors = new InertialSensors();
 		GraphManager graphManager = new GraphManager();
 		WiFiPlaceRecognition wifiPlaceRecognition = new WiFiPlaceRecognition();
@@ -80,7 +87,6 @@ public class ConfigurationReader {
 	Parameters getParameters() {
 		return parameters;
 	}
-	 
 
 	private static final String ns = null;
 
@@ -88,7 +94,7 @@ public class ConfigurationReader {
 			throws XmlPullParserException, IOException {
 
 		Log.d(moduleLogName, "Starting ...");
-		
+
 		FileInputStream ifs = new FileInputStream(new File(path));
 		try {
 			XmlPullParser parser = Xml.newPullParser();
@@ -104,72 +110,109 @@ public class ConfigurationReader {
 			ifs.close();
 		}
 		Log.d(moduleLogName, "Finishing ...");
-		
+
 		logAllParameters();
-		
+
 		return parameters;
 	}
-	
-	
-	private void logAllParameters() {
-		
-		Log.d(moduleLogName, "MainProcessing:" +
-				"\n--- frequencyOfNewDataQuery=" + parameters.mainProcessing.frequencyOfNewDataQuery + 
-				"\n--- priorMapName=" + parameters.mainProcessing.priorMapName + 
-				"\n--- usePriorMap=" + parameters.mainProcessing.usePriorMap +
-				"\n--- imageCaptureStep=" + parameters.mainProcessing.imageCaptureStep +
-				"\n--- imageCaptureVarianceThreshold=" + parameters.mainProcessing.imageCaptureVarianceThreshold + 
-				"\n--- useNavigation=" + parameters.mainProcessing.useNavigation + 
-				"\n--- showMapWithoutMapConnection=" + parameters.mainProcessing.showMapWithoutMapConnection);
-		
-		Log.d(moduleLogName, "InertialSensors:" +
-				"\n--- useModule=" + parameters.inertialSensors.useModule + 
-				"\n--- stepometer=" + parameters.inertialSensors.stepometer +
-				"\n--- verticalOrientation=" + parameters.inertialSensors.verticalOrientation + 
-				"\n--- priorMapStepometerBiasVertical=" + parameters.inertialSensors.priorMapStepometerBiasVertical +
-				"\n--- priorMapStepometerBiasHorizontal=" + parameters.inertialSensors.priorMapStepometerBiasHorizontal);	
 
-		Log.d(moduleLogName, "--- Record:" +
-				"\n------ accelerometer=" + parameters.inertialSensors.record.accelerometer + 
-				"\n------ gyroscope=" + parameters.inertialSensors.record.gyroscope + 
-				"\n------ magnetometer=" + parameters.inertialSensors.record.magnetometer + 
-				"\n------ barometer=" + parameters.inertialSensors.record.barometer + 
-				"\n------ accelerometerWithoutGravity=" + parameters.inertialSensors.record.accelerometerWithoutGravity + 
-				
-				"\n------ orientationAndroid=" + parameters.inertialSensors.record.orientationAndroid + 
-				"\n------ orientationAndroidEuler=" + parameters.inertialSensors.record.orientationAndroidEuler + 
-				"\n------ orientationAEKF=" + parameters.inertialSensors.record.orientationAEKF + 
-				"\n------ orientationAEKFEuler=" + parameters.inertialSensors.record.orientationAEKFEuler + 
-				"\n------ orientationCF=" + parameters.inertialSensors.record.orientationCF + 
-				"\n------ orientationCFEuler=" + parameters.inertialSensors.record.orientationCFEuler);
-	
-		Log.d(moduleLogName, "GraphManager:" +
-				"\n--- vprVicinityDeadBandRadius=" + parameters.graphManager.vprVicinityDeadBandRadius + 
-				"\n--- informationMatrixOfVPRVicinity=" + parameters.graphManager.informationMatrixOfVPRVicinity + 
-				"\n--- wifiFingerprintDeadBandRadius=" + parameters.graphManager.wifiFingerprintDeadBandRadius + 
-				"\n--- informationMatrixOfWiFiFingerprint=" + parameters.graphManager.informationMatrixOfWiFiFingerprint +
-				"\n--- informationMatrixOfWiFi=" + parameters.graphManager.informationMatrixOfWiFi +
-				"\n--- optimizeFromFileIterationCount=" + parameters.graphManager.optimizeFromFileIterationCount);
-				
-		Log.d(moduleLogName, "WiFiPlaceRecognition:" +
-				"\n--- useModule=" + parameters.wifiPlaceRecognition.useModule +
-				"\n--- recordRawData=" + parameters.wifiPlaceRecognition.recordRawData +
-				"\n--- maxPlaceDatabaseSize=" + parameters.wifiPlaceRecognition.maxPlaceDatabaseSize +
-				"\n--- maxQueueSize=" + parameters.wifiPlaceRecognition.maxQueueSize +
-				"\n--- fractionOfQueueAfterReduction=" + parameters.wifiPlaceRecognition.fractionOfQueueAfterReduction +
-				"\n--- minNumberOfSharedNetworks=" + parameters.wifiPlaceRecognition.minNumberOfSharedNetworks +
-				"\n--- minPercentOfSharedNetworks=" + parameters.wifiPlaceRecognition.minPercentOfSharedNetworks +
-				"\n--- maxAvgErrorThreshold=" + parameters.wifiPlaceRecognition.maxAvgErrorThreshold +
-				"\n--- addUserWiFiToRecognition=" + parameters.wifiPlaceRecognition.addUserWiFiToRecognition);		
+	private void logAllParameters() {
+
+		Log.d(moduleLogName, "MainProcessing:"
+				+ "\n--- frequencyOfNewDataQuery="
+				+ parameters.mainProcessing.frequencyOfNewDataQuery
+				+ "\n--- priorMapName="
+				+ parameters.mainProcessing.priorMapName + "\n--- usePriorMap="
+				+ parameters.mainProcessing.usePriorMap
+				+ "\n--- imageCaptureStep="
+				+ parameters.mainProcessing.imageCaptureStep
+				+ "\n--- imageCaptureVarianceThreshold="
+				+ parameters.mainProcessing.imageCaptureVarianceThreshold
+				+ "\n--- useNavigation="
+				+ parameters.mainProcessing.useNavigation
+				+ "\n--- showMapWithoutMapConnection="
+				+ parameters.mainProcessing.showMapWithoutMapConnection);
+
+		Log.d(moduleLogName, "Playback:" + "\n--- SimulationSpeed="
+				+ parameters.playback.simulationSpeed + "\n--- maxDelay="
+				+ parameters.playback.maxDelay + "\n--- sleepTimeInMs="
+				+ parameters.playback.sleepTimeInMs);
+
+		Log.d(moduleLogName, "InertialSensors:" + "\n--- useModule="
+				+ parameters.inertialSensors.useModule + "\n--- stepometer="
+				+ parameters.inertialSensors.stepometer
+				+ "\n--- verticalOrientation="
+				+ parameters.inertialSensors.verticalOrientation
+				+ "\n--- priorMapStepometerBiasVertical="
+				+ parameters.inertialSensors.priorMapStepometerBiasVertical
+				+ "\n--- priorMapStepometerBiasHorizontal="
+				+ parameters.inertialSensors.priorMapStepometerBiasHorizontal);
+
+		Log.d(moduleLogName, "--- Record:" + "\n------ accelerometer="
+				+ parameters.inertialSensors.record.accelerometer
+				+ "\n------ gyroscope="
+				+ parameters.inertialSensors.record.gyroscope
+				+ "\n------ magnetometer="
+				+ parameters.inertialSensors.record.magnetometer
+				+ "\n------ barometer="
+				+ parameters.inertialSensors.record.barometer
+				+ "\n------ accelerometerWithoutGravity="
+				+ parameters.inertialSensors.record.accelerometerWithoutGravity
+				+
+
+				"\n------ orientationAndroid="
+				+ parameters.inertialSensors.record.orientationAndroid
+				+ "\n------ orientationAndroidEuler="
+				+ parameters.inertialSensors.record.orientationAndroidEuler
+				+ "\n------ orientationAEKF="
+				+ parameters.inertialSensors.record.orientationAEKF
+				+ "\n------ orientationAEKFEuler="
+				+ parameters.inertialSensors.record.orientationAEKFEuler
+				+ "\n------ orientationCF="
+				+ parameters.inertialSensors.record.orientationCF
+				+ "\n------ orientationCFEuler="
+				+ parameters.inertialSensors.record.orientationCFEuler);
+
+		Log.d(moduleLogName, "GraphManager:"
+				+ "\n--- vprVicinityDeadBandRadius="
+				+ parameters.graphManager.vprVicinityDeadBandRadius
+				+ "\n--- informationMatrixOfVPRVicinity="
+				+ parameters.graphManager.informationMatrixOfVPRVicinity
+				+ "\n--- wifiFingerprintDeadBandRadius="
+				+ parameters.graphManager.wifiFingerprintDeadBandRadius
+				+ "\n--- informationMatrixOfWiFiFingerprint="
+				+ parameters.graphManager.informationMatrixOfWiFiFingerprint
+				+ "\n--- informationMatrixOfWiFi="
+				+ parameters.graphManager.informationMatrixOfWiFi
+				+ "\n--- optimizeFromFileIterationCount="
+				+ parameters.graphManager.optimizeFromFileIterationCount);
+
+		Log.d(moduleLogName, "WiFiPlaceRecognition:" + "\n--- useModule="
+				+ parameters.wifiPlaceRecognition.useModule
+				+ "\n--- recordRawData="
+				+ parameters.wifiPlaceRecognition.recordRawData
+				+ "\n--- maxPlaceDatabaseSize="
+				+ parameters.wifiPlaceRecognition.maxPlaceDatabaseSize
+				+ "\n--- maxQueueSize="
+				+ parameters.wifiPlaceRecognition.maxQueueSize
+				+ "\n--- fractionOfQueueAfterReduction="
+				+ parameters.wifiPlaceRecognition.fractionOfQueueAfterReduction
+				+ "\n--- minNumberOfSharedNetworks="
+				+ parameters.wifiPlaceRecognition.minNumberOfSharedNetworks
+				+ "\n--- minPercentOfSharedNetworks="
+				+ parameters.wifiPlaceRecognition.minPercentOfSharedNetworks
+				+ "\n--- maxAvgErrorThreshold="
+				+ parameters.wifiPlaceRecognition.maxAvgErrorThreshold
+				+ "\n--- addUserWiFiToRecognition="
+				+ parameters.wifiPlaceRecognition.addUserWiFiToRecognition);
 	}
-	
 
 	private void readFeed(XmlPullParser parser) throws XmlPullParserException,
 			IOException {
 
 		parser.require(XmlPullParser.START_TAG, ns, "OpenAIL");
 		while (parser.next() != XmlPullParser.END_TAG) {
-			
+
 			if (parser.getEventType() != XmlPullParser.START_TAG) {
 				continue;
 			}
@@ -181,6 +224,9 @@ public class ConfigurationReader {
 			switch (currentModule) {
 			case MAINPROCESSING:
 				readMainProcessing(parser);
+				break;
+			case PLAYBACK:
+				readPlayback(parser);
 				break;
 			case INERTIALSENSORS:
 				readInertialSensors(parser);
@@ -198,44 +244,92 @@ public class ConfigurationReader {
 
 		}
 	}
-	
+
 	// Parses the contents of an entry.
 	private void readMainProcessing(XmlPullParser parser)
 			throws XmlPullParserException, IOException {
 		Log.d(moduleLogName, "<MainProcessing>");
 		parser.require(XmlPullParser.START_TAG, ns, "MainProcessing");
-	
+
 		// Reading attributes
-		String frequencyOfNewDataQueryString = parser.getAttributeValue(null, "frequencyOfNewDataQuery");
-		parameters.mainProcessing.priorMapName = parser.getAttributeValue(null, "priorMapName");
-		String usePriorMapString = parser.getAttributeValue(null, "usePriorMap");
-		String imageCaptureStepString = parser.getAttributeValue(null, "imageCaptureStep");
-		String imageCaptureVarianceThresholdString = parser.getAttributeValue(null, "imageCaptureVarianceThreshold");
-		String useNavigationString = parser.getAttributeValue(null, "useNavigation");
-		String showMapWithoutMapConnectionString = parser.getAttributeValue(null, "showMapWithoutMapConnection");
-		
+		String frequencyOfNewDataQueryString = parser.getAttributeValue(null,
+				"frequencyOfNewDataQuery");
+		parameters.mainProcessing.priorMapName = parser.getAttributeValue(null,
+				"priorMapName");
+		String usePriorMapString = parser
+				.getAttributeValue(null, "usePriorMap");
+		String imageCaptureStepString = parser.getAttributeValue(null,
+				"imageCaptureStep");
+		String imageCaptureVarianceThresholdString = parser.getAttributeValue(
+				null, "imageCaptureVarianceThreshold");
+		String useNavigationString = parser.getAttributeValue(null,
+				"useNavigation");
+		String showMapWithoutMapConnectionString = parser.getAttributeValue(
+				null, "showMapWithoutMapConnection");
+
 		// Logging those values
-		Log.d(moduleLogName, "frequencyOfNewDataQuery = " + frequencyOfNewDataQueryString);
-		Log.d(moduleLogName, "priorMapName = " + parameters.mainProcessing.priorMapName);
+		Log.d(moduleLogName, "frequencyOfNewDataQuery = "
+				+ frequencyOfNewDataQueryString);
+		Log.d(moduleLogName, "priorMapName = "
+				+ parameters.mainProcessing.priorMapName);
 		Log.d(moduleLogName, "usePriorMap = " + usePriorMapString);
 		Log.d(moduleLogName, "imageCaptureStep = " + imageCaptureStepString);
-		Log.d(moduleLogName, "imageCaptureVarianceThreshold = " + imageCaptureVarianceThresholdString);
+		Log.d(moduleLogName, "imageCaptureVarianceThreshold = "
+				+ imageCaptureVarianceThresholdString);
 		Log.d(moduleLogName, "useNavigation = " + useNavigationString);
-		Log.d(moduleLogName, "showMapWithoutMapConnection = " + showMapWithoutMapConnectionString);
+		Log.d(moduleLogName, "showMapWithoutMapConnection = "
+				+ showMapWithoutMapConnectionString);
 
 		// Storing read values
-		parameters.mainProcessing.frequencyOfNewDataQuery =  Double.parseDouble(frequencyOfNewDataQueryString);
-		parameters.mainProcessing.usePriorMap = usePriorMapString.equals("True");
-		parameters.mainProcessing.imageCaptureStep = Integer.parseInt(imageCaptureStepString);
-		parameters.mainProcessing.imageCaptureVarianceThreshold =  Double.parseDouble(imageCaptureVarianceThresholdString);
-		parameters.mainProcessing.useNavigation = useNavigationString.equals("True");
-		parameters.mainProcessing.showMapWithoutMapConnection = showMapWithoutMapConnectionString.equals("True");
-		
+		parameters.mainProcessing.frequencyOfNewDataQuery = Double
+				.parseDouble(frequencyOfNewDataQueryString);
+		parameters.mainProcessing.usePriorMap = usePriorMapString
+				.equals("True");
+		parameters.mainProcessing.imageCaptureStep = Integer
+				.parseInt(imageCaptureStepString);
+		parameters.mainProcessing.imageCaptureVarianceThreshold = Double
+				.parseDouble(imageCaptureVarianceThresholdString);
+		parameters.mainProcessing.useNavigation = useNavigationString
+				.equals("True");
+		parameters.mainProcessing.showMapWithoutMapConnection = showMapWithoutMapConnectionString
+				.equals("True");
+
 		parser.nextTag();
 		parser.require(XmlPullParser.END_TAG, ns, "MainProcessing");
 		Log.d(moduleLogName, "</MainProcessing>");
 	}
-		
+
+	// Parses the contents of an entry.
+	private void readPlayback(XmlPullParser parser)
+			throws XmlPullParserException, IOException {
+
+		Log.d(moduleLogName, "<Playback>");
+		parser.require(XmlPullParser.START_TAG, ns, "Playback");
+
+		// Reading attributes
+		String simulationSpeedString = parser.getAttributeValue(null,
+				"simulationSpeed");
+		String maxDelayString = parser.getAttributeValue(null,
+				"maxDelay");
+		String sleepTimeInMsString = parser.getAttributeValue(null,
+				"sleepTimeInMs");
+
+		// Logging those values
+		Log.d(moduleLogName, "simulationSpeed = " + simulationSpeedString);
+		Log.d(moduleLogName, "maxDelay = " + maxDelayString);
+		Log.d(moduleLogName, "sleepTimeInMs = " + sleepTimeInMsString);
+
+		// Storing read values
+		parameters.playback.simulationSpeed = Double
+				.parseDouble(simulationSpeedString);
+		parameters.playback.maxDelay = Double
+				.parseDouble(maxDelayString);
+		parameters.playback.sleepTimeInMs = Long.parseLong(sleepTimeInMsString);
+
+		parser.nextTag();
+		parser.require(XmlPullParser.END_TAG, ns, "Playback");
+		Log.d(moduleLogName, "</Playback>");
+	}
 
 	// Parses the contents of an entry.
 	private void readInertialSensors(XmlPullParser parser)
@@ -246,86 +340,121 @@ public class ConfigurationReader {
 		// Reading attributes
 		String useModuleString = parser.getAttributeValue(null, "useModule");
 		String stepometerString = parser.getAttributeValue(null, "stepometer");
-		String verticalOrientationString = parser.getAttributeValue(null, "verticalOrientation");
-		String priorMapStepometerBiasVerticalString = parser.getAttributeValue(null, "priorMapStepometerBiasVertical");
-		String priorMapStepometerBiasHorizontalString = parser.getAttributeValue(null, "priorMapStepometerBiasHorizontal");
-		
+		String verticalOrientationString = parser.getAttributeValue(null,
+				"verticalOrientation");
+		String priorMapStepometerBiasVerticalString = parser.getAttributeValue(
+				null, "priorMapStepometerBiasVertical");
+		String priorMapStepometerBiasHorizontalString = parser
+				.getAttributeValue(null, "priorMapStepometerBiasHorizontal");
+
 		// Logging those values
 		Log.d(moduleLogName, "useModule = " + useModuleString);
 		Log.d(moduleLogName, "stepometer = " + stepometerString);
-		Log.d(moduleLogName, "verticalOrientation = " + verticalOrientationString);
-		Log.d(moduleLogName, "priorMapStepometerBiasVertical = " + priorMapStepometerBiasVerticalString);
-		Log.d(moduleLogName, "priorMapStepometerBiasHorizontal = " + priorMapStepometerBiasHorizontalString);
-				
+		Log.d(moduleLogName, "verticalOrientation = "
+				+ verticalOrientationString);
+		Log.d(moduleLogName, "priorMapStepometerBiasVertical = "
+				+ priorMapStepometerBiasVerticalString);
+		Log.d(moduleLogName, "priorMapStepometerBiasHorizontal = "
+				+ priorMapStepometerBiasHorizontalString);
+
 		// Storing read values
 		parameters.inertialSensors.useModule = useModuleString.equals("True");
 		parameters.inertialSensors.stepometer = useModuleString.equals("True");
-		parameters.inertialSensors.verticalOrientation = verticalOrientationString.equals("True");
-		parameters.inertialSensors.priorMapStepometerBiasVertical =  Double.parseDouble(priorMapStepometerBiasVerticalString);
-		parameters.inertialSensors.priorMapStepometerBiasHorizontal =  Double.parseDouble(priorMapStepometerBiasHorizontalString);
-		
-		
+		parameters.inertialSensors.verticalOrientation = verticalOrientationString
+				.equals("True");
+		parameters.inertialSensors.priorMapStepometerBiasVertical = Double
+				.parseDouble(priorMapStepometerBiasVerticalString);
+		parameters.inertialSensors.priorMapStepometerBiasHorizontal = Double
+				.parseDouble(priorMapStepometerBiasHorizontalString);
+
 		// Reading record parameters
 		while (parser.next() != XmlPullParser.END_TAG) {
-			
+
 			if (parser.getEventType() != XmlPullParser.START_TAG) {
 				continue;
 			}
-			
+
 			Log.d(moduleLogName, "</Record>");
 			parser.require(XmlPullParser.START_TAG, ns, "Record");
-			
+
 			// Reading attributes
-			String accelerometerString = parser.getAttributeValue(null, "accelerometer");
-			String gyroscopeString = parser.getAttributeValue(null, "gyroscope");
-			String magnetometerString = parser.getAttributeValue(null, "magnetometer");
-			String barometerString = parser.getAttributeValue(null, "barometer");
-			String accelerometerWithoutGravityString = parser.getAttributeValue(null, "accelerometerWithoutGravity");
-			
-			String orientationAndroidString = parser.getAttributeValue(null, "orientationAndroid");
-			String orientationAndroidEulerString = parser.getAttributeValue(null, "orientationAndroidEuler");
-			String orientationAEKFString = parser.getAttributeValue(null, "orientationAEKF");
-			String orientationAEKFEulerString = parser.getAttributeValue(null, "orientationAEKFEuler");
-			String orientationCFString = parser.getAttributeValue(null, "orientationCF");
-			String orientationCFEulerString = parser.getAttributeValue(null, "orientationCFEuler");
-			
+			String accelerometerString = parser.getAttributeValue(null,
+					"accelerometer");
+			String gyroscopeString = parser
+					.getAttributeValue(null, "gyroscope");
+			String magnetometerString = parser.getAttributeValue(null,
+					"magnetometer");
+			String barometerString = parser
+					.getAttributeValue(null, "barometer");
+			String accelerometerWithoutGravityString = parser
+					.getAttributeValue(null, "accelerometerWithoutGravity");
+
+			String orientationAndroidString = parser.getAttributeValue(null,
+					"orientationAndroid");
+			String orientationAndroidEulerString = parser.getAttributeValue(
+					null, "orientationAndroidEuler");
+			String orientationAEKFString = parser.getAttributeValue(null,
+					"orientationAEKF");
+			String orientationAEKFEulerString = parser.getAttributeValue(null,
+					"orientationAEKFEuler");
+			String orientationCFString = parser.getAttributeValue(null,
+					"orientationCF");
+			String orientationCFEulerString = parser.getAttributeValue(null,
+					"orientationCFEuler");
+
 			// Logging those values
 			Log.d(moduleLogName, "accelerometer = " + accelerometerString);
 			Log.d(moduleLogName, "gyroscope = " + gyroscopeString);
 			Log.d(moduleLogName, "magnetometer = " + magnetometerString);
 			Log.d(moduleLogName, "barometer = " + barometerString);
-			Log.d(moduleLogName, "accelerometerWithoutGravity = " + accelerometerWithoutGravityString);
-			
-			Log.d(moduleLogName, "orientationAndroid = " + orientationAndroidString);
-			Log.d(moduleLogName, "orientationAndroidEuler = " + orientationAndroidEulerString);
+			Log.d(moduleLogName, "accelerometerWithoutGravity = "
+					+ accelerometerWithoutGravityString);
+
+			Log.d(moduleLogName, "orientationAndroid = "
+					+ orientationAndroidString);
+			Log.d(moduleLogName, "orientationAndroidEuler = "
+					+ orientationAndroidEulerString);
 			Log.d(moduleLogName, "orientationAEKF = " + orientationAEKFString);
-			Log.d(moduleLogName, "orientationAEKFEuler = " + orientationAEKFEulerString);
+			Log.d(moduleLogName, "orientationAEKFEuler = "
+					+ orientationAEKFEulerString);
 			Log.d(moduleLogName, "orientationCF = " + orientationCFString);
-			Log.d(moduleLogName, "orientationCFEuler = " + orientationCFEulerString);
-			
+			Log.d(moduleLogName, "orientationCFEuler = "
+					+ orientationCFEulerString);
+
 			// Storing read values
-			parameters.inertialSensors.record.accelerometer = accelerometerString.equals("True");
-			parameters.inertialSensors.record.gyroscope = gyroscopeString.equals("True");
-			parameters.inertialSensors.record.magnetometer = magnetometerString.equals("True");
-			parameters.inertialSensors.record.barometer = barometerString.equals("True");
-			parameters.inertialSensors.record.accelerometerWithoutGravity = accelerometerWithoutGravityString.equals("True");
-			
-			parameters.inertialSensors.record.orientationAndroid = orientationAndroidString.equals("True");
-			parameters.inertialSensors.record.orientationAndroidEuler = orientationAndroidEulerString.equals("True");
-			parameters.inertialSensors.record.orientationAEKF = orientationAEKFString.equals("True");
-			parameters.inertialSensors.record.orientationAEKFEuler = orientationAEKFEulerString.equals("True");
-			parameters.inertialSensors.record.orientationCF = orientationCFString.equals("True");
-			parameters.inertialSensors.record.orientationCFEuler = orientationCFEulerString.equals("True");
-			
+			parameters.inertialSensors.record.accelerometer = accelerometerString
+					.equals("True");
+			parameters.inertialSensors.record.gyroscope = gyroscopeString
+					.equals("True");
+			parameters.inertialSensors.record.magnetometer = magnetometerString
+					.equals("True");
+			parameters.inertialSensors.record.barometer = barometerString
+					.equals("True");
+			parameters.inertialSensors.record.accelerometerWithoutGravity = accelerometerWithoutGravityString
+					.equals("True");
+
+			parameters.inertialSensors.record.orientationAndroid = orientationAndroidString
+					.equals("True");
+			parameters.inertialSensors.record.orientationAndroidEuler = orientationAndroidEulerString
+					.equals("True");
+			parameters.inertialSensors.record.orientationAEKF = orientationAEKFString
+					.equals("True");
+			parameters.inertialSensors.record.orientationAEKFEuler = orientationAEKFEulerString
+					.equals("True");
+			parameters.inertialSensors.record.orientationCF = orientationCFString
+					.equals("True");
+			parameters.inertialSensors.record.orientationCFEuler = orientationCFEulerString
+					.equals("True");
+
 			parser.nextTag();
 			parser.require(XmlPullParser.END_TAG, ns, "Record");
 			Log.d(moduleLogName, "</Record>");
 		}
-		
+
 		parser.require(XmlPullParser.END_TAG, ns, "InertialSensors");
 		Log.d(moduleLogName, "</InertialSensors>");
 	}
-	
+
 	// Parses the contents of an entry.
 	private void readGraphManager(XmlPullParser parser)
 			throws XmlPullParserException, IOException {
@@ -333,28 +462,46 @@ public class ConfigurationReader {
 		parser.require(XmlPullParser.START_TAG, ns, "GraphManager");
 
 		// Reading attributes
-		String vprVicinityDeadBandRadiusString = parser.getAttributeValue(null, "vprVicinityDeadBandRadius");
-		String informationMatrixOfVPRVicinityString = parser.getAttributeValue(null, "informationMatrixOfVPRVicinity");
-		String wifiFingerprintDeadBandRadiusString = parser.getAttributeValue(null, "wifiFingerprintDeadBandRadius");
-		String informationMatrixOfWiFiFingerprintString = parser.getAttributeValue(null, "informationMatrixOfWiFiFingerprint");
-		String informationMatrixOfWiFiString = parser.getAttributeValue(null, "informationMatrixOfWiFi");
-		String optimizeFromFileIterationCountString = parser.getAttributeValue(null, "optimizeFromFileIterationCount");
+		String vprVicinityDeadBandRadiusString = parser.getAttributeValue(null,
+				"vprVicinityDeadBandRadius");
+		String informationMatrixOfVPRVicinityString = parser.getAttributeValue(
+				null, "informationMatrixOfVPRVicinity");
+		String wifiFingerprintDeadBandRadiusString = parser.getAttributeValue(
+				null, "wifiFingerprintDeadBandRadius");
+		String informationMatrixOfWiFiFingerprintString = parser
+				.getAttributeValue(null, "informationMatrixOfWiFiFingerprint");
+		String informationMatrixOfWiFiString = parser.getAttributeValue(null,
+				"informationMatrixOfWiFi");
+		String optimizeFromFileIterationCountString = parser.getAttributeValue(
+				null, "optimizeFromFileIterationCount");
 
 		// Logging those values
-		Log.d(moduleLogName, "vprVicinityDeadBandRadius = " + vprVicinityDeadBandRadiusString);
-		Log.d(moduleLogName, "informationMatrixOfVPRVicinity = " + informationMatrixOfVPRVicinityString);
-		Log.d(moduleLogName, "wifiFingerprintDeadBandRadius = " + wifiFingerprintDeadBandRadiusString);
-		Log.d(moduleLogName, "informationMatrixOfWiFiFingerprint = " + informationMatrixOfWiFiFingerprintString);
-		Log.d(moduleLogName, "informationMatrixOfWiFi = " + informationMatrixOfWiFiString);
-		Log.d(moduleLogName, "optimizeFromFileIterationCount = " + optimizeFromFileIterationCountString);
+		Log.d(moduleLogName, "vprVicinityDeadBandRadius = "
+				+ vprVicinityDeadBandRadiusString);
+		Log.d(moduleLogName, "informationMatrixOfVPRVicinity = "
+				+ informationMatrixOfVPRVicinityString);
+		Log.d(moduleLogName, "wifiFingerprintDeadBandRadius = "
+				+ wifiFingerprintDeadBandRadiusString);
+		Log.d(moduleLogName, "informationMatrixOfWiFiFingerprint = "
+				+ informationMatrixOfWiFiFingerprintString);
+		Log.d(moduleLogName, "informationMatrixOfWiFi = "
+				+ informationMatrixOfWiFiString);
+		Log.d(moduleLogName, "optimizeFromFileIterationCount = "
+				+ optimizeFromFileIterationCountString);
 
 		// Storing read values
-		parameters.graphManager.vprVicinityDeadBandRadius = Double.parseDouble(vprVicinityDeadBandRadiusString);
-		parameters.graphManager.informationMatrixOfVPRVicinity = Double.parseDouble(informationMatrixOfVPRVicinityString);
-		parameters.graphManager.wifiFingerprintDeadBandRadius = Double.parseDouble(wifiFingerprintDeadBandRadiusString);
-		parameters.graphManager.informationMatrixOfWiFiFingerprint = Double.parseDouble(informationMatrixOfWiFiFingerprintString);
-		parameters.graphManager.informationMatrixOfWiFi = Double.parseDouble(informationMatrixOfWiFiString);
-		parameters.graphManager.optimizeFromFileIterationCount = Integer.parseInt(optimizeFromFileIterationCountString);
+		parameters.graphManager.vprVicinityDeadBandRadius = Double
+				.parseDouble(vprVicinityDeadBandRadiusString);
+		parameters.graphManager.informationMatrixOfVPRVicinity = Double
+				.parseDouble(informationMatrixOfVPRVicinityString);
+		parameters.graphManager.wifiFingerprintDeadBandRadius = Double
+				.parseDouble(wifiFingerprintDeadBandRadiusString);
+		parameters.graphManager.informationMatrixOfWiFiFingerprint = Double
+				.parseDouble(informationMatrixOfWiFiFingerprintString);
+		parameters.graphManager.informationMatrixOfWiFi = Double
+				.parseDouble(informationMatrixOfWiFiString);
+		parameters.graphManager.optimizeFromFileIterationCount = Integer
+				.parseInt(optimizeFromFileIterationCountString);
 
 		parser.nextTag();
 		parser.require(XmlPullParser.END_TAG, ns, "GraphManager");
@@ -368,46 +515,70 @@ public class ConfigurationReader {
 
 		// Reading attributes
 		String useModuleString = parser.getAttributeValue(null, "useModule");
-		String recordRawDataString = parser.getAttributeValue(null, "recordRawData");
-		String maxPlaceDatabaseSizeString = parser.getAttributeValue(null, "maxPlaceDatabaseSize"); 
-		String maxQueueSizeString = parser.getAttributeValue(null, "maxQueueSize"); 
-		String fractionOfQueueAfterReductionString = parser.getAttributeValue(null, "fractionOfQueueAfterReduction");
-		String minNumberOfSharedNetworksString = parser.getAttributeValue(null, "minNumberOfSharedNetworks");
-		String minPercentOfSharedNetworksString = parser.getAttributeValue(null, "minPercentOfSharedNetworks");
-		String maxAvgErrorThresholdString = parser.getAttributeValue(null, "maxAvgErrorThreshold");
-		String directWiFiMeasurementsString = parser.getAttributeValue(null, "directWiFiMeasurements");
-		String addUserWiFiToRecognitionString = parser.getAttributeValue(null, "addUserWiFiToRecognition");
-		
+		String recordRawDataString = parser.getAttributeValue(null,
+				"recordRawData");
+		String maxPlaceDatabaseSizeString = parser.getAttributeValue(null,
+				"maxPlaceDatabaseSize");
+		String maxQueueSizeString = parser.getAttributeValue(null,
+				"maxQueueSize");
+		String fractionOfQueueAfterReductionString = parser.getAttributeValue(
+				null, "fractionOfQueueAfterReduction");
+		String minNumberOfSharedNetworksString = parser.getAttributeValue(null,
+				"minNumberOfSharedNetworks");
+		String minPercentOfSharedNetworksString = parser.getAttributeValue(
+				null, "minPercentOfSharedNetworks");
+		String maxAvgErrorThresholdString = parser.getAttributeValue(null,
+				"maxAvgErrorThreshold");
+		String directWiFiMeasurementsString = parser.getAttributeValue(null,
+				"directWiFiMeasurements");
+		String addUserWiFiToRecognitionString = parser.getAttributeValue(null,
+				"addUserWiFiToRecognition");
+
 		// Logging those values
 		Log.d(moduleLogName, "useModule = " + useModuleString);
 		Log.d(moduleLogName, "recordRawData = " + recordRawDataString);
-		Log.d(moduleLogName, "maxPlaceDatabaseSize = " + maxPlaceDatabaseSizeString);
+		Log.d(moduleLogName, "maxPlaceDatabaseSize = "
+				+ maxPlaceDatabaseSizeString);
 		Log.d(moduleLogName, "maxQueueSize = " + maxQueueSizeString);
-		Log.d(moduleLogName, "fractionOfQueueAfterReduction = " + fractionOfQueueAfterReductionString);
-		Log.d(moduleLogName, "minNumberOfSharedNetworks = " + minNumberOfSharedNetworksString);
-		Log.d(moduleLogName, "minPercentOfSharedNetworks = " + minPercentOfSharedNetworksString);
-		Log.d(moduleLogName, "maxAvgErrorThreshold = " + maxAvgErrorThresholdString);
-		Log.d(moduleLogName, "directWiFiMeasurements = " + directWiFiMeasurementsString);
-		Log.d(moduleLogName, "addUserWiFiToRecognition = " + addUserWiFiToRecognitionString);
-		
-		
+		Log.d(moduleLogName, "fractionOfQueueAfterReduction = "
+				+ fractionOfQueueAfterReductionString);
+		Log.d(moduleLogName, "minNumberOfSharedNetworks = "
+				+ minNumberOfSharedNetworksString);
+		Log.d(moduleLogName, "minPercentOfSharedNetworks = "
+				+ minPercentOfSharedNetworksString);
+		Log.d(moduleLogName, "maxAvgErrorThreshold = "
+				+ maxAvgErrorThresholdString);
+		Log.d(moduleLogName, "directWiFiMeasurements = "
+				+ directWiFiMeasurementsString);
+		Log.d(moduleLogName, "addUserWiFiToRecognition = "
+				+ addUserWiFiToRecognitionString);
+
 		// Storing read values
-		parameters.wifiPlaceRecognition.useModule = useModuleString.equals("True");
-		parameters.wifiPlaceRecognition.recordRawData = recordRawDataString.equals("True");
-		parameters.wifiPlaceRecognition.maxPlaceDatabaseSize = Integer.parseInt(maxPlaceDatabaseSizeString);
-		parameters.wifiPlaceRecognition.maxQueueSize = Integer.parseInt(maxQueueSizeString);
-		parameters.wifiPlaceRecognition.fractionOfQueueAfterReduction = Double.parseDouble(fractionOfQueueAfterReductionString);
-		parameters.wifiPlaceRecognition.minNumberOfSharedNetworks = Integer.parseInt(minNumberOfSharedNetworksString);
-		parameters.wifiPlaceRecognition.minPercentOfSharedNetworks = Double.parseDouble(minPercentOfSharedNetworksString);
-		parameters.wifiPlaceRecognition.maxAvgErrorThreshold = Double.parseDouble(maxAvgErrorThresholdString);
-		parameters.wifiPlaceRecognition.directWiFiMeasurements = directWiFiMeasurementsString.equals("True");
-		parameters.wifiPlaceRecognition.addUserWiFiToRecognition = addUserWiFiToRecognitionString.equals("True");
-				
+		parameters.wifiPlaceRecognition.useModule = useModuleString
+				.equals("True");
+		parameters.wifiPlaceRecognition.recordRawData = recordRawDataString
+				.equals("True");
+		parameters.wifiPlaceRecognition.maxPlaceDatabaseSize = Integer
+				.parseInt(maxPlaceDatabaseSizeString);
+		parameters.wifiPlaceRecognition.maxQueueSize = Integer
+				.parseInt(maxQueueSizeString);
+		parameters.wifiPlaceRecognition.fractionOfQueueAfterReduction = Double
+				.parseDouble(fractionOfQueueAfterReductionString);
+		parameters.wifiPlaceRecognition.minNumberOfSharedNetworks = Integer
+				.parseInt(minNumberOfSharedNetworksString);
+		parameters.wifiPlaceRecognition.minPercentOfSharedNetworks = Double
+				.parseDouble(minPercentOfSharedNetworksString);
+		parameters.wifiPlaceRecognition.maxAvgErrorThreshold = Double
+				.parseDouble(maxAvgErrorThresholdString);
+		parameters.wifiPlaceRecognition.directWiFiMeasurements = directWiFiMeasurementsString
+				.equals("True");
+		parameters.wifiPlaceRecognition.addUserWiFiToRecognition = addUserWiFiToRecognitionString
+				.equals("True");
+
 		parser.nextTag();
 		parser.require(XmlPullParser.END_TAG, ns, "WiFiPlaceRecognition");
 		Log.d(moduleLogName, "</WiFiPlaceRecognition>");
 	}
-	
 
 	private void skip(XmlPullParser parser) throws XmlPullParserException,
 			IOException {

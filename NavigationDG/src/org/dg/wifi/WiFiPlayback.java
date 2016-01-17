@@ -9,8 +9,8 @@ import java.util.Locale;
 import java.util.Scanner;
 
 import org.dg.openAIL.PriorMapHandler;
-import org.dg.openAIL.Playback.SOURCE_TYPE;
 
+import android.hardware.Sensor;
 import android.os.Environment;
 import android.util.Log;
 
@@ -18,7 +18,7 @@ public class WiFiPlayback implements Runnable {
 final String moduleLogName = "WiFiPlayback";
 
 	class RawData {
-		SOURCE_TYPE sourceType;
+		int sourceType;
 		long timestamp, timestampEnd;
 		double x, y, z, w;
 		int graphId, wifiId, wifiCount;
@@ -91,7 +91,7 @@ final String moduleLogName = "WiFiPlayback";
 	RawData readWiFi() {
 		if ( rawDataScanner.hasNextInt()) {
 			RawData wifiData = new RawData();
-			wifiData.sourceType = SOURCE_TYPE.WIFI;
+			wifiData.sourceType = Sensor.TYPE_ALL;
 			wifiData.graphId = rawDataScanner.nextInt();
 			wifiData.wifiId = rawDataScanner.nextInt();
 			wifiData.timestamp = rawDataScanner.nextLong();

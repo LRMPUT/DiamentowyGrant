@@ -15,9 +15,8 @@ import org.dg.graphManager.GraphManager;
 import org.dg.graphManager.Vertex;
 import org.dg.graphManager.wiFiMeasurement;
 import org.dg.inertialSensors.InertialSensors;
+import org.dg.inertialSensors.InertialSensorsPlayback;
 import org.dg.main.LocalizationView;
-import org.dg.openAIL.Playback.RawData;
-import org.dg.wifi.WiFiPlaceMatch;
 import org.dg.wifi.WiFiPlayback;
 import org.dg.wifi.WifiScanner;
 import org.opencv.core.Mat;
@@ -78,6 +77,7 @@ public class OpenAndroidIndoorLocalization {
 
 	// TODO STILL TESTING!
 	WiFiPlayback wifiPlayback;
+	InertialSensorsPlayback inertialSensorsPlayback;
 	
 	/*
 	 * Creates OpenAIL, loads settings and initializes graph optimization, 
@@ -113,6 +113,7 @@ public class OpenAndroidIndoorLocalization {
 		
 		// TODO
 		wifiPlayback = new WiFiPlayback(wifiScanner);
+		inertialSensorsPlayback = new InertialSensorsPlayback(parameters.playback, inertialSensors);
 		
 		// TODO
 //		Playback playback = new Playback();
@@ -208,7 +209,11 @@ public class OpenAndroidIndoorLocalization {
 	
 	// TODO
 	public void startPlayback() {
-		wifiPlayback.start();
+//		wifiPlayback.start();
+		
+		inertialSensors.startPlayback();
+		inertialSensors.startStepometer();
+		inertialSensorsPlayback.start();
 	}
 	
 	/**
@@ -350,9 +355,8 @@ public class OpenAndroidIndoorLocalization {
 
 				// WiFi place recognition
 				int currentPoseId = graphManager.getCurrentPoseId();
-				wifiScanner.setGraphPoseId(currentPoseId);
 
-				// Add new pose to search
+				// Add new pose to search and set it with the id of the graph pose
 				wifiScanner.addLastScanToRecognition(currentPoseId);
 
 				// Should we add direct links to WiFi networks to the graph
