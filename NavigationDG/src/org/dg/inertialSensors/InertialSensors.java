@@ -116,7 +116,7 @@ public class InertialSensors {
 		accStepometerWindow = new LinkedList<Float>();
 		accVarianceWindow = new LinkedList<Float>();
 		gyroVarianceWindow = new LinkedList<Float>();
-		stepometer = new Stepometer();
+		stepometer = new Stepometer(parameters.stepometer);
 		
 		magneticWindow = new ArrayList<Float>();
 		magneticRecognition = new MagneticRecognition();

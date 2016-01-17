@@ -46,12 +46,19 @@ public class ConfigurationReader {
 						orientationCFEuler;
 			}
 
+			public class Stepometer {
+				public int verbose;
+				public double minFrequency, maxFrequency;
+				public double stepSize;
+			}
+
 			public boolean useModule;
-			public boolean stepometer;
+			public boolean useStepometer;
 			public boolean verticalOrientation;
 			public double priorMapStepometerBiasVertical;
 			public double priorMapStepometerBiasHorizontal;
 			public Record record = new Record();
+			public Stepometer stepometer = new Stepometer();
 		}
 
 		public class GraphManager {
@@ -135,14 +142,17 @@ public class ConfigurationReader {
 				+ parameters.mainProcessing.showMapWithoutMapConnection);
 
 		Log.d(moduleLogName, "Playback:" + "\n--- SimulationSpeed="
-				+ parameters.playback.simulationSpeed + "\n--- inertialSleepTimeInMs="
-				+ parameters.playback.inertialSleepTimeInMs + "\n--- wifiSleepTimeInMs="
-						+ parameters.playback.wifiSleepTimeInMs + "\n--- inertialMaxDelay="
+				+ parameters.playback.simulationSpeed
+				+ "\n--- inertialSleepTimeInMs="
+				+ parameters.playback.inertialSleepTimeInMs
+				+ "\n--- wifiSleepTimeInMs="
+				+ parameters.playback.wifiSleepTimeInMs
+				+ "\n--- inertialMaxDelay="
 				+ parameters.playback.inertialMaxDelay);
 
 		Log.d(moduleLogName, "InertialSensors:" + "\n--- useModule="
-				+ parameters.inertialSensors.useModule + "\n--- stepometer="
-				+ parameters.inertialSensors.stepometer
+				+ parameters.inertialSensors.useModule + "\n--- useStepometer="
+				+ parameters.inertialSensors.useStepometer
 				+ "\n--- verticalOrientation="
 				+ parameters.inertialSensors.verticalOrientation
 				+ "\n--- priorMapStepometerBiasVertical="
@@ -174,6 +184,14 @@ public class ConfigurationReader {
 				+ parameters.inertialSensors.record.orientationCF
 				+ "\n------ orientationCFEuler="
 				+ parameters.inertialSensors.record.orientationCFEuler);
+		
+		Log.d(moduleLogName, "--- Stepometer:" + "\n------ verbose="
+				+ parameters.inertialSensors.stepometer.verbose +
+				"\n------ minFrequency="
+				+ parameters.inertialSensors.stepometer.minFrequency
+				+ "\n------ maxFrequency="
+				+ parameters.inertialSensors.stepometer.maxFrequency + "\n------ stepSize="
+				+ parameters.inertialSensors.stepometer.stepSize);
 
 		Log.d(moduleLogName, "GraphManager:"
 				+ "\n--- vprVicinityDeadBandRadius="
@@ -311,7 +329,7 @@ public class ConfigurationReader {
 		// Reading attributes
 		String simulationSpeedString = parser.getAttributeValue(null,
 				"simulationSpeed");
-		
+
 		String inertialSleepTimeInMsString = parser.getAttributeValue(null,
 				"inertialSleepTimeInMs");
 		String wifiSleepTimeInMsString = parser.getAttributeValue(null,
@@ -321,18 +339,21 @@ public class ConfigurationReader {
 
 		// Logging those values
 		Log.d(moduleLogName, "simulationSpeed = " + simulationSpeedString);
-		Log.d(moduleLogName, "inertialSleepTimeInMs = " + inertialSleepTimeInMsString);
+		Log.d(moduleLogName, "inertialSleepTimeInMs = "
+				+ inertialSleepTimeInMsString);
 		Log.d(moduleLogName, "wifiSleepTimeInMs = " + wifiSleepTimeInMsString);
 		Log.d(moduleLogName, "inertialMaxDelay = " + inertialMaxDelayString);
 
 		// Storing read values
 		parameters.playback.simulationSpeed = Double
 				.parseDouble(simulationSpeedString);
-		parameters.playback.inertialSleepTimeInMs = Long.parseLong(inertialSleepTimeInMsString);
-		parameters.playback.wifiSleepTimeInMs = Long.parseLong(wifiSleepTimeInMsString);
+		parameters.playback.inertialSleepTimeInMs = Long
+				.parseLong(inertialSleepTimeInMsString);
+		parameters.playback.wifiSleepTimeInMs = Long
+				.parseLong(wifiSleepTimeInMsString);
 		parameters.playback.inertialMaxDelay = Double
 				.parseDouble(inertialMaxDelayString);
-		
+
 		parser.nextTag();
 		parser.require(XmlPullParser.END_TAG, ns, "Playback");
 		Log.d(moduleLogName, "</Playback>");
@@ -346,7 +367,7 @@ public class ConfigurationReader {
 
 		// Reading attributes
 		String useModuleString = parser.getAttributeValue(null, "useModule");
-		String stepometerString = parser.getAttributeValue(null, "stepometer");
+		String useStepometerString = parser.getAttributeValue(null, "useStepometer");
 		String verticalOrientationString = parser.getAttributeValue(null,
 				"verticalOrientation");
 		String priorMapStepometerBiasVerticalString = parser.getAttributeValue(
@@ -356,7 +377,7 @@ public class ConfigurationReader {
 
 		// Logging those values
 		Log.d(moduleLogName, "useModule = " + useModuleString);
-		Log.d(moduleLogName, "stepometer = " + stepometerString);
+		Log.d(moduleLogName, "useStepometer = " + useStepometerString);
 		Log.d(moduleLogName, "verticalOrientation = "
 				+ verticalOrientationString);
 		Log.d(moduleLogName, "priorMapStepometerBiasVertical = "
@@ -366,7 +387,7 @@ public class ConfigurationReader {
 
 		// Storing read values
 		parameters.inertialSensors.useModule = useModuleString.equals("True");
-		parameters.inertialSensors.stepometer = useModuleString.equals("True");
+		parameters.inertialSensors.useStepometer = useModuleString.equals("True");
 		parameters.inertialSensors.verticalOrientation = verticalOrientationString
 				.equals("True");
 		parameters.inertialSensors.priorMapStepometerBiasVertical = Double
@@ -381,7 +402,7 @@ public class ConfigurationReader {
 				continue;
 			}
 
-			Log.d(moduleLogName, "</Record>");
+			Log.d(moduleLogName, "<Record>");
 			parser.require(XmlPullParser.START_TAG, ns, "Record");
 
 			// Reading attributes
@@ -456,6 +477,45 @@ public class ConfigurationReader {
 			parser.nextTag();
 			parser.require(XmlPullParser.END_TAG, ns, "Record");
 			Log.d(moduleLogName, "</Record>");
+			break;
+		}
+
+		// Reading stepometer parameters
+		while (parser.next() != XmlPullParser.END_TAG) {
+
+			if (parser.getEventType() != XmlPullParser.START_TAG) {
+				continue;
+			}
+
+			Log.d(moduleLogName, "<Stepometer>");
+			parser.require(XmlPullParser.START_TAG, ns, "Stepometer");
+
+			// Reading attributes
+			String verboseString = parser.getAttributeValue(null,
+					"verbose");
+			String minFrequencyString = parser.getAttributeValue(null,
+					"minFrequency");
+			String maxFrequencyString = parser.getAttributeValue(null,
+					"maxFrequency");
+			String stepSizeString = parser.getAttributeValue(null,
+					"stepSize");
+
+			// Logging those values
+			Log.d(moduleLogName, "verbose = " + verboseString);
+			Log.d(moduleLogName, "minFrequency = " + minFrequencyString);
+			Log.d(moduleLogName, "maxFrequency = " + maxFrequencyString);
+			Log.d(moduleLogName, "stepSize = " + stepSizeString);
+
+			// Storing read values
+			parameters.inertialSensors.stepometer.verbose = Integer.parseInt(verboseString);
+			parameters.inertialSensors.stepometer.minFrequency = Double.parseDouble(minFrequencyString);
+			parameters.inertialSensors.stepometer.maxFrequency = Double.parseDouble(maxFrequencyString);
+			parameters.inertialSensors.stepometer.stepSize = Double.parseDouble(stepSizeString);
+
+			parser.nextTag();
+			parser.require(XmlPullParser.END_TAG, ns, "Stepometer");
+			Log.d(moduleLogName, "</Stepometer>");
+		
 		}
 
 		parser.require(XmlPullParser.END_TAG, ns, "InertialSensors");

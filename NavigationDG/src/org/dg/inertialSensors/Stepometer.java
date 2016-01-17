@@ -1,6 +1,8 @@
 package org.dg.inertialSensors;
 
 
+import org.dg.openAIL.ConfigurationReader.Parameters;
+
 import android.util.Log;
 
 public class Stepometer implements Runnable{
@@ -11,27 +13,21 @@ public class Stepometer implements Runnable{
 	public native float fftFindDominantFrequency(float [] accWindow, float accelerometerMeasurementFrequency);
 	
 	// Parameters
-	final int verboseLevel = 0;
+	Parameters.InertialSensors.Stepometer parameters;
 	
 	// Loading the NDK library
-	public Stepometer() {
+	public Stepometer(Parameters.InertialSensors.Stepometer _parameters) {
 		System.loadLibrary("StepometerModule");
+		parameters = _parameters;
 	}
 
 	// Last detected frequency (in Hz)
 	float lastDetectedFrequency = 0.0f;
 	
-	// Step size in meters - 0.7 m as default
-	final float personalStepSize = 0.65f;
-	
 	// Total number of steps and total number of distance covered
 	float detectedNumberOfSteps = 0;
 	float coveredStepDistance = 0.0f;
 	float lastReportedCoveredStepDistance = 0.0f;
-	
-	// The walking frequencies borders
-	final float leftWalkingFrequencyBorder = 1.3f;
-	final float rightWalkingFrequencyBorder = 2.1f;
 	
 	// Accelerometer measurement frequency (in Hz)
 	final float accelerometerMeasurementFrequency = 200.0f;
@@ -49,7 +45,7 @@ public class Stepometer implements Runnable{
 	@Override
 	public void run() {
 		
-		if (verboseLevel > 0)
+		if (parameters.verbose > 0)
 			Log.d("Stepometer", "Starting fft test, size of window : " + Integer.toString(accWindowSize));
 		
 		// We need to copy the data into the float array to pass into NDK
@@ -69,14 +65,14 @@ public class Stepometer implements Runnable{
 		// Perform frequency detection
 		lastDetectedFrequency = fftFindDominantFrequency(accWindow, accelerometerMeasurementFrequency);
 		
-		if (verboseLevel > 0)
+		if (parameters.verbose > 0)
 			Log.d("Stepometer", "Found frequency: " + lastDetectedFrequency + " Hz");
 		
 		// If the detected frequency is inside walking frequencies
-		if (leftWalkingFrequencyBorder <= lastDetectedFrequency
-				&& lastDetectedFrequency <= rightWalkingFrequencyBorder) {
+		if (parameters.minFrequency <= lastDetectedFrequency
+				&& lastDetectedFrequency <= parameters.maxFrequency) {
 			// new distance = step of a person * frequency 
-			coveredStepDistance = coveredStepDistance + personalStepSize * lastDetectedFrequency;
+			coveredStepDistance = (float) (coveredStepDistance + parameters.stepSize * lastDetectedFrequency);
 			detectedNumberOfSteps = detectedNumberOfSteps + lastDetectedFrequency;
 		}
 		
