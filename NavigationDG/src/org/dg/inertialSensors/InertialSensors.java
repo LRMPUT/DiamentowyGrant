@@ -68,7 +68,6 @@ public class InertialSensors {
 	static int gyroWindowSize = 100;
 	boolean stepometerStarted = false;
 	int stepometerRunningCounter = 0;
-	final int stepometerWindowSize = 1024;
 	float lastYawZ = 0.0f;
 	boolean firstYawCall = true;
 	Stepometer stepometer;
@@ -209,9 +208,9 @@ public class InertialSensors {
 	}
 	
 	
-//	public float getAngleForStepometer() {
-//		return stepometerAngle;
-//	}
+	public float getStepometerAngle() {
+		return stepometerAngle;
+	}
 	
 	/**
 	 * Returns Yaw (Z-axis) in degrees
@@ -830,16 +829,16 @@ public class InertialSensors {
 
 		float[] R = new float[9];
 		SensorManager.getRotationMatrixFromVector(R, event.values);
-		if (deviceOrientation == deviceOrientation.VERTICAL)
-			stepometerAngle = (float) (Math.atan2(R[3], R[0]) * 180.0d / Math.PI);
-		else if (deviceOrientation == deviceOrientation.HORIZONTAL_LEFT)
-			stepometerAngle = (float) (Math.atan2(-R[4], -R[1]) * 180.0d / Math.PI);
-		else if (deviceOrientation == DeviceOrientation.HORIZONTAL_RIGHT)
-			stepometerAngle = (float) (Math.atan2(R[4], R[1]) * 180.0d / Math.PI);
-		else if (deviceOrientation == DeviceOrientation.UNKNOWN)
-			stepometerAngle = (float) (90.0f - Math.atan2(-R[5], R[2]) * 180.0d / Math.PI);
+//		if (deviceOrientation == deviceOrientation.VERTICAL)
+//			stepometerAngle = (float) (Math.atan2(R[3], R[0]) * 180.0d / Math.PI);
+//		else if (deviceOrientation == deviceOrientation.HORIZONTAL_LEFT)
+//			stepometerAngle = (float) (Math.atan2(-R[4], -R[1]) * 180.0d / Math.PI);
+//		else if (deviceOrientation == DeviceOrientation.HORIZONTAL_RIGHT)
+//			stepometerAngle = (float) (Math.atan2(R[4], R[1]) * 180.0d / Math.PI);
+//		else if (deviceOrientation == DeviceOrientation.UNKNOWN)
+//			stepometerAngle = (float) (90.0f - Math.atan2(-R[5], R[2]) * 180.0d / Math.PI);
 
-
+		stepometerAngle = (float) (90.0f - Math.atan2(-R[5], R[2]) * 180.0d / Math.PI);
 	}
 
 
@@ -974,7 +973,7 @@ public class InertialSensors {
 //		if (accVarianceWindow.size() > accVarianceWindowSize) {
 //			accVarianceWindow.removeFirst();
 //		}
-		if (accStepometerWindow.size() > stepometerWindowSize) {
+		if (accStepometerWindow.size() > parameters.stepometer.windowSize) {
 			accStepometerWindow.removeFirst();
 		}
 
@@ -983,8 +982,8 @@ public class InertialSensors {
 		
 		if (stepometerStarted && stepometerRunningCounter > 200)
 		{
-			Log.d(moduleLogName, "Compare sizes: " + accStepometerWindow.size() + " " + stepometerWindowSize);
-			if ( accStepometerWindow.size() == stepometerWindowSize)
+			Log.d(moduleLogName, "Compare sizes: " + accStepometerWindow.size() + " " + parameters.stepometer.windowSize);
+			if ( accStepometerWindow.size() == parameters.stepometer.windowSize)
 			{
 				
 				 // Copying from list to float array, so we can process in new thread

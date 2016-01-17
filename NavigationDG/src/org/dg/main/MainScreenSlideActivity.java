@@ -583,7 +583,7 @@ public class MainScreenSlideActivity extends Activity implements
 			float estimatedHeight = openAIL.inertialSensors
 					.getEstimatedHeight();
 			float accVariance = openAIL.inertialSensors.getAccVariance();
-			float stepometerAngle = openAIL.inertialSensors.getGlobalYaw();
+			float stepometerAngle = openAIL.inertialSensors.getStepometerAngle();
 			float gyroVariance = openAIL.inertialSensors.getGyroVariance();
 
 			// Passing to fragment for update

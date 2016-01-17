@@ -699,7 +699,7 @@ public class ScreenSlidePageFragment extends Fragment {
 						+ String.format("%.2f", stepCount));
 				mTextViewStepDistance.setText("Dist: "
 						+ String.format("%.2f", stepDistance) + " m");
-				mTextViewAngle.setText("Angle: "
+				mTextViewAngle.setText("Raw angle: "
 						+ String.format("%.2f", stepometerAngle));
 				mTextViewAccVariance.setText("Acc var: "
 						+ String.format("%.2f", accVariance));

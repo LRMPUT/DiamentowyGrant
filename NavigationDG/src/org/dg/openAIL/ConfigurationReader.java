@@ -50,6 +50,7 @@ public class ConfigurationReader {
 				public int verbose;
 				public double minFrequency, maxFrequency;
 				public double stepSize;
+				public int windowSize;
 			}
 
 			public boolean useModule;
@@ -184,14 +185,17 @@ public class ConfigurationReader {
 				+ parameters.inertialSensors.record.orientationCF
 				+ "\n------ orientationCFEuler="
 				+ parameters.inertialSensors.record.orientationCFEuler);
-		
+
 		Log.d(moduleLogName, "--- Stepometer:" + "\n------ verbose="
-				+ parameters.inertialSensors.stepometer.verbose +
-				"\n------ minFrequency="
+				+ parameters.inertialSensors.stepometer.verbose
+				+ "\n------ minFrequency="
 				+ parameters.inertialSensors.stepometer.minFrequency
 				+ "\n------ maxFrequency="
-				+ parameters.inertialSensors.stepometer.maxFrequency + "\n------ stepSize="
-				+ parameters.inertialSensors.stepometer.stepSize);
+				+ parameters.inertialSensors.stepometer.maxFrequency
+				+ "\n------ stepSize="
+				+ parameters.inertialSensors.stepometer.stepSize
+				+ "\n------ windowSize="
+				+ parameters.inertialSensors.stepometer.windowSize);
 
 		Log.d(moduleLogName, "GraphManager:"
 				+ "\n--- vprVicinityDeadBandRadius="
@@ -367,7 +371,8 @@ public class ConfigurationReader {
 
 		// Reading attributes
 		String useModuleString = parser.getAttributeValue(null, "useModule");
-		String useStepometerString = parser.getAttributeValue(null, "useStepometer");
+		String useStepometerString = parser.getAttributeValue(null,
+				"useStepometer");
 		String verticalOrientationString = parser.getAttributeValue(null,
 				"verticalOrientation");
 		String priorMapStepometerBiasVerticalString = parser.getAttributeValue(
@@ -387,7 +392,8 @@ public class ConfigurationReader {
 
 		// Storing read values
 		parameters.inertialSensors.useModule = useModuleString.equals("True");
-		parameters.inertialSensors.useStepometer = useModuleString.equals("True");
+		parameters.inertialSensors.useStepometer = useModuleString
+				.equals("True");
 		parameters.inertialSensors.verticalOrientation = verticalOrientationString
 				.equals("True");
 		parameters.inertialSensors.priorMapStepometerBiasVertical = Double
@@ -491,31 +497,37 @@ public class ConfigurationReader {
 			parser.require(XmlPullParser.START_TAG, ns, "Stepometer");
 
 			// Reading attributes
-			String verboseString = parser.getAttributeValue(null,
-					"verbose");
+			String verboseString = parser.getAttributeValue(null, "verbose");
 			String minFrequencyString = parser.getAttributeValue(null,
 					"minFrequency");
 			String maxFrequencyString = parser.getAttributeValue(null,
 					"maxFrequency");
-			String stepSizeString = parser.getAttributeValue(null,
-					"stepSize");
+			String stepSizeString = parser.getAttributeValue(null, "stepSize");
+			String windowSizeString = parser.getAttributeValue(null, "windowSize");
 
 			// Logging those values
 			Log.d(moduleLogName, "verbose = " + verboseString);
 			Log.d(moduleLogName, "minFrequency = " + minFrequencyString);
 			Log.d(moduleLogName, "maxFrequency = " + maxFrequencyString);
 			Log.d(moduleLogName, "stepSize = " + stepSizeString);
+			Log.d(moduleLogName, "windowSize = " + windowSizeString);
 
 			// Storing read values
-			parameters.inertialSensors.stepometer.verbose = Integer.parseInt(verboseString);
-			parameters.inertialSensors.stepometer.minFrequency = Double.parseDouble(minFrequencyString);
-			parameters.inertialSensors.stepometer.maxFrequency = Double.parseDouble(maxFrequencyString);
-			parameters.inertialSensors.stepometer.stepSize = Double.parseDouble(stepSizeString);
+			parameters.inertialSensors.stepometer.verbose = Integer
+					.parseInt(verboseString);
+			parameters.inertialSensors.stepometer.minFrequency = Double
+					.parseDouble(minFrequencyString);
+			parameters.inertialSensors.stepometer.maxFrequency = Double
+					.parseDouble(maxFrequencyString);
+			parameters.inertialSensors.stepometer.stepSize = Double
+					.parseDouble(stepSizeString);
+			parameters.inertialSensors.stepometer.windowSize = Integer
+					.parseInt(windowSizeString);
 
 			parser.nextTag();
 			parser.require(XmlPullParser.END_TAG, ns, "Stepometer");
 			Log.d(moduleLogName, "</Stepometer>");
-		
+
 		}
 
 		parser.require(XmlPullParser.END_TAG, ns, "InertialSensors");
