@@ -51,6 +51,7 @@ final String moduleLogName = "WiFiPlayback";
 					folder + "/wifi.log")));
 			rawDataScanner.useLocale(Locale.US);
 		} catch (FileNotFoundException e1) {
+			rawDataScanner = null;
 			Log.e(moduleLogName, "Missing wifi.log");
 		}
 		
@@ -97,7 +98,7 @@ final String moduleLogName = "WiFiPlayback";
 	
 	
 	RawData readWiFi() {
-		if ( rawDataScanner.hasNextInt()) {
+		if ( rawDataScanner != null && rawDataScanner.hasNextInt()) {
 			RawData wifiData = new RawData();
 			wifiData.sourceType = Sensor.TYPE_ALL;
 			wifiData.graphId = rawDataScanner.nextInt();

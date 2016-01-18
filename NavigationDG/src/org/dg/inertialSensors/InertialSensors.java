@@ -237,6 +237,7 @@ public class InertialSensors {
 			
 			// In first case, the diff is equal to global orientation corrected by map bias
 			if ( firstYawCall) {
+				Log.d(moduleLogName, "deltaYaw = " + deltaYaw + " firstCallBias = " + firstCallBias);
 				firstYawCall = false;
 				return deltaYaw + firstCallBias;
 			}
@@ -734,7 +735,8 @@ public class InertialSensors {
 	/**
 	 * Updates orientation filters
 	 */
-	private void processNewOrientationData(MySensorEvent event) {
+	private void processNewOrientationData(MySensorEvent event) {	
+		
 		float[] quaternion = new float[4];
 		SensorManager.getQuaternionFromVector(quaternion,
 				event.values);
@@ -839,6 +841,7 @@ public class InertialSensors {
 //			stepometerAngle = (float) (90.0f - Math.atan2(-R[5], R[2]) * 180.0d / Math.PI);
 
 		stepometerAngle = (float) (90.0f - Math.atan2(-R[5], R[2]) * 180.0d / Math.PI);
+		Log.d(moduleLogName, "stepometerAngle=" + stepometerAngle);
 	}
 
 

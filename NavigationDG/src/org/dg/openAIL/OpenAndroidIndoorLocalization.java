@@ -1,6 +1,8 @@
 package org.dg.openAIL;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -24,6 +26,8 @@ import org.opencv.core.Point3;
 import org.xmlpull.v1.XmlPullParserException;
 
 import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.Bitmap.CompressFormat;
 import android.hardware.SensorManager;
 import android.net.wifi.WifiManager;
 import android.os.Environment;
@@ -59,35 +63,35 @@ public class OpenAndroidIndoorLocalization {
 
 	// Prior map
 	public PriorMapHandler priorMapHandler;
-	
+
 	// Navigation
 	public Navigation navigation;
-	
+
 	// View to draw localization
 	LocalizationView localizationView;
-	
+
 	// QR Code decoding
 	public QRCodeDecoderClass qrCodeDecoder;
-	
+
 	// Context for toasts
 	Context context;
-	
+
 	// Timestamp
 	long processingStartTimestamp = 0;
 
 	// TODO STILL TESTING!
 	WiFiPlayback wifiPlayback;
 	InertialSensorsPlayback inertialSensorsPlayback;
-	
+
 	/*
-	 * Creates OpenAIL, loads settings and initializes graph optimization, 
+	 * Creates OpenAIL, loads settings and initializes graph optimization,
 	 * inertial sensors and WiFi scanner
 	 */
-	public OpenAndroidIndoorLocalization(Context _context, SensorManager sensorManager,
-			WifiManager wifiManager) {
+	public OpenAndroidIndoorLocalization(Context _context,
+			SensorManager sensorManager, WifiManager wifiManager) {
 		// Save context
 		context = _context;
-		
+
 		// Create directories if needed
 		createNeededDirectories();
 
@@ -96,37 +100,41 @@ public class OpenAndroidIndoorLocalization {
 
 		// Preparing prior map
 		priorMapHandler = new PriorMapHandler();
-		
+
 		// Init graph
 		graphManager = new GraphManager(parameters.graphManager);
 
 		// Init inertial sensors
 		if (parameters.inertialSensors.useModule)
-			inertialSensors = new InertialSensors(sensorManager, parameters.inertialSensors);
+			inertialSensors = new InertialSensors(sensorManager,
+					parameters.inertialSensors);
 
 		// Init WiFi
 		wifiScanner = new WifiScanner(wifiManager,
 				parameters.wifiPlaceRecognition);
-		
+
 		// Create QRCodeDecoder
 		qrCodeDecoder = new QRCodeDecoderClass(context);
-		
+
 		// TODO
 		wifiPlayback = new WiFiPlayback(parameters.playback, wifiScanner);
-		inertialSensorsPlayback = new InertialSensorsPlayback(parameters.playback, inertialSensors);
-		
+		inertialSensorsPlayback = new InertialSensorsPlayback(
+				parameters.playback, inertialSensors);
+
 		// TODO
-//		Playback playback = new Playback();
-//		Log.d(moduleLogName, "playbackInitialized!");
-//		for (int i=0;i<10;i++) {
-//			 RawData data = playback.getNextData();
-//			 Log.d(moduleLogName, "Read: " + data.timestamp + " type: " + data.sourceType );
-//		}
-		
+		// Playback playback = new Playback();
+		// Log.d(moduleLogName, "playbackInitialized!");
+		// for (int i=0;i<10;i++) {
+		// RawData data = playback.getNextData();
+		// Log.d(moduleLogName, "Read: " + data.timestamp + " type: " +
+		// data.sourceType );
+		// }
+
 	}
 
 	/**
-	 * Part of the code that can be only called after OpenCV was loaded inside application
+	 * Part of the code that can be only called after OpenCV was loaded inside
+	 * application
 	 */
 	public void initAfterOpenCV() {
 		Log.d(moduleLogName,
@@ -137,50 +145,54 @@ public class OpenAndroidIndoorLocalization {
 	}
 
 	/*
-	 * Starting the localization task:
-	 * - creating graph structure
-	 * - loading prior map
-	 * - start checking for new measurments
+	 * Starting the localization task: - creating graph structure - loading
+	 * prior map - start checking for new measurments
 	 */
 	public void startLocalization() {
 		Log.d(moduleLogName, "startLocalization()");
-		
+
 		// Let's read map plan
-		BuildingPlan buildingPlan = priorMapHandler.loadCorridorMap(parameters.mainProcessing.priorMapName);
+		BuildingPlan buildingPlan = priorMapHandler
+				.loadCorridorMap(parameters.mainProcessing.priorMapName);
 		localizationView.setBuildingPlan(buildingPlan);
-		
+
 		if (parameters.mainProcessing.useNavigation)
 			navigation = new Navigation(buildingPlan);
-		
+
 		// Creating new graph
 		graphManager.start();
 
 		// Load prior map
 		if (parameters.mainProcessing.usePriorMap) {
-			List<MapPosition> mapPositions = priorMapHandler.loadWiFiAndImageMap(parameters.mainProcessing.priorMapName);
-			
-			// For all positions in a map add to graph and initially add to visualization
+			List<MapPosition> mapPositions = priorMapHandler
+					.loadWiFiAndImageMap(parameters.mainProcessing.priorMapName);
+
+			// For all positions in a map add to graph and initially add to
+			// visualization
 			List<Pair<Double, Double>> wifiScanLocations = new ArrayList<Pair<Double, Double>>();
-			for (MapPosition mapPos: mapPositions) {
-				
+			for (MapPosition mapPos : mapPositions) {
+
 				// Add a node to the graph
-				graphManager.addVertexWithKnownPosition(mapPos.id, mapPos.X, mapPos.Y, mapPos.Z);
-				
+				graphManager.addVertexWithKnownPosition(mapPos.id, mapPos.X,
+						mapPos.Y, mapPos.Z);
+
 				// Add a position for initial Visualization
-				Pair<Double, Double> tmpPair = new Pair<Double, Double>(mapPos.X, mapPos.Y);
+				Pair<Double, Double> tmpPair = new Pair<Double, Double>(
+						mapPos.X, mapPos.Y);
 				wifiScanLocations.add(tmpPair);
 
-				// Add new scan to WiFi Place Recognition 
-				//	(TODO: Could be extended to use X, Y, Z, angle)
-				wifiScanner.addScanToRecognition(mapPos.id, mapPos.scannedWiFiList);
-				
-				// Add new image to VPR 
-				//	(TODO: Could be extended to use X, Y, Z, angle)
-				//visualPlaceRecognition.addPlace(mapPos.id, mapPos.image);
+				// Add new scan to WiFi Place Recognition
+				// (TODO: Could be extended to use X, Y, Z, angle)
+				wifiScanner.addScanToRecognition(mapPos.id,
+						mapPos.scannedWiFiList);
+
+				// Add new image to VPR
+				// (TODO: Could be extended to use X, Y, Z, angle)
+				// visualPlaceRecognition.addPlace(mapPos.id, mapPos.image);
 			}
 			localizationView.setWiFiScanLocations(wifiScanLocations);
 		}
-		
+
 		// Synchronize times
 		synchronizeModuleTime();
 
@@ -197,7 +209,7 @@ public class OpenAndroidIndoorLocalization {
 
 		// Check if there is an issue with WiFi
 		detectWiFiIssue = 0;
-		
+
 		// Save first image for FABMAP
 		if (preview != null) {
 			Log.d(moduleLogName, "Mobicase version: preview OK");
@@ -206,16 +218,15 @@ public class OpenAndroidIndoorLocalization {
 		}
 	}
 
-	
 	// TODO
 	public void startPlayback() {
 		wifiPlayback.start();
-		
+
 		inertialSensors.startPlayback();
 		inertialSensors.startStepometer();
 		inertialSensorsPlayback.start();
 	}
-	
+
 	/**
 	 * We set the same time for all modules
 	 */
@@ -234,7 +245,7 @@ public class OpenAndroidIndoorLocalization {
 		// Stop checking for new data
 		updateGraphTimer.cancel();
 		updateGraphTimer = null;
-		
+
 		// Stop WiFi recognition thread
 		wifiScanner.stopNewPlaceRecognitionThread();
 
@@ -244,45 +255,73 @@ public class OpenAndroidIndoorLocalization {
 		// Stop the optimization thread
 		graphManager.stopOptimizationThread();
 
+//		File folder = new File(Environment.getExternalStorageDirectory()
+//				+ "/OpenAIL");
+//		if (!folder.exists()) {
+//			folder.mkdir();
+//		}
+//		File dirResult = new File(folder.getAbsolutePath() + "/result");
+//		if (!dirResult.exists()) {
+//			dirResult.mkdirs();
+//		}
+//
+//		Bitmap localizationViewScreenshot = localizationView.getDrawingCache();
+//
+//		FileOutputStream imgStream;
+//		try {
+//			imgStream = new FileOutputStream(dirResult.getAbsolutePath()
+//					+ "/positionEstimates.png");
+//			localizationViewScreenshot.compress(CompressFormat.PNG, 10,
+//					imgStream);
+//			imgStream.close();
+//
+//		} catch (Exception e) {
+//			// TODO Auto-generated catch block
+//			e.printStackTrace();
+//		}
+
 		// Getting the estimates
-//		List<Vertex> list = graphManager.getVerticesEstimates();
+		// List<Vertex> list = graphManager.getVerticesEstimates();
 	}
 
 	/*
 	 * Optimizing the graph stored in a file - "offline mode"
 	 */
-	public void optimizeGraphInFile(String name)
-	{
+	public void optimizeGraphInFile(String name) {
 		graphManager.optimizeGraphInFile("lastCreatedGraph.g2o");
-		
+
 		List<Vertex> listOfVertices = graphManager.getVerticesEstimates();
 		List<Pair<Double, Double>> userLocations = new ArrayList<Pair<Double, Double>>();
-		
+
 		for (Vertex v : listOfVertices) {
-			Log.d(moduleLogName, "Vertex " + v.id + " - pos = (" + v.X + ", " + v.Y + ", " + v.Z + ")");
-			if ( v.id < 10000 )
-				userLocations.add(new Pair<Double,Double>(v.X, v.Y));
+			Log.d(moduleLogName, "Vertex " + v.id + " - pos = (" + v.X + ", "
+					+ v.Y + ", " + v.Z + ")");
+			if (v.id < 10000)
+				userLocations.add(new Pair<Double, Double>(v.X, v.Y));
 		}
-		
+
 		localizationView.setUserLocations(userLocations);
-		
-		// For all positions in a map add to graph and initially add to visualization
+
+		// For all positions in a map add to graph and initially add to
+		// visualization
 		List<Pair<Double, Double>> wifiScanLocations = new ArrayList<Pair<Double, Double>>();
 		if (parameters.mainProcessing.usePriorMap) {
-			List<MapPosition> mapPositions = priorMapHandler.loadWiFiAndImageMap(parameters.mainProcessing.priorMapName);
-			
+			List<MapPosition> mapPositions = priorMapHandler
+					.loadWiFiAndImageMap(parameters.mainProcessing.priorMapName);
+
 			// For all positions in a map
-			for (MapPosition mapPos: mapPositions) {
+			for (MapPosition mapPos : mapPositions) {
 				// Add a position for initial Visualization
-				Pair<Double, Double> tmpPair = new Pair<Double, Double>(mapPos.X, mapPos.Y);
+				Pair<Double, Double> tmpPair = new Pair<Double, Double>(
+						mapPos.X, mapPos.Y);
 				wifiScanLocations.add(tmpPair);
 			}
 			// Add to the visualization
 			localizationView.setWiFiScanLocations(wifiScanLocations);
 		}
-		
+
 	}
-	
+
 	/*
 	 * Setting the view to draw current localization estimates
 	 */
@@ -290,22 +329,22 @@ public class OpenAndroidIndoorLocalization {
 		// Save localization view for drawing
 		localizationView = _localizationView;
 	}
-	
+
 	/**
-	* Class used to check if there is new sensor data to add to graph
-	* The mentioned method is performed with a frequency set in settings.xml
-	*/
+	 * Class used to check if there is new sensor data to add to graph The
+	 * mentioned method is performed with a frequency set in settings.xml
+	 */
 	class UpdateGraph extends TimerTask {
 		int iterationCounter = 0;
 		int lastImageSaveIterationCounter = 0;
 
 		// Called to check new data
 		public void run() {
-		
+
 			// Stepometer
 			double distance = inertialSensors.getStepometerStepDistance();
 			if (distance > 0.01) {
-				
+
 				// get angle from our estimation
 				// TODO: RIGHT NOW WE USE ANDROID ORIENTATION
 				float yawZ = -inertialSensors.getYawForStepometer();
@@ -316,24 +355,23 @@ public class OpenAndroidIndoorLocalization {
 				graphManager.createNewPose();
 				graphManager.addStepometerMeasurement(distance, yawZ);
 			}
-			
-			
-			// Visual place recognition - take the image if acc variance is reasonable
+
+			// Visual place recognition - take the image if acc variance is
+			// reasonable
 			float accVariance = inertialSensors.getAccVariance();
 			if (iterationCounter - lastImageSaveIterationCounter >= parameters.mainProcessing.imageCaptureStep
-					&& accVariance < parameters.mainProcessing.imageCaptureVarianceThreshold)
-			{
-				Log.d(moduleLogName, "Mobicase version: saving image when in motion");
+					&& accVariance < parameters.mainProcessing.imageCaptureVarianceThreshold) {
+				Log.d(moduleLogName,
+						"Mobicase version: saving image when in motion");
 				if (preview != null) {
 					Log.d(moduleLogName, "Mobicase version: preview OK");
 					Mat image = preview.getCurPreviewImage();
-					
+
 					int poseId = graphManager.getCurrentPoseId();
 					visualPlaceRecognition.savePlace(0, 0, 0, image, poseId);
-				}
-				else
+				} else
 					Log.d(moduleLogName, "Mobicase version: preview FAILED");
-				
+
 				lastImageSaveIterationCounter = iterationCounter;
 			}
 
@@ -342,9 +380,9 @@ public class OpenAndroidIndoorLocalization {
 					.getAndClearRecognizedPlacesList();
 			Log.d(moduleLogName, "The placeRecognition thread found "
 					+ recognizedPlaces.size() + " connections");
-			if (recognizedPlaces!=null && recognizedPlaces.size() > 0)
+			if (recognizedPlaces != null && recognizedPlaces.size() > 0)
 				graphManager.addMultipleWiFiFingerprints(recognizedPlaces);
-			
+
 			// Check if there is new measurement
 			if (wifiScanner.isNewMeasurement()) {
 				// All ok
@@ -356,7 +394,8 @@ public class OpenAndroidIndoorLocalization {
 				// WiFi place recognition
 				int currentPoseId = graphManager.getCurrentPoseId();
 
-				// Add new pose to search and set it with the id of the graph pose
+				// Add new pose to search and set it with the id of the graph
+				// pose
 				wifiScanner.addLastScanToRecognition(currentPoseId);
 
 				// Should we add direct links to WiFi networks to the graph
@@ -364,12 +403,15 @@ public class OpenAndroidIndoorLocalization {
 					// Adding WiFi measurements
 					List<wiFiMeasurement> wifiList = wifiScanner
 							.getGraphWiFiList();
-					 if (wifiList != null)
-						 graphManager.addMultipleWiFiMeasurements(wifiList);
+					if (wifiList != null)
+						graphManager.addMultipleWiFiMeasurements(wifiList);
 				}
-			} else if (wifiScanner.getWaitingForScan() && !wifiScanner.getPlaybackState()) {
+			} else if (wifiScanner.getWaitingForScan()
+					&& !wifiScanner.getPlaybackState()) {
 
-				Log.d(moduleLogName,"WiFi waiting for scan = " + wifiScanner.getWaitingForScan());
+				Log.d(moduleLogName,
+						"WiFi waiting for scan = "
+								+ wifiScanner.getWaitingForScan());
 				detectWiFiIssue++;
 
 				// Bad scan received - need to restart
@@ -382,89 +424,93 @@ public class OpenAndroidIndoorLocalization {
 			}
 
 			// Save current image
-//			Log.d(moduleLogName, "Processing camera ...");
-//			if (preview != null && iterationCounter % 5 == 0) {
-//				Log.d(moduleLogName, "Getting and saving camera image");
-//				Mat image = preview.getCurPreviewImage();
-//				visualPlaceRecognition.savePlace(0, 0, 0, image);
-//			}
-//
-//			List<IdPair<Integer, Integer>> vprList = visualPlaceRecognition
-//					.getAndClearVPRMatchedList();
-			
+			// Log.d(moduleLogName, "Processing camera ...");
+			// if (preview != null && iterationCounter % 5 == 0) {
+			// Log.d(moduleLogName, "Getting and saving camera image");
+			// Mat image = preview.getCurPreviewImage();
+			// visualPlaceRecognition.savePlace(0, 0, 0, image);
+			// }
+			//
+			// List<IdPair<Integer, Integer>> vprList = visualPlaceRecognition
+			// .getAndClearVPRMatchedList();
+
 			// QR Codes
-			List<Pair<Integer, Point3>> recognizedQRCodes = qrCodeDecoder.getRecognizedQRCodes();
-			Log.d(moduleLogName, "Recognized QR codes: " + recognizedQRCodes.size());
-			if ( recognizedQRCodes.size() > 0) {
+			List<Pair<Integer, Point3>> recognizedQRCodes = qrCodeDecoder
+					.getRecognizedQRCodes();
+			Log.d(moduleLogName,
+					"Recognized QR codes: " + recognizedQRCodes.size());
+			if (recognizedQRCodes.size() > 0) {
 				graphManager.addMultipleQRCodes(recognizedQRCodes);
 			}
-			
+
 			// Should we show the background plan?
-			boolean showBackgroundPlan = parameters.mainProcessing.showMapWithoutMapConnection || graphManager.isMapConnected() ;
+			boolean showBackgroundPlan = parameters.mainProcessing.showMapWithoutMapConnection
+					|| graphManager.isMapConnected();
 			localizationView.showBackgroundPlan(showBackgroundPlan);
-			
+
 			// TODO: Get current estimate of vertices
-			if (graphManager.changeInOptimizedData)
-			{				
+			if (graphManager.changeInOptimizedData) {
 				Log.d(moduleLogName, "Adding user positions to visualization");
-				List<Vertex> listOfVertices = graphManager.getVerticesEstimates();
-				List<Pair<Double, Double>> userLocations = new ArrayList<Pair<Double, Double>>();	
-				
-				if ( listOfVertices == null) {
+				List<Vertex> listOfVertices = graphManager
+						.getVerticesEstimates();
+				List<Pair<Double, Double>> userLocations = new ArrayList<Pair<Double, Double>>();
+
+				if (listOfVertices == null) {
 					Log.d(moduleLogName, "list of vertices is null");
 				} else {
 					Log.d(moduleLogName, "SIZE: " + listOfVertices.size());
 				}
-				
+
 				for (Vertex v : listOfVertices) {
-					if ( v.id < 10000 )
-						userLocations.add(new Pair<Double,Double>(v.X, v.Y));
+					if (v.id < 10000)
+						userLocations.add(new Pair<Double, Double>(v.X, v.Y));
 				}
-				
+
 				localizationView.setUserLocations(userLocations);
-				
+
 				graphManager.changeInOptimizedData = false;
 			}
-			
-			
+
 			// Navigation part TODO: STILL TESTING
-			if( parameters.mainProcessing.useNavigation && localizationView.isGoalSet() ) {
+			if (parameters.mainProcessing.useNavigation
+					&& localizationView.isGoalSet()) {
 				Pair<Double, Double> goal = localizationView.getGoal();
-				
+
 				Vertex v = graphManager.getCurrentPoseEstimate();
-				if ( v == null) {
+				if (v == null) {
 					Log.d(moduleLogName, "Navigation: vertex is null");
 					v = new Vertex(-1, 0, 0, 0);
 				}
-				
-				List<Pair<Double, Double>> pathToGoal = navigation.startNavigation(v.X, v.Y, goal.first, goal.second);
+
+				List<Pair<Double, Double>> pathToGoal = navigation
+						.startNavigation(v.X, v.Y, goal.first, goal.second);
 				localizationView.setPathToGoal(pathToGoal);
 			}
-			
-			
-			
+
 			iterationCounter++;
 		}
 
 	}
-	
+
 	/**
-	 *  Method that can be used to save a position in a map
+	 * Method that can be used to save a position in a map
 	 */
-	public void saveMapPoint(String mapName, int id, double X, double Y, double Z) {
-		Log.d(moduleLogName, "Called saveMapPoint with: " + mapName + " id: " + id + " " + X + " " + Y + " " + Z);
-		
+	public void saveMapPoint(String mapName, int id, double X, double Y,
+			double Z) {
+		Log.d(moduleLogName, "Called saveMapPoint with: " + mapName + " id: "
+				+ id + " " + X + " " + Y + " " + Z);
+
 		// Let's create a new map position
 		MapPosition mapPos = new MapPosition();
-		
+
 		// Fill position with provided data
 		mapPos.id = id;
 		mapPos.X = X;
 		mapPos.Y = Y;
 		mapPos.Z = Z;
-		
+
 		// Filling missing information with current data
-		
+
 		// Angle in global coordinate system
 		mapPos.angle = inertialSensors.getGlobalYaw();
 
@@ -473,17 +519,17 @@ public class OpenAndroidIndoorLocalization {
 
 		// Getting the last image
 		mapPos.image = preview.getCurPreviewImage();
-		
+
 		// Save this point to files
 		priorMapHandler.saveMapPoint(mapName, mapPos);
 	}
-	
+
 	public void clearNewMap(String mapName) {
 		priorMapHandler.clearNewMap(mapName);
 	}
-	
+
 	/**
-	 *  Method used to read all of the parameters from settings.xml
+	 * Method used to read all of the parameters from settings.xml
 	 */
 	private ConfigurationReader.Parameters readParametersFromXML(String fileName) {
 		String configFileName = String.format(Locale.getDefault(), Environment
@@ -509,7 +555,7 @@ public class OpenAndroidIndoorLocalization {
 	}
 
 	/**
-	 *  Method used to create directories if those do not exist
+	 * Method used to create directories if those do not exist
 	 */
 	private void createNeededDirectories() {
 		File folder = new File(Environment.getExternalStorageDirectory()

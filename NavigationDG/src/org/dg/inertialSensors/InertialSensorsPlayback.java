@@ -241,17 +241,15 @@ public class InertialSensorsPlayback implements Runnable {
 			RawData inertialData = new RawData();
 			inertialData.timestamp = inertialScanner.nextLong();
 
-			int valuesSize = 3;
-			if (fourValues)
-				valuesSize = 4;
-
-			inertialData.data = new float[valuesSize];
+			if (fourValues) {
+				double quatW = inertialScanner.nextDouble();
+			}
+			
+			inertialData.data = new float[3];
 
 			inertialData.data[0] = (float) inertialScanner.nextDouble();
 			inertialData.data[1] = (float) inertialScanner.nextDouble();
 			inertialData.data[2] = (float) inertialScanner.nextDouble();
-			if (fourValues)
-				inertialData.data[3] = (float) inertialScanner.nextDouble();
 			String endOfLine = inertialScanner.nextLine();
 
 //			Log.e(moduleLogName, "READ: " + inertialData.timestamp + " "
