@@ -37,7 +37,8 @@ public class InertialSensors {
 			myOrientAEKFStream, myOrientAEKFEulerStream, myOrientComplementaryStream, myOrientComplementaryEulerStream, pressureStream;
 
 	// Starting timestamp and current timestamp
-	long timestampStart, currentTimestamp;
+	long timestampStart = 0, currentTimestamp;
+	boolean firstNewData = true;
 
 	// Last estimates
 	private final Semaphore orientMtx = new Semaphore(1, true);
@@ -386,7 +387,7 @@ public class InertialSensors {
 		}
 
 		isStarted = true;
-		timestampStart = 0;
+		firstNewData = true;
 	}
 
 	/**
@@ -432,7 +433,6 @@ public class InertialSensors {
 	// Stop the processing
 	public void stop() {
 		isStarted = false;
-		timestampStart = 0;
 		deviceOrientationIter = 0;
 		deviceOrientationPoll = new int[4]; 
 
@@ -692,8 +692,9 @@ public class InertialSensors {
 	 */
 	private void processNewData(MySensorEvent event) {
 		currentTimestamp = event.timestamp;
-		if (timestampStart == 0) {
-			timestampStart = event.timestamp;
+		if (firstNewData) {
+			firstNewData = false;
+			timestampStart = event.timestamp - (System.nanoTime() - timestampStart);
 		}
 
 		if (event.sensorType == Sensor.TYPE_ACCELEROMETER) {
@@ -841,7 +842,7 @@ public class InertialSensors {
 //			stepometerAngle = (float) (90.0f - Math.atan2(-R[5], R[2]) * 180.0d / Math.PI);
 
 		stepometerAngle = (float) (90.0f - Math.atan2(-R[5], R[2]) * 180.0d / Math.PI);
-		Log.d(moduleLogName, "stepometerAngle=" + stepometerAngle);
+//		Log.d(moduleLogName, "stepometerAngle=" + stepometerAngle);
 	}
 
 

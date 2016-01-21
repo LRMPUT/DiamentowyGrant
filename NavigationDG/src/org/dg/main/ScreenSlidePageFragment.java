@@ -287,6 +287,7 @@ public class ScreenSlidePageFragment extends Fragment {
 			final int id) {
 
 		Switch switchInterialSensors = (Switch) rootView.findViewById(id);
+		switchInterialSensors.setEnabled(false);
 		switchInterialSensors.setChecked(false);
 		switchInterialSensors.setText("Inertial sensors");
 		switchInterialSensors
@@ -339,6 +340,7 @@ public class ScreenSlidePageFragment extends Fragment {
 	private void initSwitchWiFi(final ViewGroup rootView, final int id) {
 
 		Switch switchWiFi = (Switch) rootView.findViewById(id);
+		switchWiFi.setEnabled(false);
 		switchWiFi.setChecked(false);
 		switchWiFi.setText("WiFi");
 		switchWiFi.setOnCheckedChangeListener(new OnCheckedChangeListener() {
@@ -359,6 +361,7 @@ public class ScreenSlidePageFragment extends Fragment {
 	private void initSwitchStepometer(final ViewGroup rootView, final int id) {
 
 		Switch switchStepometer = (Switch) rootView.findViewById(id);
+		switchStepometer.setEnabled(false);
 		switchStepometer.setChecked(false);
 		switchStepometer.setText("Stepometer");
 		switchStepometer
@@ -379,6 +382,7 @@ public class ScreenSlidePageFragment extends Fragment {
 	 */
 	private void initSwitchBarometer(final ViewGroup rootView, final int id) {
 		Switch switchStartFloorDetection = (Switch) rootView.findViewById(id);
+		switchStartFloorDetection.setEnabled(false);
 		switchStartFloorDetection.setChecked(false);
 		switchStartFloorDetection.setText("Barometer");
 		switchStartFloorDetection
@@ -407,13 +411,34 @@ public class ScreenSlidePageFragment extends Fragment {
 				{
 					Button buttonStartGraphOnline = (Button) rootView
 							.findViewById(id);
+
+					Switch switchStartFloorDetection = (Switch) rootView
+							.findViewById(R.id.switchBarometer);
+					Switch switchInterialSensors = (Switch) rootView
+							.findViewById(R.id.switchInertialSensors);
+					Switch switchStepometer = (Switch) rootView
+							.findViewById(R.id.switchStepometer);
+					Switch switchWiFi = (Switch) rootView
+							.findViewById(R.id.switchWiFi);
+
 					if (buttonStartGraphOnline.getText().toString()
 							.equals("Start Localization")) {
 						buttonStartGraphOnline.setText("Stop Localization");
+
+						switchStartFloorDetection.setEnabled(true);
+						switchInterialSensors.setEnabled(true);
+						switchStepometer.setEnabled(true);
+						switchWiFi.setEnabled(true);
+
 						onSomeClick(v, "Start graph");
 					} else {
 						buttonStartGraphOnline.setText("Start Localization");
 						onSomeClick(v, "Optimize graph");
+
+						switchStartFloorDetection.setEnabled(false);
+						switchInterialSensors.setEnabled(false);
+						switchStepometer.setEnabled(false);
+						switchWiFi.setEnabled(false);
 					}
 
 				}

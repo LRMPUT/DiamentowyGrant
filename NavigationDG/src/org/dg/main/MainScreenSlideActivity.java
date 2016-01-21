@@ -142,11 +142,11 @@ public class MainScreenSlideActivity extends Activity implements
 
 		// 4. Do a single WiFi Scan
 		if (link.contains("Do a single WiFi scan")) {
-			if (openAIL.inertialSensors.getState()) {
-				openAIL.wifiScanner
-						.startTimestampOfGlobalTime(openAIL.inertialSensors
-								.getTimestamp());
-			}
+//			if (openAIL.inertialSensors.getState()) {
+//				openAIL.wifiScanner
+//						.startTimestampOfGlobalTime(openAIL.inertialSensors
+//								.getTimestamp());
+//			}
 			openAIL.wifiScanner.singleScan(true).continuousScanning(false);
 			openAIL.wifiScanner.startScanning();
 		}
@@ -156,11 +156,11 @@ public class MainScreenSlideActivity extends Activity implements
 			if (openAIL.wifiScanner.getWaitingForScan()) {
 				openAIL.wifiScanner.stopScanning();
 			} else {
-				if (openAIL.inertialSensors.getState()) {
-					openAIL.wifiScanner
-							.startTimestampOfGlobalTime(openAIL.inertialSensors
-									.getTimestamp());
-				}
+//				if (openAIL.inertialSensors.getState()) {
+//					openAIL.wifiScanner
+//							.startTimestampOfGlobalTime(openAIL.inertialSensors
+//									.getTimestamp());
+//				}
 				openAIL.wifiScanner.singleScan(false).continuousScanning(true);
 				openAIL.wifiScanner.startScanning();
 			}

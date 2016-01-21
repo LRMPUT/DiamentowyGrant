@@ -35,8 +35,7 @@ public class WifiScanner extends BroadcastReceiver {
 	public boolean playbackActive = false;
 	
 	// Timestamps
-	long startTimestampOfWiFiScanning, startTimestampOfCurrentScan,
-			startTimestampOfGlobalTime;
+	long startTimestampOfCurrentScan, startTimestampOfGlobalTime;
 
 	// Scan id and graphId
 	private int id, graphPoseId;
@@ -125,11 +124,11 @@ public class WifiScanner extends BroadcastReceiver {
 		return this;
 	}
 
-	public WifiScanner startTimestampOfGlobalTime(
-			long _startTimestampOfGlobalTime) {
-		this.startTimestampOfGlobalTime = _startTimestampOfGlobalTime ;
-		return this;
-	}
+//	public WifiScanner startTimestampOfGlobalTime(
+//			long _startTimestampOfGlobalTime) {
+//		this.startTimestampOfGlobalTime = _startTimestampOfGlobalTime ;
+//		return this;
+//	}
 
 	// We start the recognition of places
 	public void startNewPlaceRecognitionThread() {
@@ -175,9 +174,7 @@ public class WifiScanner extends BroadcastReceiver {
 
 		}
 		
-		if (id == 0)
-			startTimestampOfWiFiScanning = System.currentTimeMillis();
-		startTimestampOfCurrentScan = System.currentTimeMillis();
+		startTimestampOfCurrentScan = System.nanoTime();
 
 		// We initialize the WiFi scan if WiFi is on
 		Log.e("WIFI",
@@ -281,6 +278,7 @@ public class WifiScanner extends BroadcastReceiver {
 
 	// Setting the start of the time
 	public void setStartTime() {
+		Log.d(moduleLogName, "setStartTime = " + System.nanoTime() /10e9);
 		startTimestampOfGlobalTime = System.nanoTime();
 	}
 
@@ -382,6 +380,7 @@ public class WifiScanner extends BroadcastReceiver {
 	 * @param wifiScans
 	 */
 	private void saveScanToRawStream(List<MyScanResult> wifiScans) {
+		Log.d(moduleLogName, "current =  " + System.nanoTime()/10e9 + "  startTimestampOfCurrentScan = " + startTimestampOfCurrentScan/10e9 + "  startTimestampOfGlobalTime = " + startTimestampOfGlobalTime/10e9);
 		outStreamRawData.print(Integer.toString(graphPoseId)
 				+ "\t"
 				+ Integer.toString(id)

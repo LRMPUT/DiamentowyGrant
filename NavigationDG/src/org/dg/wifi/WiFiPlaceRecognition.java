@@ -187,9 +187,9 @@ public class WiFiPlaceRecognition implements Runnable {
 
 				// Should we add this match to the list of recognized places?
 				if (value > parameters.minNumberOfSharedNetworks
-						&& value > parameters.minPercentOfSharedNetworks
+						&& value >= parameters.minPercentOfSharedNetworks
 								* linkToTest.listA.size()
-						&& value > parameters.minPercentOfSharedNetworks
+						&& value >= parameters.minPercentOfSharedNetworks
 								* linkToTest.listB.size()
 						&& avgError < parameters.maxAvgErrorThreshold) {
 
@@ -199,8 +199,11 @@ public class WiFiPlaceRecognition implements Runnable {
 						recognizedPlaces.add(new IdPair<Integer, Integer>(
 								linkToTest.indexA, linkToTest.indexB));
 					}
-					
+					outStreamPlaceRecognitionData.print("  true");
 				}
+				else
+					outStreamPlaceRecognitionData.print("  false");
+				outStreamPlaceRecognitionData.print("\n");
 			} catch (InterruptedException e) {
 				Log.d("RecognizedPlaces", "Failed to acquire mutex");
 			}
