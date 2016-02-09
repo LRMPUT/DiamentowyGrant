@@ -340,7 +340,7 @@ public class ScreenSlidePageFragment extends Fragment {
 	private void initSwitchWiFi(final ViewGroup rootView, final int id) {
 
 		Switch switchWiFi = (Switch) rootView.findViewById(id);
-		switchWiFi.setEnabled(false);
+//		switchWiFi.setEnabled(false);
 		switchWiFi.setChecked(false);
 		switchWiFi.setText("WiFi");
 		switchWiFi.setOnCheckedChangeListener(new OnCheckedChangeListener() {
@@ -418,8 +418,8 @@ public class ScreenSlidePageFragment extends Fragment {
 							.findViewById(R.id.switchInertialSensors);
 					Switch switchStepometer = (Switch) rootView
 							.findViewById(R.id.switchStepometer);
-					Switch switchWiFi = (Switch) rootView
-							.findViewById(R.id.switchWiFi);
+//					Switch switchWiFi = (Switch) rootView
+//							.findViewById(R.id.switchWiFi);
 
 					if (buttonStartGraphOnline.getText().toString()
 							.equals("Start Localization")) {
@@ -428,7 +428,7 @@ public class ScreenSlidePageFragment extends Fragment {
 						switchStartFloorDetection.setEnabled(true);
 						switchInterialSensors.setEnabled(true);
 						switchStepometer.setEnabled(true);
-						switchWiFi.setEnabled(true);
+//						switchWiFi.setEnabled(true);
 
 						onSomeClick(v, "Start graph");
 					} else {
@@ -438,7 +438,7 @@ public class ScreenSlidePageFragment extends Fragment {
 						switchStartFloorDetection.setEnabled(false);
 						switchInterialSensors.setEnabled(false);
 						switchStepometer.setEnabled(false);
-						switchWiFi.setEnabled(false);
+//						switchWiFi.setEnabled(false);
 					}
 
 				}

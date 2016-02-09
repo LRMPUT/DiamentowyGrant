@@ -15,12 +15,14 @@ import org.dg.camera.QRCodeDecoderClass;
 import org.dg.camera.VisualPlaceRecognition;
 import org.dg.graphManager.GraphManager;
 import org.dg.graphManager.Vertex;
-import org.dg.graphManager.wiFiMeasurement;
+import org.dg.graphManager.WiFiMeasurement;
 import org.dg.inertialSensors.InertialSensors;
 import org.dg.inertialSensors.InertialSensorsPlayback;
 import org.dg.main.LocalizationView;
+import org.dg.wifi.WiFiDirect;
+import org.dg.wifi.WiFiDirect.DirectMeasurement;
 import org.dg.wifi.WiFiPlayback;
-import org.dg.wifi.WifiScanner;
+import org.dg.wifi.WiFiScanner;
 import org.opencv.core.Mat;
 import org.opencv.core.Point3;
 import org.xmlpull.v1.XmlPullParserException;
@@ -33,6 +35,7 @@ import android.net.wifi.WifiManager;
 import android.os.Environment;
 import android.util.Log;
 import android.util.Pair;
+import android.view.View.MeasureSpec;
 
 // This is a class that is supposed to provide the interface for all available solutions
 public class OpenAndroidIndoorLocalization {
@@ -46,7 +49,7 @@ public class OpenAndroidIndoorLocalization {
 	public InertialSensors inertialSensors;
 
 	// WiFi
-	public WifiScanner wifiScanner;
+	public WiFiScanner wifiScanner;
 	int detectWiFiIssue;
 
 	// Visual Place Recognition
@@ -110,7 +113,7 @@ public class OpenAndroidIndoorLocalization {
 					parameters.inertialSensors);
 
 		// Init WiFi
-		wifiScanner = new WifiScanner(wifiManager,
+		wifiScanner = new WiFiScanner(wifiManager,
 				parameters.wifiPlaceRecognition);
 
 		// Create QRCodeDecoder
@@ -120,16 +123,6 @@ public class OpenAndroidIndoorLocalization {
 		wifiPlayback = new WiFiPlayback(parameters.playback, wifiScanner);
 		inertialSensorsPlayback = new InertialSensorsPlayback(
 				parameters.playback, inertialSensors);
-
-		// TODO
-		// Playback playback = new Playback();
-		// Log.d(moduleLogName, "playbackInitialized!");
-		// for (int i=0;i<10;i++) {
-		// RawData data = playback.getNextData();
-		// Log.d(moduleLogName, "Read: " + data.timestamp + " type: " +
-		// data.sourceType );
-		// }
-
 	}
 
 	/**
@@ -144,9 +137,79 @@ public class OpenAndroidIndoorLocalization {
 		visualPlaceRecognition = new VisualPlaceRecognition();
 	}
 
+	class AP {
+		double X, Y, howMany;
+
+		AP() {
+			X = 0;
+			Y = 0;
+			howMany = 0;
+		}
+	}
+	
+	public void directWiFiTest() {
+		Log.d(moduleLogName, "directWiFiTest()");
+		WiFiDirect wifiDirect = new WiFiDirect();
+		
+		List<MapPosition> mapPositions = priorMapHandler
+				.loadWiFiAndImageMap(parameters.mainProcessing.priorMapName);
+		
+		graphManager.openCreatedGraphStream();
+		
+		for (MapPosition mapPos : mapPositions) {
+				wifiDirect.processNewScan(mapPos.scannedWiFiList, mapPos.id);
+				
+//				graphManager.addVertexXY(mapPos.id, mapPos.X,
+//						mapPos.Y);
+				graphManager.addVertexSE2(mapPos.id, mapPos.X,
+						mapPos.Y, 0);
+		}
+		
+		int numberOfNetworks = wifiDirect.getNumberOfNetworks();
+		List<DirectMeasurement> measurements = wifiDirect.getGraphWiFiList();
+		
+		Log.d(moduleLogName, "directWiFiTest() - init for APs");
+		
+		AP [] apPositions = new AP[numberOfNetworks];
+		for (int i=0;i<numberOfNetworks;i++)
+			apPositions[i] = new AP();
+		
+		for (DirectMeasurement dm : measurements) {
+			MapPosition mapPos = mapPositions.get(dm.idPos - 10000);
+			
+			apPositions[dm.idAP].X += mapPos.X;
+			apPositions[dm.idAP].Y += mapPos.Y;
+			apPositions[dm.idAP].howMany ++;
+		}
+		
+		for ( int i=0;i<numberOfNetworks;i++) {
+			AP ap = apPositions[i];
+//			graphManager.addVertexSE2(i, ap.X / ap.howMany,
+//					ap.Y / ap.howMany, 8.0);
+			graphManager.addVertexXYZ(i, ap.X / ap.howMany,
+					ap.Y / ap.howMany, 10.0);
+		}
+		
+		Log.d(moduleLogName, "directWiFiTest() - add measurements");
+		
+		// TODO!
+//		graphManager.addMultipleWiFiMeasurements(measurements);
+		
+//		Log.d(moduleLogName, "Reverse problem! ");
+		
+//		measurements = wifiDirect.getReverseTest();
+//		graphManager.addMultipleWiFiMeasurements(measurements);
+		
+		Log.d(moduleLogName, "directWiFiTest() - optimize");
+		
+		graphManager.optimizeGraph();
+		
+		Log.d(moduleLogName, "directWiFiTest() - end");
+	}
+	
 	/*
 	 * Starting the localization task: - creating graph structure - loading
-	 * prior map - start checking for new measurments
+	 * prior map - start checking for new measurements
 	 */
 	public void startLocalization() {
 		Log.d(moduleLogName, "startLocalization()");
@@ -173,7 +236,7 @@ public class OpenAndroidIndoorLocalization {
 			for (MapPosition mapPos : mapPositions) {
 
 				// Add a node to the graph
-				graphManager.addVertexWithKnownPosition(mapPos.id, mapPos.X,
+				graphManager.addVertexSE2(mapPos.id, mapPos.X,
 						mapPos.Y, mapPos.Z);
 
 				// Add a position for initial Visualization
@@ -220,6 +283,11 @@ public class OpenAndroidIndoorLocalization {
 
 	// TODO
 	public void startPlayback() {
+		
+//		directWiFiTest();
+//		graphManager.optimizeGraphInFile("lastCreatedGraphOnly0.g2o");
+		
+		
 		wifiPlayback.start();
 
 		inertialSensors.startPlayback();
@@ -401,10 +469,10 @@ public class OpenAndroidIndoorLocalization {
 				// Should we add direct links to WiFi networks to the graph
 				if (parameters.wifiPlaceRecognition.directWiFiMeasurements) {
 					// Adding WiFi measurements
-					List<wiFiMeasurement> wifiList = wifiScanner
-							.getGraphWiFiList();
-					if (wifiList != null)
-						graphManager.addMultipleWiFiMeasurements(wifiList);
+//					List<WiFiMeasurement> wifiList = wifiScanner
+//							.getGraphWiFiList();
+//					if (wifiList != null)
+//						graphManager.addMultipleWiFiMeasurements(wifiList);
 				}
 			} else if (wifiScanner.getWaitingForScan()
 					&& !wifiScanner.getPlaybackState()) {

@@ -16,6 +16,7 @@
 #include "g2o/types/slam2d/g2o_types_slam2d_api.h"
 #include "g2o/types/slam2d/vertex_se2.h"
 #include "g2o/types/slam2d/vertex_point_xy.h"
+#include "g2o/types/slam3d/vertex_pointxyz.h"
 
 // Solver
 #include "g2o/solvers/pcg/linear_solver_pcg.h"
@@ -26,6 +27,7 @@
 
 // Custom edges
 #include "edge_se2_pointXY_distance.h"
+#include "edge_se2_pointXYZ_fixedZ_distance.h"
 #include "edge_se2_distanceOrientation.h"
 #include "edge_se2_placeVicinity.h"
 #include "edge_se2_qr.h"
@@ -47,7 +49,9 @@ public:
 		/// Vertex 2D -- x, y
 		VERTEX2D,
 		/// Vertex SE(2) -- x, y, theta
-		VERTEXSE2
+		VERTEXSE2,
+		/// Vertex 3D -- x, y, z
+		VERTEX3D
 	};
 
 	Type type;
@@ -69,6 +73,14 @@ public:
 	}
 	Eigen::Vector2d pos;
 	double orient;
+};
+
+class Vertex3D: public Vertex {
+public:
+	Vertex3D() {
+		pos = Eigen::Vector3d::Zero();
+	}
+	Eigen::Vector3d pos;
 };
 
 }
@@ -108,7 +120,7 @@ private:
 	// Adding vertices:
 	// 0 - SE2
 	// 1 - XY
-	int addVertex(stringstream &data, int type);
+	int addVertex(stringstream &data, ail::Vertex::Type type);
 
 	// add Vicinity Edge
 	int addVicinityEdge(stringstream &data, string name);

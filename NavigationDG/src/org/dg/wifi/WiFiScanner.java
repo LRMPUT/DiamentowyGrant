@@ -7,7 +7,7 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.dg.graphManager.wiFiMeasurement;
+import org.dg.graphManager.WiFiMeasurement;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -18,7 +18,7 @@ import android.os.Environment;
 import android.util.Log;
 import android.widget.Toast;
 
-public class WifiScanner extends BroadcastReceiver {
+public class WiFiScanner extends BroadcastReceiver {
 	
 	final String moduleLogName = "WiFiScanner";
 
@@ -62,27 +62,9 @@ public class WifiScanner extends BroadcastReceiver {
 	// Should we save raw WiFi data
 	boolean saveRawData = false;
 
-	//// --------
-	
-	// Graph result
-	List<wiFiMeasurement> graphWiFiList = new ArrayList<wiFiMeasurement>();
-	boolean graphWiFiListReady = false;
-	
-	// List of already found networks
-	List<String> bssid2name = new ArrayList<String>();
-
-	// Wifi direct measurements
-		public List<wiFiMeasurement> getGraphWiFiList() {
-			if (graphWiFiListReady) {
-				graphWiFiListReady = false;
-				return new ArrayList<wiFiMeasurement>(graphWiFiList);
-			}
-			return null;
-		}
-		
 		
 	
-	public WifiScanner(
+	public WiFiScanner(
 			WifiManager _wifiManager,
 			org.dg.openAIL.ConfigurationReader.Parameters.WiFiPlaceRecognition wifiPlaceRecognitionParameters) {
 		// Save physical access to sensor
@@ -111,15 +93,16 @@ public class WifiScanner extends BroadcastReceiver {
 
 		// File to save results
 		saveRawData = wifiPlaceRecognitionParameters.recordRawData;
+		
 	}
 
 	// Nicely setting parameters
-	public WifiScanner singleScan(boolean _singleScan) {
+	public WiFiScanner singleScan(boolean _singleScan) {
 		this.singleScan = _singleScan;
 		return this;
 	}
 
-	public WifiScanner continuousScanning(boolean _continuousScanning) {
+	public WiFiScanner continuousScanning(boolean _continuousScanning) {
 		this.continuousScanning = _continuousScanning;
 		return this;
 	}
@@ -340,40 +323,18 @@ public class WifiScanner extends BroadcastReceiver {
 	/**
 	 * Processes new scan coming either from real sensor manager or from playback
 	 */
-	private void processNewScan(List<MyScanResult> wifiScans) throws InterruptedException {
+	private void processNewScan(List<MyScanResult> wifiScan) throws InterruptedException {
 
 			// Saving raw data
 			if (saveRawData)
-				saveScanToRawStream(wifiScans);
-
-			
-			// Save data for graph
-			graphWiFiList.clear();
-			for (int i = 0; i < wifiScans.size(); i++) {
-				// Getting network
-				MyScanResult scanResult = wifiScans.get(i);
-				// Convert MAC to index
-				int index = bssid2name.indexOf(scanResult.BSSID);
-				if (index == -1) {
-					bssid2name.add(scanResult.BSSID);
-					index = bssid2name.indexOf(scanResult.BSSID);
-				}
-				// Convert lvl to meters
-				double distance = convertLevelToMeters(scanResult.level);
-				// Add to list
-				graphWiFiList.add(new wiFiMeasurement(index + 10000,
-						distance));
-			}
-			graphWiFiListReady = true;
-
+				saveScanToRawStream(wifiScan);
+				
 			// Save measurement
 			synchronized (previousWiFiList) {
-				previousWiFiList = wifiScans;
+				previousWiFiList = wifiScan;
 			}
 
-			newMeasurement = true;
-
-			
+			newMeasurement = true;	
 	}
 
 	/**
@@ -400,12 +361,5 @@ public class WifiScanner extends BroadcastReceiver {
 		}
 	}
 
-	/*
-	 *  Convert measurement from dBm to meters with some propagation model
-	 */
-	private double convertLevelToMeters(double level) {
-		double tmp = -40 + Math.abs(level);
-		tmp = tmp / 40;
-		return Math.pow(10, tmp);
-	}
+
 }

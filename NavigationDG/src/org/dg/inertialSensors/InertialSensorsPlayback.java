@@ -15,7 +15,7 @@ import java.util.Scanner;
 import org.dg.openAIL.ConfigurationReader.Parameters;
 import org.dg.openAIL.PriorMapHandler;
 import org.dg.wifi.MyScanResult;
-import org.dg.wifi.WifiScanner;
+import org.dg.wifi.WiFiScanner;
 
 import android.hardware.Sensor;
 import android.os.Environment;

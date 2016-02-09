@@ -32,7 +32,7 @@ GraphManager::GraphManager() {
 	// Adding initial node (0,0,0)
 	stringstream tmp;
 	tmp << "0 0.0 0.0 0.0\n";
-	addVertex(tmp, 0);
+	addVertex(tmp, ail::Vertex::VERTEXSE2);
 }
 
 
@@ -116,6 +116,8 @@ void GraphManager::addToGraph() {
 		// Adding vertex/edge
 		if (type == "EDGE_SE2:WIFI")
 			addEdgeWiFi(data);
+		else if (type == "EDGE_SE2:WIFI_SE2_XYZ")
+			addEdgeWiFi2(data);
 		else if (type == "EDGE_SE2:STEP")
 			addEdgeStepometer(data);
 		else if (type == "EDGE_SE2")
@@ -127,12 +129,14 @@ void GraphManager::addToGraph() {
 		else if (type == "EDGE_SE2:VPR_VICINITY")
 			addVicinityEdge(data, "VPR Vicinity");
 		else if (type == "VERTEX_SE2")
-			addVertex(data, 0);
+			addVertex(data, ail::Vertex::VERTEXSE2);
 		else if (type == "VERTEX_XY")
-			addVertex(data, 1);
+			addVertex(data, ail::Vertex::VERTEX2D);
+		else if (type == "VERTEX_XYZ")
+			addVertex(data, ail::Vertex::VERTEX3D);
 
 		// If we added first edge to fixed nodes, we unfix position 0 so the whole graph can move
-		if ( type == "EDGE_SE2:WIFI_FINGERPRINT" || type == "EDGE_SE2:VPR_VICINITY") {
+		if ( type == "EDGE_SE2:WIFI_FINGERPRINT" || type == "EDGE_SE2:VPR_VICINITY" || type == "EDGE_SE2:WIFI") {
 			g2o::OptimizableGraph::Vertex* v = optimizer.vertex(0);
 			if (v)
 				v->setFixed(false);
@@ -167,6 +171,13 @@ std::vector<double> GraphManager::getVertexPosition(int id) {
 				estimate.push_back(vertex->pos[1]);
 				estimate.push_back(vertex->orient);
 			}
+			else if (vertices[i]->type == ail::Vertex::Type::VERTEX3D) {
+				ail::Vertex3D* vertex =
+						static_cast<ail::Vertex3D*>(vertices[i]);
+				estimate.push_back(vertex->pos[0]);
+				estimate.push_back(vertex->pos[1]);
+				estimate.push_back(vertex->pos[2]);
+			}
 		}
 	}
 
@@ -199,6 +210,12 @@ std::vector<double> GraphManager::getPositionOfAllVertices() {
 			estimate.push_back(vertex->pos[0]);
 			estimate.push_back(vertex->pos[1]);
 			estimate.push_back(vertex->orient);
+		}
+		else if (vertices[i]->type == ail::Vertex::Type::VERTEX3D) {
+			ail::Vertex3D* vertex = static_cast<ail::Vertex3D*>(vertices[i]);
+			estimate.push_back(vertex->pos[0]);
+			estimate.push_back(vertex->pos[1]);
+			estimate.push_back(vertex->pos[2]);
 		}
 
 	}
@@ -302,26 +319,37 @@ void GraphManager::updateVerticesEstimates(
 			vertex->pos[1] = estimate[1];
 			vertex->orient = estimate[2];
 		}
+		else if (vertices[index]->type == ail::Vertex::Type::VERTEX3D) {
+			ail::Vertex3D* vertex = static_cast<ail::Vertex3D*>(vertices[index]);
+			vertex->pos[0] = estimate[0];
+			vertex->pos[1] = estimate[1];
+			vertex->pos[2] = estimate[2];
+		}
 	}
 }
 
 
-int GraphManager::addVertex(stringstream &data, int type) {
+int GraphManager::addVertex(stringstream &data, ail::Vertex::Type type) {
 
 	g2o::OptimizableGraph::Vertex* v;
 	ail::Vertex *ailVertex;
 
-	if (type == 0)
+	if (type == ail::Vertex::VERTEX2D)
 	{
 		v = new VertexSE2();
 		ailVertex = new ail::VertexSE2();
 		ailVertex->type = ail::Vertex::Type::VERTEXSE2;
 	}
-	else if (type == 1)
+	else if (type == ail::Vertex::VERTEXSE2)
 	{
 		v = new VertexPointXY();
 		ailVertex = new ail::Vertex2D();
 		ailVertex->type = ail::Vertex::Type::VERTEX2D;
+	}
+	else if (type == ail::Vertex::VERTEX3D) {
+		v = new VertexPointXYZ();
+		ailVertex = new ail::Vertex3D();
+		ailVertex->type = ail::Vertex::Type::VERTEX3D;
 	}
 	int id;
 	data >> id;
@@ -383,7 +411,39 @@ int GraphManager::addVicinityEdge(stringstream &data, string name)
 	return 0;
 }
 
-int GraphManager::addEdgeWiFi(stringstream &data) {
+int GraphManager::addEdgeWiFi2(stringstream &data) {
+	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK:LC: [%s]",
+					"Adding wifi edge");
+	int id1, id2;
+	EdgeSE2PointXYZfixedZDistance* e = new EdgeSE2PointXYZfixedZDistance();
+	data >> id1 >> id2;
+	OptimizableGraph::Vertex* from = optimizer.vertex(id1);
+	OptimizableGraph::Vertex* to = optimizer.vertex(id2);
+	if (!to) {
+		stringstream tmp;
+		tmp << id2 << " 0.0 0.0 0.0\n";
+		addVertex(tmp, ail::Vertex::VERTEX3D);
+		to = optimizer.vertex(id2);
+	}
+
+	if (from && to) {
+		e->setVertex(0, from);
+		e->setVertex(1, to);
+		e->read(data);
+//		pthread_mutex_lock(&bufferMtx);
+//b		bufferPointXYDistanceEdges.push_back(e);
+//		pthread_mutex_unlock(&bufferMtx);
+		if (!optimizer.addEdge(e)) {
+			__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK:LC: [%s]",
+					"Unable to add edge wifi");
+			delete e;
+			return -1;
+		}
+	}
+	return 0;
+}
+
+int GraphManager::addEdgeWiFi_SE2_XYZ(stringstream &data) {
 	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK:LC: [%s]",
 					"Adding wifi edge");
 	int id1, id2;
@@ -395,7 +455,7 @@ int GraphManager::addEdgeWiFi(stringstream &data) {
 		stringstream tmp;
 		tmp << id2 << " " << prevUserPositionX << " " << prevUserPositionY
 				<< "\n";
-		addVertex(tmp, 1);
+		addVertex(tmp, ail::Vertex::VERTEX2D);
 		to = optimizer.vertex(id2);
 	}
 
@@ -404,7 +464,7 @@ int GraphManager::addEdgeWiFi(stringstream &data) {
 		e->setVertex(1, to);
 		e->read(data);
 //		pthread_mutex_lock(&bufferMtx);
-//		bufferPointXYDistanceEdges.push_back(e);
+//b		bufferPointXYDistanceEdges.push_back(e);
 //		pthread_mutex_unlock(&bufferMtx);
 		if (!optimizer.addEdge(e)) {
 			__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK:LC: [%s]",
@@ -430,7 +490,7 @@ int GraphManager::addEdgeStepometer(stringstream &data) {
 				"Adding initial vertex -- should not have happen anymore!");
 		stringstream tmp;
 		tmp << id1 << " 0.0 0.0 0.0\n";
-		addVertex(tmp, 0);
+		addVertex(tmp, ail::Vertex::VERTEXSE2);
 		from = optimizer.vertex(id1);
 	}
 
@@ -468,7 +528,7 @@ int GraphManager::addEdgeStepometer(stringstream &data) {
 		stringstream tmp;
 		tmp << id2 << " " << prevUserPositionX << " " << prevUserPositionY
 				<< " " << prevUserPositionTheta << " \n";
-		addVertex(tmp, 0);
+		addVertex(tmp, ail::Vertex::VERTEXSE2);
 		to = optimizer.vertex(id2);
 	}
 
@@ -504,7 +564,7 @@ int GraphManager::addEdgeSE2(stringstream &data) {
 				"Adding initial vertex");
 		stringstream tmp;
 		tmp << id1 << " 0.0 0.0 0.0\n";
-		addVertex(tmp, 0);
+		addVertex(tmp, ail::Vertex::VERTEXSE2);
 		from = optimizer.vertex(id1);
 	}
 
@@ -524,7 +584,7 @@ int GraphManager::addEdgeSE2(stringstream &data) {
 		stringstream tmp;
 		tmp << id2 << " " << prevUserPositionX << " " << prevUserPositionY
 				<< " " << prevUserPositionTheta << " \n";
-		addVertex(tmp, 0);
+		addVertex(tmp, ail::Vertex::VERTEXSE2);
 		to = optimizer.vertex(id2);
 	}
 

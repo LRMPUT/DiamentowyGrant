@@ -187,8 +187,8 @@ public class WiFiPlaceRecognition implements Runnable {
 
 				// Should we add this match to the list of recognized places?
 				if (value > parameters.minNumberOfSharedNetworks
-						&& value >= parameters.minPercentOfSharedNetworks
-								* linkToTest.listA.size()
+//						&& value >= parameters.minPercentOfSharedNetworks
+//								* linkToTest.listA.size()
 						&& value >= parameters.minPercentOfSharedNetworks
 								* linkToTest.listB.size()
 						&& avgError < parameters.maxAvgErrorThreshold) {

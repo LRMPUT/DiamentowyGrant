@@ -28,11 +28,11 @@ final String moduleLogName = "WiFiPlayback";
 	}
 	
 	Scanner rawDataScanner;
-	WifiScanner wifiScanner;
+	WiFiScanner wifiScanner;
 	
 	Parameters.Playback parameters;
 	
-	public WiFiPlayback(Parameters.Playback _parameters, WifiScanner _wifiScanner) {
+	public WiFiPlayback(Parameters.Playback _parameters, WiFiScanner _wifiScanner) {
 		wifiScanner = _wifiScanner;
 		parameters = _parameters;
 		

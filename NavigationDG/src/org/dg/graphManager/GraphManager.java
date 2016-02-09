@@ -10,6 +10,7 @@ import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.dg.wifi.WiFiDirect.DirectMeasurement;
 import org.opencv.core.Point3;
 
 import android.os.Environment;
@@ -111,6 +112,15 @@ public class GraphManager {
 		timestamps.clear();
 		currentEstimate.clear();
 		
+		openCreatedGraphStream();
+		
+		mapConnected = false;
+		startOptimizeOnlineThread();
+	}
+	/**
+	 * 
+	 */
+	public void openCreatedGraphStream() {
 		try {
 			File folder = new File(Environment.getExternalStorageDirectory()
 					+ "/OpenAIL");
@@ -134,9 +144,6 @@ public class GraphManager {
 			graphStream = null;
 			e.printStackTrace();
 		}
-		
-		mapConnected = false;
-		startOptimizeOnlineThread();
 	}
 	
 	/*
@@ -212,6 +219,12 @@ public class GraphManager {
 		destroyGraph();
 	}
 	
+	public void optimizeGraph() {
+		optimizeLoadedGraph(parameters.optimizeFromFileIterationCount);
+		
+		destroyGraph();	
+	}
+	
 	public void setStartTime() {
 		timestampStart = System.nanoTime();
 		timestamps.add(Long.valueOf(0));
@@ -222,17 +235,45 @@ public class GraphManager {
 	/// 
 	
 	/* 
-	 * adds Vertex with position (X,Y,Z), e.g. for map points
+	 * adds VertexSE2 with position (X,Y,angle), e.g. for map points
 	 */
-	public void addVertexWithKnownPosition(int id, double X, double Y, double Z) {
-		Log.d(moduleLogName, "addVertexWithKnownPosition("+id + ", " + X + ", " + Y + ", " + Z + ")");
+	public void addVertexSE2(int id, double X, double Y, double angle) {
+		Log.d(moduleLogName, "addVertexSE2("+id + ", " + X + ", " + Y + ", " + angle + ")");
 		
 		checkGraphExistance();
 		
-		String g2oString = "VERTEX_SE2 " + id + " " + X + " " + Y + " " + Z +"\n";
+		String g2oString = "VERTEX_SE2 " + id + " " + X + " " + Y + " " + angle +"\n";
 		saveGraph2file(g2oString);
 		NDKGraphAddVertexEdge(addrGraph, g2oString);
 	}
+	
+	/* 
+	 * adds VertexXYZ with position (X,Y,Z), e.g. for map points
+	 */
+	public void addVertexXYZ(int id, double X, double Y, double Z) {
+		Log.d(moduleLogName, "addVertexXYZ("+id + ", " + X + ", " + Y + ", " + Z + ")");
+		
+		checkGraphExistance();
+		
+		String g2oString = "addVertexXYZ " + id + " " + X + " " + Y + " " + Z +"\n";
+		saveGraph2file(g2oString);
+		NDKGraphAddVertexEdge(addrGraph, g2oString);
+	}
+	
+	/* 
+	 * adds VertexXY with position (X,Y), e.g. for map points
+	 */
+	public void addVertexXY(int id, double X, double Y) {
+		Log.d(moduleLogName, "addVertexXY("+id + ", " + X + ", " + Y + ")");
+		
+		checkGraphExistance();
+		
+		String g2oString = "VERTEX_XY " + id + " " + X + " " + Y +"\n";
+		saveGraph2file(g2oString);
+		NDKGraphAddVertexEdge(addrGraph, g2oString);
+	}
+	
+	
 	
 	public void createNewPose() {
 		currentPoseId++;
@@ -307,7 +348,7 @@ public class GraphManager {
 		String g2oString = "";
 		for (Pair<Integer, Point3> measurement: listOfPositions)
 		{
-			addVertexWithKnownPosition(qrCodeId, measurement.second.x, measurement.second.y, measurement.second.z);
+			addVertexSE2(qrCodeId, measurement.second.x, measurement.second.y, measurement.second.z);
 			String edgeQR = createQREdgeString(qrCodeId, measurement.first);
 			
 			g2oString = g2oString + edgeQR;
@@ -323,13 +364,14 @@ public class GraphManager {
 	/*
 	 * adds WiFi measurements to the graph
 	 */
-	public void addMultipleWiFiMeasurements(List<wiFiMeasurement> wiFiMeasurementList) {
+	public void addMultipleWiFiMeasurements(List<DirectMeasurement> measurements) {
 		checkGraphExistance();
 		
 		String g2oString = "";
-		for (wiFiMeasurement measurement: wiFiMeasurementList)
+		for (DirectMeasurement measurement: measurements)
 		{
-			String edgeWiFi = createWiFiEdgeString(measurement.id, measurement.distance);
+			//String edgeWiFi = createWiFi_SE2_XY_EdgeString(measurement.idAP, measurement.idPos, measurement.distance);
+			String edgeWiFi = createWiFi_SE2_XYZ_EdgeString(measurement.idAP, measurement.idPos, measurement.distance);
 			
 			g2oString = g2oString + edgeWiFi;
 		}
@@ -568,8 +610,16 @@ public class GraphManager {
 	/**
 	 * Creates a WiFi measurement string from values
 	 */
-	private String createWiFiEdgeString(int id, double distance) {
-		String edgeWiFi ="EDGE_SE2:WIFI " + currentPoseId + " " + id + " " + distance + " " + parameters.informationMatrixOfWiFi + "\n";
+	private String createWiFi_SE2_XY_EdgeString(int id, int id2, double distance) {
+		String edgeWiFi ="EDGE_SE2:WIFI " + id + " " + id2 + " " + distance + " " + parameters.informationMatrixOfWiFi + "\n";
+		return edgeWiFi;
+	}
+	
+	/**
+	 * Creates a WiFi measurement string from values
+	 */
+	private String createWiFi_SE2_XYZ_EdgeString(int id, int id2, double distance) {
+		String edgeWiFi ="EDGE_SE2:WIFI_SE2_XYZ " + id + " " + id2 + " " + distance + " " + parameters.informationMatrixOfWiFi + "\n";
 		return edgeWiFi;
 	}
 	

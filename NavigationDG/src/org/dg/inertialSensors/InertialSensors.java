@@ -842,7 +842,12 @@ public class InertialSensors {
 //			stepometerAngle = (float) (90.0f - Math.atan2(-R[5], R[2]) * 180.0d / Math.PI);
 
 		stepometerAngle = (float) (90.0f - Math.atan2(-R[5], R[2]) * 180.0d / Math.PI);
-//		Log.d(moduleLogName, "stepometerAngle=" + stepometerAngle);
+		
+//		double Zval = Math.sqrt(R[5]*R[5] + R[2]*R[2]);
+//		double Yval = Math.sqrt(R[4]*R[4] + R[1]*R[1]);
+//		
+//		double stepometerAngle2 = (float) (90.0f - Math.atan2(-R[4], R[1]) * 180.0d / Math.PI);
+//		Log.d(moduleLogName, "Zval =" + Zval + " Yval=" + Yval +  " || stepomterAngle=" + stepometerAngle + " step2=" +stepometerAngle2);
 	}
 
 
