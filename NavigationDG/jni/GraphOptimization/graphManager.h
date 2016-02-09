@@ -37,6 +37,7 @@ using namespace std;
 using namespace g2o;
 
 G2O_USE_TYPE_GROUP(slam2d);
+G2O_USE_TYPE_GROUP(slam3d);
 
 #define DEBUG_TAG "NDK_DG_GraphManager"
 
@@ -127,6 +128,7 @@ private:
 
 	// WiFi Edge
 	int addEdgeWiFi(stringstream &data);
+	int addEdgeWiFi_SE2_XYZ(stringstream &data);
 
 	// Stepometer
 	int addEdgeStepometer(stringstream &data);

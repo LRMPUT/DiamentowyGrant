@@ -117,7 +117,7 @@ void GraphManager::addToGraph() {
 		if (type == "EDGE_SE2:WIFI")
 			addEdgeWiFi(data);
 		else if (type == "EDGE_SE2:WIFI_SE2_XYZ")
-			addEdgeWiFi2(data);
+			addEdgeWiFi_SE2_XYZ(data);
 		else if (type == "EDGE_SE2:STEP")
 			addEdgeStepometer(data);
 		else if (type == "EDGE_SE2")
@@ -411,11 +411,12 @@ int GraphManager::addVicinityEdge(stringstream &data, string name)
 	return 0;
 }
 
-int GraphManager::addEdgeWiFi2(stringstream &data) {
+int GraphManager::addEdgeWiFi_SE2_XYZ(stringstream &data) {
 	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK:LC: [%s]",
 					"Adding wifi edge");
 	int id1, id2;
 	EdgeSE2PointXYZfixedZDistance* e = new EdgeSE2PointXYZfixedZDistance();
+//	EdgeSE2PointXYDistance* e = new EdgeSE2PointXYDistance();
 	data >> id1 >> id2;
 	OptimizableGraph::Vertex* from = optimizer.vertex(id1);
 	OptimizableGraph::Vertex* to = optimizer.vertex(id2);
@@ -443,7 +444,7 @@ int GraphManager::addEdgeWiFi2(stringstream &data) {
 	return 0;
 }
 
-int GraphManager::addEdgeWiFi_SE2_XYZ(stringstream &data) {
+int GraphManager::addEdgeWiFi(stringstream &data) {
 	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK:LC: [%s]",
 					"Adding wifi edge");
 	int id1, id2;

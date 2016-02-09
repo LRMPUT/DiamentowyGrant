@@ -24,8 +24,8 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef G2O_EDGE_SE2_POINT_XY_DISTANCE_H
-#define G2O_EDGE_SE2_POINT_XY_DISTANCE_H
+#ifndef G2O_EDGE_SE2_POINT_XYZ_DISTANCE_H
+#define G2O_EDGE_SE2_POINT_XYZ_DISTANCE_H
 
 #include "g2o/config.h"
 #include "g2o/types/slam2d/vertex_se2.h"
@@ -117,9 +117,9 @@ namespace g2o {
   };
 
 #ifdef G2O_HAVE_OPENGL
-  class G2O_TYPES_SLAM2D_API EdgeSE2PointXYDistanceDrawAction: public DrawAction{
+  class G2O_TYPES_SLAM2D_API EdgeSE2PointXYZfixedZDistanceDrawAction: public DrawAction{
   public:
-    EdgeSE2PointXYDistanceDrawAction();
+	EdgeSE2PointXYZfixedZDistanceDrawAction();
     virtual HyperGraphElementAction* operator()(HyperGraph::HyperGraphElement* element,
             HyperGraphElementAction::Parameters* params_);
   };

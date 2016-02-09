@@ -88,9 +88,9 @@ namespace g2o {
   }
 
 #ifdef G2O_HAVE_OPENGL
-  EdgeSE2PointXYDistanceDrawAction::EdgeSE2PointXYDistanceDrawAction(): DrawAction(typeid(EdgeSE2PointXYDistance).name()){}
+  EdgeSE2PointXYDistanceDrawAction::EdgeSE2PointXYZfixedZDistanceDrawAction(): DrawAction(typeid(EdgeSE2PointXYZfixedZDistance).name()){}
 
-  HyperGraphElementAction* EdgeSE2PointXYDistanceDrawAction::operator()(HyperGraph::HyperGraphElement* element,  HyperGraphElementAction::Parameters* params_){
+  HyperGraphElementAction* EdgeSE2PointXYZfixedZDistanceDrawAction::operator()(HyperGraph::HyperGraphElement* element,  HyperGraphElementAction::Parameters* params_){
     if (typeid(*element).name()!=_typeName)
       return 0;
 
