@@ -443,6 +443,15 @@ public class MainScreenSlideActivity extends Activity implements
 			openAIL.startPlayback();
 
 		}
+		
+		// Button clear new map
+		if (link.contains("Test")) {
+			Log.v(TAG, "Test");
+
+//			openAIL.graphManager.optimizeGraphInFile("lastCreatedGraph.g2o");
+			openAIL.directWiFiTest();
+
+		}
 
 	}
 

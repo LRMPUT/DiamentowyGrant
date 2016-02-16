@@ -1,9 +1,14 @@
 package org.dg.wifi;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
+import android.util.Log;
+
 public class WiFiDirect {
+	
+	final String moduleLogName = "WiFiDirect";
 	
 	public class DirectMeasurement {
 		public int idPos, idAP;
@@ -19,9 +24,12 @@ public class WiFiDirect {
 	
 	// List of measurements
 	List<DirectMeasurement> directMeasurements = new ArrayList<DirectMeasurement>();
+	List<Integer> posOccurrence= new ArrayList<Integer>();
+	int lastIdPos = -1;
 	
 	// NetworkMacAddr to idAP
-	List<String> bssid2name = new ArrayList<String>();
+	List<String> bssid2id = new ArrayList<String>();
+	List<Integer> bssidOccurrence= new ArrayList<Integer>();
 
 	
 	public void processNewScan(List<MyScanResult> scan, int idPos) {
@@ -31,26 +39,69 @@ public class WiFiDirect {
 			// Getting network
 			MyScanResult network = scan.get(i);
 			
-			// Convert MAC to index
-			int idAP = bssid2name.indexOf(network.BSSID);
-			if (idAP == -1) {
-				bssid2name.add(network.BSSID);
-				idAP = bssid2name.indexOf(network.BSSID);
+			if ( (network.networkName.contains("mtp") || network.networkName.length() < 1) && network.level > -120)
+			{
+			
+				// Convert MAC to index
+				int idAP = bssid2id.indexOf(network.BSSID);
+				
+				if (idAP == -1) {
+					bssid2id.add(network.BSSID);
+					bssidOccurrence.add(Integer.valueOf(0));
+					idAP = bssid2id.indexOf(network.BSSID);
+				} else
+					bssidOccurrence.set(idAP, bssidOccurrence.get(idAP)+1);
+				
+				// Convert lvl to meters
+				double distance = convertLevelToMeters(network.level);
+				
+				// Add to list
+				directMeasurements.add(new DirectMeasurement(idAP, idPos, distance, network.level));
+				
+				if ( lastIdPos != idPos) {
+					lastIdPos = idPos;
+					posOccurrence.add(Integer.valueOf(0));
+				}
 			}
-			
-			// Convert lvl to meters
-			double distance = convertLevelToMeters(network.level);
-			
-			// Add to list
-			directMeasurements.add(new DirectMeasurement(idAP, idPos, distance, network.level));
+			else
+				Log.d(moduleLogName, "Rejected: " + network.networkName);
 		}
 	}
 	
+	public void filterDirectMeasurements() {
+		Log.d(moduleLogName, "filterDirectMeasurements! " + directMeasurements.size());
+		
+		for (int i=0;i<bssidOccurrence.size();i++)
+		{
+			if ( bssidOccurrence.get(i) < 10 )
+			{
+				Iterator<DirectMeasurement> iter = directMeasurements.iterator();
+				while (iter.hasNext()) {
+				    if (iter.next().idAP == i) {
+				        iter.remove();
+				    }
+				}
+			}
+			
+		}
+		Log.d(moduleLogName, "Filtered! " + directMeasurements.size());
+	}
+	
 	public List<DirectMeasurement> getReverseTest() {
+		Log.d(moduleLogName, "getReverseTest()! " + posOccurrence.size());
+		
 		List<DirectMeasurement> positionOne = new ArrayList<DirectMeasurement>();
 		for (DirectMeasurement dm : directMeasurements) {
 			positionOne.add(new DirectMeasurement(dm.idAP, dm.idPos-8000, dm.distance, dm.level));
+			posOccurrence.set(dm.idPos-10000, posOccurrence.get(dm.idPos-10000) + 1);
 		}
+		
+		for (Integer i : posOccurrence) {
+			Log.d(moduleLogName, "posOccurance = " + i);
+		}
+		Log.d(moduleLogName, "getReverseTest()! ");
+		
+		
 		return positionOne;
 	}
 	
@@ -62,7 +113,7 @@ public class WiFiDirect {
 	}
 	
 	public int getNumberOfNetworks() {
-		return bssid2name.size();
+		return bssid2id.size();
 	}
 
 	/*

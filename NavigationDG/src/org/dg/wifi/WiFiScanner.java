@@ -277,7 +277,7 @@ public class WiFiScanner extends BroadcastReceiver {
 				
 				List<MyScanResult> wifiList = new ArrayList<MyScanResult>();
 				for (ScanResult network : tmp) {
-					wifiList.add(new MyScanResult(network.BSSID, network.level, network.SSID));
+					wifiList.add(new MyScanResult(network.BSSID, network.level, network.SSID, network.frequency));
 				}
 				
 				processNewScan(wifiList);
@@ -357,7 +357,7 @@ public class WiFiScanner extends BroadcastReceiver {
 		for (int i = 0; i < wifiScans.size(); i++) {
 			MyScanResult scanResult = wifiScans.get(i); //convertLevelToMeters(scanResult.level)  + "\t" + scanResult.frequency 
 			outStreamRawData.print(scanResult.BSSID + "\t"
-					+ scanResult.networkName + "\t" + scanResult.level + "\n");
+					+ scanResult.networkName + "\t" + scanResult.level + "\t" + scanResult.frequency + "\n");
 		}
 	}
 

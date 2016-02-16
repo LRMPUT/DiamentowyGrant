@@ -255,7 +255,7 @@ public class GraphManager {
 		
 		checkGraphExistance();
 		
-		String g2oString = "addVertexXYZ " + id + " " + X + " " + Y + " " + Z +"\n";
+		String g2oString = "VERTEX_XYZ " + id + " " + X + " " + Y + " " + Z +"\n";
 		saveGraph2file(g2oString);
 		NDKGraphAddVertexEdge(addrGraph, g2oString);
 	}
@@ -371,7 +371,7 @@ public class GraphManager {
 		for (DirectMeasurement measurement: measurements)
 		{
 			//String edgeWiFi = createWiFi_SE2_XY_EdgeString(measurement.idAP, measurement.idPos, measurement.distance);
-			String edgeWiFi = createWiFi_SE2_XYZ_EdgeString(measurement.idAP, measurement.idPos, measurement.distance);
+			String edgeWiFi = createWiFi_SE2_XYZ_EdgeString(measurement.idPos, measurement.idAP, measurement.distance);
 			
 			g2oString = g2oString + edgeWiFi;
 		}

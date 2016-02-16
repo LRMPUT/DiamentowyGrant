@@ -30,9 +30,9 @@ GraphManager::GraphManager() {
 	optimizer.setAlgorithm(optimizationAlgorithm);
 
 	// Adding initial node (0,0,0)
-	stringstream tmp;
-	tmp << "0 0.0 0.0 0.0\n";
-	addVertex(tmp, ail::Vertex::VERTEXSE2);
+//	stringstream tmp;
+//	tmp << "0 0.0 0.0 0.0\n";
+//	addVertex(tmp, ail::Vertex::VERTEXSE2);
 }
 
 
@@ -136,7 +136,8 @@ void GraphManager::addToGraph() {
 			addVertex(data, ail::Vertex::VERTEX3D);
 
 		// If we added first edge to fixed nodes, we unfix position 0 so the whole graph can move
-		if ( type == "EDGE_SE2:WIFI_FINGERPRINT" || type == "EDGE_SE2:VPR_VICINITY" || type == "EDGE_SE2:WIFI") {
+		if ( type == "EDGE_SE2:WIFI_FINGERPRINT" || type == "EDGE_SE2:VPR_VICINITY"
+				|| type == "EDGE_SE2:WIFI" || type == "EDGE_SE2:WIFI_SE2_XYZ") {
 			g2o::OptimizableGraph::Vertex* v = optimizer.vertex(0);
 			if (v)
 				v->setFixed(false);
@@ -334,13 +335,13 @@ int GraphManager::addVertex(stringstream &data, ail::Vertex::Type type) {
 	g2o::OptimizableGraph::Vertex* v;
 	ail::Vertex *ailVertex;
 
-	if (type == ail::Vertex::VERTEX2D)
+	if (type == ail::Vertex::VERTEXSE2)
 	{
 		v = new VertexSE2();
 		ailVertex = new ail::VertexSE2();
 		ailVertex->type = ail::Vertex::Type::VERTEXSE2;
 	}
-	else if (type == ail::Vertex::VERTEXSE2)
+	else if (type == ail::Vertex::VERTEX2D)
 	{
 		v = new VertexPointXY();
 		ailVertex = new ail::Vertex2D();

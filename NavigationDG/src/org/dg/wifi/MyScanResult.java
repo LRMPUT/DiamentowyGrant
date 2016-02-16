@@ -13,8 +13,15 @@ public class MyScanResult {
 		networkName = _networkName;
 	}
 	
+	public MyScanResult(String _BSSID, int _level, String _networkName, int _frequency) {
+		BSSID = _BSSID;
+		level = _level;
+		networkName = _networkName;
+		frequency = _frequency;
+	}
 	
-	public int level;	
+	
+	public int level, frequency;	
 	public String BSSID;
 	public String networkName;
 }

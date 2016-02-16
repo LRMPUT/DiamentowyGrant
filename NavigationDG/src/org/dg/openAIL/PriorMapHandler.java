@@ -322,19 +322,18 @@ public class PriorMapHandler {
 		for (int j = 0; j < wifiCount; j++) {
 			String line = wifiScanScanner.nextLine();
 
-			String[] values = line.split("\\t+");
+			String[] values = line.split("\\t");
 
-			String BSSID = values[0];
-			int level;
-			if (values.length == 3)
-				level = Integer.parseInt(values[2]);
-			else
-				level = Integer.parseInt(values[1]);
-
-			MyScanResult wifiNetwork = new MyScanResult(BSSID, level);
+			String BSSID = values[0], networkName = values[1];
+			int level = Integer.parseInt(values[2]), freq = 2412;
+			if (values.length == 4) {
+				freq = Integer.parseInt(values[3]);
+			}
+				
+			MyScanResult wifiNetwork = new MyScanResult(BSSID, level, networkName, freq);
 			scannedWiFisList.add(wifiNetwork);
 
-			Log.d(moduleLogName, "WiFiDatabase data: " + BSSID + " " + level);
+			Log.d(moduleLogName, "WiFiDatabase data: " + BSSID + " " + networkName + " " + level + " " + freq);
 		}
 		return scannedWiFisList;
 	}
@@ -438,7 +437,8 @@ public class PriorMapHandler {
 		for (int i = 0; i < wifiList.size(); i++) {
 			MyScanResult scanResult = wifiList.get(i);
 			outStreamRawData.print(scanResult.BSSID + "\t"
-					+ scanResult.networkName + "\t" + scanResult.level + "\n");
+					+ scanResult.networkName + "\t" + scanResult.level + "\t"
+					+ scanResult.frequency + "\n");
 		}
 	}
 

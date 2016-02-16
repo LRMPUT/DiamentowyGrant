@@ -112,7 +112,7 @@ final String moduleLogName = "WiFiPlayback";
 	
 			Log.d(moduleLogName, "WIFI: " + wifiData.graphId + " " + wifiData.wifiId + " " + wifiData.timestamp + " " + wifiData.timestamp + " " + wifiData.wifiCount );
 			for (MyScanResult msr : wifiData.wifiScans) {
-				Log.d(moduleLogName, "\tnetwork: " + msr.BSSID + " " + msr.networkName + " " + msr.level);
+				Log.d(moduleLogName, "\tnetwork: " + msr.BSSID + " " + msr.networkName + " " + msr.level + " " + msr.frequency);
 			}
 			return wifiData;
 		}

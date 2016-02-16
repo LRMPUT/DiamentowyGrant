@@ -164,6 +164,7 @@ public class OpenAndroidIndoorLocalization {
 				graphManager.addVertexSE2(mapPos.id, mapPos.X,
 						mapPos.Y, 0);
 		}
+		wifiDirect.filterDirectMeasurements();
 		
 		int numberOfNetworks = wifiDirect.getNumberOfNetworks();
 		List<DirectMeasurement> measurements = wifiDirect.getGraphWiFiList();
@@ -193,16 +194,23 @@ public class OpenAndroidIndoorLocalization {
 		Log.d(moduleLogName, "directWiFiTest() - add measurements");
 		
 		// TODO!
-//		graphManager.addMultipleWiFiMeasurements(measurements);
+		graphManager.addMultipleWiFiMeasurements(measurements);
 		
-//		Log.d(moduleLogName, "Reverse problem! ");
+		Log.d(moduleLogName, "Reverse problem! ");
 		
-//		measurements = wifiDirect.getReverseTest();
-//		graphManager.addMultipleWiFiMeasurements(measurements);
+		measurements = wifiDirect.getReverseTest();
+		
+		for (MapPosition mapPos : mapPositions) {
+			graphManager.addVertexSE2(mapPos.id-8000, mapPos.X,
+					mapPos.Y, 0);
+		}
+		
+		graphManager.addMultipleWiFiMeasurements(measurements);
 		
 		Log.d(moduleLogName, "directWiFiTest() - optimize");
 		
 		graphManager.optimizeGraph();
+		
 		
 		Log.d(moduleLogName, "directWiFiTest() - end");
 	}
@@ -224,6 +232,7 @@ public class OpenAndroidIndoorLocalization {
 
 		// Creating new graph
 		graphManager.start();
+		graphManager.addVertexSE2(0, 0, 0, 0);
 
 		// Load prior map
 		if (parameters.mainProcessing.usePriorMap) {
@@ -280,14 +289,10 @@ public class OpenAndroidIndoorLocalization {
 			visualPlaceRecognition.savePlace(0, 0, 0, image);
 		}
 	}
-
-	// TODO
+	
+	// Starts playback
 	public void startPlayback() {
-		
-//		directWiFiTest();
-//		graphManager.optimizeGraphInFile("lastCreatedGraphOnly0.g2o");
-		
-		
+			
 		wifiPlayback.start();
 
 		inertialSensors.startPlayback();

@@ -202,8 +202,11 @@ public class ScreenSlidePageFragment extends Fragment {
 			// Clear map
 			initButtonClearNewMap(rootView, R.id.buttonClearNewMap);
 			
-			// Clear map
+			// Playback
 			initButtonPlayback(rootView, R.id.buttonPlayback);
+			
+			// Test new functions
+			initButtonTest(rootView, R.id.buttonTest);
 
 			/**
 			 * OLD: 
@@ -333,6 +336,21 @@ public class ScreenSlidePageFragment extends Fragment {
 		buttonPlayback.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
 					onSomeClick(v, "Playback");
+			}
+		});
+	}
+	
+	/**
+	 * 
+	 */
+	private void initButtonTest(final ViewGroup rootView,
+			final int id) {
+		Button buttonTest = (Button) rootView.findViewById(id);
+		buttonTest.setText("Test sth new!");
+
+		buttonTest.setOnClickListener(new OnClickListener() {
+			public void onClick(View v) {
+					onSomeClick(v, "Test");
 			}
 		});
 	}
