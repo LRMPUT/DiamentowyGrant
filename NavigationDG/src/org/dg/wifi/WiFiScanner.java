@@ -218,7 +218,7 @@ public class WiFiScanner extends BroadcastReceiver {
 		List<MyScanResult> myList = new ArrayList<MyScanResult>();
 		synchronized (previousWiFiList) {
 			for (MyScanResult sr : previousWiFiList) {
-				myList.add(new MyScanResult(sr.BSSID, sr.level, sr.networkName));
+				myList.add(new MyScanResult(sr.BSSID, sr.level, sr.networkName, sr.frequency));
 			}
 		}
 		
