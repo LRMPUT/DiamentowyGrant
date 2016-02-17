@@ -24,6 +24,9 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+// Modified by Michal Nowicki (michal.nowicki@put.poznan.pl) 2015
+// Added EdgeSE2PointXYDistance (Distance measurement)
+
 #include "edge_se2_pointXY_distance.h"
 
 #ifdef G2O_HAVE_OPENGL

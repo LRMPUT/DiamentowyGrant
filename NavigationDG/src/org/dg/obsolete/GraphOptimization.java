@@ -24,33 +24,16 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-package org.dg.tcp;
-
-import java.net.InetAddress;
-
-public class ConnectionIPPort {
-	public InetAddress IP;
-	public int PORT;
-
-	public InetAddress getIP() {
-		return IP;
-	}
-
-	public void setIP(InetAddress iP) {
-		IP = iP;
-	}
-
-	public int getPORT() {
-		return PORT;
-	}
-
-	public void setPORT(int pORT) {
-		PORT = pORT;
-	}
-
-	public ConnectionIPPort(InetAddress ipaddress, int i) {
-		IP = ipaddress;
-		PORT = i;
-	}
-
-}
+//package org.dg.obsolete;
+//
+//public class GraphOptimization {
+//
+//	public GraphOptimization() {
+//		System.loadLibrary("g2o_stuff");
+//		System.loadLibrary("g2o_core");
+//		System.loadLibrary("g2o_ext_csparse");
+//		System.loadLibrary("g2o_csparse_extension");
+//		System.loadLibrary("g2o_solver_csparse");
+//		System.loadLibrary("g2o_module");
+//	}
+//}

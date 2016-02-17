@@ -24,6 +24,9 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+// Modified by Michal Nowicki (michal.nowicki@put.poznan.pl) 2015
+// Added EdgeSE2PlaceVicinity (Vicinity measurement)
+
 #ifndef G2O_EDGE_SE2_PLACEVICINITY_H
 #define G2O_EDGE_SE2_PLACEVICINITY_H
 

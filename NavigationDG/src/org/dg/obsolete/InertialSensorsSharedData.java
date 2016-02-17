@@ -24,33 +24,21 @@
 // NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-package org.dg.tcp;
-
-import java.net.InetAddress;
-
-public class ConnectionIPPort {
-	public InetAddress IP;
-	public int PORT;
-
-	public InetAddress getIP() {
-		return IP;
-	}
-
-	public void setIP(InetAddress iP) {
-		IP = iP;
-	}
-
-	public int getPORT() {
-		return PORT;
-	}
-
-	public void setPORT(int pORT) {
-		PORT = pORT;
-	}
-
-	public ConnectionIPPort(InetAddress ipaddress, int i) {
-		IP = ipaddress;
-		PORT = i;
-	}
-
-}
+//package org.dg.obsolete;
+//
+//public class InertialSensorsSharedData {
+//    public boolean write_flag;
+//    public float [][]inertialData;
+//    public static InertialSensorsSharedData globalInstance = new InertialSensorsSharedData();
+//    
+//    public enum InSensor {    	
+//    	ACCELEROMETER, GYROSCOPE, MAGNETIC, LINEARACC, ROTATION
+//    }
+//    
+//    public InertialSensorsSharedData()
+//    {
+//    	inertialData = new float[5][3];
+//    	write_flag = false;
+//    }
+//}
+//	
