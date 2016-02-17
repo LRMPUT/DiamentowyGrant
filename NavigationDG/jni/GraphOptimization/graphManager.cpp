@@ -120,6 +120,8 @@ void GraphManager::addToGraph() {
 			addEdgeWiFi_SE2_XYZ(data);
 		else if (type == "EDGE_SE2:STEP")
 			addEdgeStepometer(data);
+		else if (type == "EDGE_SE2:ORIENT")
+			addEdgeOrientation(data);
 		else if (type == "EDGE_SE2")
 			addEdgeSE2(data);
 		else if (type == "EDGE_SE2:QR")
@@ -340,6 +342,11 @@ int GraphManager::addVertex(stringstream &data, ail::Vertex::Type type) {
 		v = new VertexSE2();
 		ailVertex = new ail::VertexSE2();
 		ailVertex->type = ail::Vertex::Type::VERTEXSE2;
+		ail::VertexSE2* ailVertexSE2 = static_cast<ail::VertexSE2*>(ailVertex);
+
+		stringstream tmpStream(data.str());
+		tmpStream >> ailVertexSE2->vertexId >> ailVertexSE2->pos[0] >> ailVertexSE2->pos[1] >> ailVertexSE2->orient;
+
 	}
 	else if (type == ail::Vertex::VERTEX2D)
 	{
@@ -544,6 +551,63 @@ int GraphManager::addEdgeStepometer(stringstream &data) {
 		if (!optimizer.addEdge(e)) {
 			__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK:LC: [%s]",
 					"Unable to add edge stepometer");
+			delete e;
+			return -1;
+		}
+	}
+	return 0;
+}
+
+int GraphManager::addEdgeOrientation(stringstream &data) {
+	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK:LC: [%s]",
+					"Adding orientation edge");
+
+	int id1, id2;
+	EdgeSE2Orientation* e = new EdgeSE2Orientation();
+	data >> id1 >> id2;
+	OptimizableGraph::Vertex* from = optimizer.vertex(id1);
+	OptimizableGraph::Vertex* to = optimizer.vertex(id2);
+	if (!from) {
+		__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK:LC: [%s]",
+				"Adding initial vertex -- should not have happen anymore!");
+		stringstream tmp;
+		tmp << id1 << " 0.0 0.0 0.0\n";
+		addVertex(tmp, ail::Vertex::VERTEXSE2);
+		from = optimizer.vertex(id1);
+	}
+
+	if (!to) {
+		__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK:LC: [%s]",
+				"Adding new vertex");
+
+		stringstream tmpStream(data.str());
+		double theta;
+		string xxx;
+		tmpStream >> xxx >> id1 >> id2 >> theta;
+
+		int index = findIndexInVertices(from->id());
+
+		ail::VertexSE2* vertex = static_cast<ail::VertexSE2*>(vertices[index]);
+
+		stringstream tmp;
+		tmp << id2 << " " << vertex->pos[0] << " " << vertex->pos[1]
+				<< " " << vertex->orient + theta << " \n";
+
+		__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK: %d : [%f, %f, %f], %d : [%f, %f, %f]",
+				id1, vertex->pos[0], vertex->pos[1], vertex->orient, id2, vertex->pos[0], vertex->pos[1], vertex->orient + theta );
+
+		addVertex(tmp, ail::Vertex::VERTEXSE2);
+		to = optimizer.vertex(id2);
+	}
+
+	if (from && to) {
+		e->setVertex(0, from);
+		e->setVertex(1, to);
+		e->read(data);
+
+		if (!optimizer.addEdge(e)) {
+			__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK:LC: [%s]",
+					"Unable to add edge orientation");
 			delete e;
 			return -1;
 		}

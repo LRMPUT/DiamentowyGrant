@@ -300,6 +300,24 @@ public class GraphManager {
 	}
 	
 	/*
+	 * adds the orientation measurement to the graph
+	 */
+	public void addOrientationMeasurement(int id1, int id2, double theta) {
+		checkGraphExistance();
+		
+		
+		// The information value of angle depends on angle
+		float infValueTheta = (float) (Math.PI/2 - theta);
+		if ( infValueTheta  < 0.1f )
+			infValueTheta = 0.1f;
+		
+		String edgeOrientation ="EDGE_SE2:ORIENT " + id1 + " " + id2 + " " + " " + theta + " 1.0 \n";
+		
+		saveGraph2file(edgeOrientation);
+		NDKGraphAddVertexEdge(addrGraph, edgeOrientation);
+	}
+	
+	/*
 	 * adds WiFi fingerprint matches to the graph
 	 */
 	public void addMultipleWiFiFingerprints(List<org.dg.openAIL.IdPair<Integer, Integer>> foundWiFiFingerprintMatches) {

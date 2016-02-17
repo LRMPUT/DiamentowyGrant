@@ -449,7 +449,8 @@ public class MainScreenSlideActivity extends Activity implements
 			Log.v(TAG, "Test");
 
 //			openAIL.graphManager.optimizeGraphInFile("lastCreatedGraph.g2o");
-			openAIL.directWiFiTest();
+//			openAIL.directWiFiTest();
+			openAIL.graphManager.optimizeGraphInFile("test.g2o");
 
 		}
 

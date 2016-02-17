@@ -29,6 +29,7 @@
 #include "edge_se2_pointXY_distance.h"
 #include "edge_se2_pointXYZ_fixedZ_distance.h"
 #include "edge_se2_distanceOrientation.h"
+#include "edge_se2_orientation.h"
 #include "edge_se2_placeVicinity.h"
 #include "edge_se2_qr.h"
 
@@ -132,6 +133,9 @@ private:
 
 	// Stepometer
 	int addEdgeStepometer(stringstream &data);
+
+	// Stepometer
+	int addEdgeOrientation(stringstream &data);
 
 	// Typical odometry SE2 edge
 	int addEdgeSE2(stringstream &data);
