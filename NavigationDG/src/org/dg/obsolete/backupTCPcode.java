@@ -1,3 +1,4 @@
+package org.dg.obsolete;
 // OpenAIL - Open Android Indoor Localization
 // Copyright (C) 2015 Michal Nowicki (michal.nowicki@put.poznan.pl)
 // All rights reserved.
