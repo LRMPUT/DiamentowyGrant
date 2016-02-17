@@ -71,9 +71,9 @@ public class VisualOdometry implements Runnable {
 	public int trackingSize, matchingSize1, matchingSize2;
 	public int RANSACTime, RANSACCorrect;
 	
-	static {
-		System.loadLibrary("VisualOdometryModule");
-	}
+//	static {
+//		System.loadLibrary("VisualOdometryModule");
+//	}
 
 	public VisualOdometry() {
 	

@@ -860,9 +860,9 @@ namespace FP
 		double ifocal = focal != 0 ? 1. / focal : 1.;
 
 
-//		double cameraParam[3][3] = {{focal,0,pp.x},{0, focal, pp.y},{0,0,1}};
+		double cameraParam[3][3] = {{focal,0,pp.x},{0, focal, pp.y},{0,0,1}};
 //		double cameraDist[5] = { -0.07714, 0.454159, 0.0000944, -0.0000424, 0.0};
-		double cameraParam[3][3] = {{319.5,0,525.0},{0,239.5, 525.0},{0,0,1}};
+//		double cameraParam[3][3] = {{319.5,0,525.0},{0,239.5, 525.0},{0,0,1}}; // THIS IS PROBABLY WRONG! http://docs.opencv.org/2.4/doc/tutorials/calib3d/camera_calibration/camera_calibration.html
 		double cameraDist[5] = { 0.0, 0.0, 0.0, 0.0, 0.0 };
 		cv::Mat cameraMatrix = cv::Mat(3, 3, CV_64FC1, &cameraParam), distCoeffs = cv::Mat(1, 5, CV_64FC1, &cameraDist);
 

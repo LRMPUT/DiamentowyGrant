@@ -210,7 +210,7 @@ double estimateScaleTriangle(Eigen::Vector3d trans12, Eigen::Vector3d trans13, E
 	rightSide.block<3,1>(0,0) = scale12 * trans12;
 
 	Eigen::VectorXd unknowns = Eigen::VectorXd::Zero(2);
-	unknowns = leftSide.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(rightSide);
+//	unknowns = leftSide.jacobiSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(rightSide);
 	return unknowns(0);
 }
 

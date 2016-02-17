@@ -68,6 +68,7 @@ void DetectDescribe::performDetection(const cv::Mat& image,
 	delete detector;
 }
 
+
 void DetectDescribe::performDescription(const cv::Mat& image,
 		std::vector<cv::KeyPoint> &v, cv::Mat & descriptors,
 		const int _descriptorType) {

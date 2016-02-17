@@ -166,9 +166,14 @@ public:
 		}
 	}
 
-
+	// detectorType:
+	// 1 - FAST, 2 - STAR, 3 - SIFT, 4 - SURF, 5 - ORB, 6 - MSER
+	// 7 - GFTT, 8 - HARRIS, 9 - SimpleBlobDetector, 10 - Dense
 	static void performDetection(const cv::Mat& image,
 			std::vector<cv::KeyPoint> & v, const int _detectorType);
+
+	// descriptorType:
+	// 0 - LDB, 1 - SIFT, 2 - SURF, 3 - ORB, 4 - BRIEF, 5 - BRISK, 6 - FREAK
 	static void performDescription(const cv::Mat& image,
 			std::vector<cv::KeyPoint> &v, cv::Mat & descriptors,
 			const int _descriptorType);

@@ -149,8 +149,7 @@ public class OpenAndroidIndoorLocalization {
 		// Create QRCodeDecoder
 		qrCodeDecoder = new QRCodeDecoderClass(context);
 		
-		// Creating visual compass
-		visualCompass = new VisualCompass();
+		
 
 		// TODO
 		wifiPlayback = new WiFiPlayback(parameters.playback, wifiScanner);
@@ -168,6 +167,9 @@ public class OpenAndroidIndoorLocalization {
 
 		// Init Visual Place Recognition
 		visualPlaceRecognition = new VisualPlaceRecognition();
+		
+		// Creating visual compass
+		visualCompass = new VisualCompass();
 	}
 
 	class AP {
