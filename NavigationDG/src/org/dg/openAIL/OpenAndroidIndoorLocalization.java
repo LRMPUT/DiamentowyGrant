@@ -38,6 +38,7 @@ import java.util.TimerTask;
 
 import org.dg.camera.Preview;
 import org.dg.camera.QRCodeDecoderClass;
+import org.dg.camera.VisualCompass;
 import org.dg.camera.VisualPlaceRecognition;
 import org.dg.graphManager.GraphManager;
 import org.dg.graphManager.Vertex;
@@ -80,6 +81,9 @@ public class OpenAndroidIndoorLocalization {
 
 	// Visual Place Recognition
 	public VisualPlaceRecognition visualPlaceRecognition;
+	
+	// Visual Compass
+	public VisualCompass visualCompass;
 
 	// Graph
 	public GraphManager graphManager;
@@ -144,6 +148,9 @@ public class OpenAndroidIndoorLocalization {
 
 		// Create QRCodeDecoder
 		qrCodeDecoder = new QRCodeDecoderClass(context);
+		
+		// Creating visual compass
+		visualCompass = new VisualCompass();
 
 		// TODO
 		wifiPlayback = new WiFiPlayback(parameters.playback, wifiScanner);

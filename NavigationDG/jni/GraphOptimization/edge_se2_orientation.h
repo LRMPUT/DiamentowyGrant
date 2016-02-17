@@ -77,9 +77,9 @@ public:
 		_error[0] = normalize_theta(_measurement - delta[2]);
 
 		float angle = (v1->estimate()).toVector()[2], angle2 = (l2->estimate()).toVector()[2];
-		__android_log_print(ANDROID_LOG_VERBOSE, "XXX", "Angle %d %d: %f %f", v1->id(), l2->id(), angle, angle2);
-		__android_log_print(ANDROID_LOG_VERBOSE, "XXX", "Delta: %f Measurement: %f", delta[2], _measurement);
-		__android_log_print(ANDROID_LOG_VERBOSE, "XXX", "Error: %f !", _error[0]);
+//		__android_log_print(ANDROID_LOG_VERBOSE, "XXX", "Angle %d %d: %f %f", v1->id(), l2->id(), angle, angle2);
+//		__android_log_print(ANDROID_LOG_VERBOSE, "XXX", "Delta: %f Measurement: %f", delta[2], _measurement);
+//		__android_log_print(ANDROID_LOG_VERBOSE, "XXX", "Error: %f !", _error[0]);
 
 	}
 

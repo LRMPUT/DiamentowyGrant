@@ -42,7 +42,7 @@ import android.os.Environment;
 import android.util.Log;
 
 public class WiFiPlayback implements Runnable {
-final String moduleLogName = "WiFiPlayback";
+	final String moduleLogName = "WiFiPlayback";
 
 	class RawData {
 		int sourceType;

@@ -476,8 +476,12 @@ public class MainScreenSlideActivity extends Activity implements
 
 //			openAIL.graphManager.optimizeGraphInFile("lastCreatedGraph.g2o");
 //			openAIL.directWiFiTest();
-			openAIL.graphManager.optimizeGraphInFile("test.g2o");
+//			openAIL.graphManager.optimizeGraphInFile("test.g2o");
 
+			if ( openAIL.visualCompass.isThreadRunning() == false)
+				openAIL.visualCompass.startThread();
+			else
+				openAIL.visualCompass.stopThread();
 		}
 
 	}
