@@ -448,10 +448,14 @@ int GraphManager::addVicinityEdge(stringstream &data, string name)
 int GraphManager::addEdgeWiFi_SE2_XYZ(stringstream &data) {
 	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDK:LC: [%s]",
 					"Adding wifi edge");
+
 	int id1, id2;
-	EdgeSE2PointXYZfixedZDistance* e = new EdgeSE2PointXYZfixedZDistance();
+	double freq;
+
 //	EdgeSE2PointXYDistance* e = new EdgeSE2PointXYDistance();
-	data >> id1 >> id2;
+	data >> id1 >> id2 >> freq;
+	EdgeSE2PointXYZfixedZDistance* e = new EdgeSE2PointXYZfixedZDistance(freq);
+
 	OptimizableGraph::Vertex* from = optimizer.vertex(id1);
 	OptimizableGraph::Vertex* to = optimizer.vertex(id2);
 	if (!to) {

@@ -48,7 +48,7 @@ public class CameraSaver implements PictureCallback, PreviewCallback{
 		try {
 
 			File folder = new File(Environment.getExternalStorageDirectory()
-					+ "/OpenIAL/Imgs");
+					+ "/OpenAIL/rawData/Imgs");
 			boolean success = true;
 			if (!folder.exists()) {
 				success = folder.mkdir();

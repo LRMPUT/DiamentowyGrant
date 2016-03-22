@@ -138,7 +138,16 @@ public class MainScreenSlideActivity extends Activity implements
 
 		// 1. Take picture
 		if (link.contains("Take picture")) {
-			camera.takePicture(null, null, new CameraSaver());
+			//camera.takePicture(null, null, new CameraSaver());
+			
+			// We need to update the preview
+			ScreenSlidePageFragment cameraFragment = (ScreenSlidePageFragment) ((ScreenSlidePagerAdapter) mPagerAdapter)
+					.getItem(0);
+			openAIL.preview = cameraFragment.preview;
+			
+			openAIL.preview.saveSinglePreviewToFile();
+				
+			
 		}
 
 		// 2. Start/Stop Orientation
@@ -474,14 +483,26 @@ public class MainScreenSlideActivity extends Activity implements
 		if (link.contains("Test")) {
 			Log.v(TAG, "Test");
 
+//			camera.takePicture(null, null, new CameraSaver());
+			
+			// We need to update the preview
+			ScreenSlidePageFragment cameraFragment = (ScreenSlidePageFragment) ((ScreenSlidePagerAdapter) mPagerAdapter)
+					.getItem(0);
+			openAIL.preview = cameraFragment.preview;
+			
+			if (openAIL.preview.getSavingPreviewState())
+				openAIL.preview.stopSavingPreviewToFile();
+			else
+				openAIL.preview.startSavingPreviewToFile();
+			
 //			openAIL.graphManager.optimizeGraphInFile("lastCreatedGraph.g2o");
 //			openAIL.directWiFiTest();
-//			openAIL.graphManager.optimizeGraphInFile("test.g2o");
+//			openAIL.graphManager.optimizeGraphInFile("test4.g2o");
 
-			if ( openAIL.visualCompass.isThreadRunning() == false)
-				openAIL.visualCompass.startThread();
-			else
-				openAIL.visualCompass.stopThread();
+//			if ( openAIL.visualCompass.isThreadRunning() == false)
+//				openAIL.visualCompass.startThread();
+//			else
+//				openAIL.visualCompass.stopThread();
 		}
 
 	}

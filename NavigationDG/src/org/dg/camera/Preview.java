@@ -26,12 +26,15 @@
 
 package org.dg.camera;
 
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
+import org.opencv.highgui.Highgui;
 import org.opencv.imgproc.Imgproc;
 
 import android.content.Context;
@@ -39,6 +42,7 @@ import android.graphics.ImageFormat;
 import android.hardware.Camera;
 import android.hardware.Camera.PreviewCallback;
 import android.hardware.Camera.Size;
+import android.os.Environment;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.SurfaceHolder;
@@ -58,6 +62,9 @@ public class Preview extends ViewGroup implements SurfaceHolder.Callback, Previe
     ReentrantLock curPreviewImageLock = new ReentrantLock();
 	
 	Mat curPreviewImage = null;
+	
+	boolean savePreviewToFile = false, singlePreviewToFile = false;
+	long startSavePreviewTime = 0, singlePreviewCounter = 0 ;
 
 
     public Preview(Context context, SurfaceView sv) {
@@ -106,7 +113,7 @@ public class Preview extends ViewGroup implements SurfaceHolder.Callback, Previe
     			mCamera.setParameters(params);
     		}*/
 //    		params.setPictureSize(640, 480);
-//    		params.setFocusMode(Camera.Parameters.FOCUS_MODE_FIXED);
+    		params.setFocusMode(Camera.Parameters.FOCUS_MODE_INFINITY);
     		
     		//mCamera.setDisplayOrientation(90);
     		mCamera.setParameters(params);
@@ -184,6 +191,23 @@ public class Preview extends ViewGroup implements SurfaceHolder.Callback, Previe
     }
 
 
+    public void startSavingPreviewToFile() {
+    	startSavePreviewTime = System.currentTimeMillis();
+    	savePreviewToFile = true;
+    }
+    
+    public void stopSavingPreviewToFile() {
+    	savePreviewToFile = false;
+    }
+    
+    public boolean getSavingPreviewState() {
+    	return savePreviewToFile;
+    }
+    
+    public void saveSinglePreviewToFile() {
+    	singlePreviewToFile = true;
+    }
+    
     private Size getOptimalPreviewSize(List<Size> sizes, int w, int h) {
         final double ASPECT_TOLERANCE = 0.3;
         double targetRatio = (double) w / h;
@@ -242,6 +266,7 @@ public class Preview extends ViewGroup implements SurfaceHolder.Callback, Previe
     
     @Override
 	public void onPreviewFrame(byte[] data, Camera camera) {
+    	Log.d(TAG, "onPreviewFrame");
 		// TODO Auto-generated method stub
     	Camera.Parameters parameters = mCamera.getParameters();
     	
@@ -266,6 +291,17 @@ public class Preview extends ViewGroup implements SurfaceHolder.Callback, Previe
 			try {
 
 				curPreviewImage = imageBGRA;
+				if ( savePreviewToFile )
+				{
+					saveImageFromPreview(curPreviewImage, System.currentTimeMillis() - startSavePreviewTime);
+					singlePreviewToFile = false;
+				}
+				if ( singlePreviewToFile ) {
+					saveImageFromPreview(curPreviewImage, singlePreviewCounter);
+					singlePreviewToFile = false;
+					singlePreviewCounter++;
+				}
+				
 				
 			} finally {
 			//						Log.d(TAG, "onPreviewFrame finally");
@@ -275,6 +311,22 @@ public class Preview extends ViewGroup implements SurfaceHolder.Callback, Previe
        }
 
 	}
+    
+    private void saveImageFromPreview(Mat image, long value) {
+    	Log.d(TAG, "saveImageFromPreview");
+    	File folder = new File(Environment.getExternalStorageDirectory()
+    			+ "/OpenAIL/rawData/Imgs");
+		if (!folder.exists()) {
+			folder.mkdirs();
+		}
+
+		String file = String.format(folder.getAbsolutePath() + "/%05d.png",
+				value);
+		Highgui.imwrite(file, image);
+    
+		//savePreviewToFile = false;
+    }
+    
     
     public Mat  getCurPreviewImage() {
 		Mat ret = null;

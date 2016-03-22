@@ -38,13 +38,14 @@ public class WiFiDirect {
 	
 	public class DirectMeasurement {
 		public int idPos, idAP;
-		public double distance, level;
+		public double distance, level, frequency;
 		
-		public DirectMeasurement(int _idAP, int _idPos, double _distance, double _level) {
+		public DirectMeasurement(int _idAP, int _idPos, double _distance, double _level, double _frequency) {
 			idAP = _idAP;
 			idPos = _idPos;
 			distance = _distance;
 			level = _level;
+			frequency = _frequency;
 		}
 	}
 	
@@ -79,10 +80,10 @@ public class WiFiDirect {
 					bssidOccurrence.set(idAP, bssidOccurrence.get(idAP)+1);
 				
 				// Convert lvl to meters
-				double distance = convertLevelToMeters(network.level);
+				double distance = convertLevelToMeters(network.level, network.frequency);
 				
 				// Add to list
-				directMeasurements.add(new DirectMeasurement(idAP, idPos, distance, network.level));
+				directMeasurements.add(new DirectMeasurement(idAP, idPos, distance, network.level, network.frequency));
 				
 				if ( lastIdPos != idPos) {
 					lastIdPos = idPos;
@@ -118,7 +119,7 @@ public class WiFiDirect {
 		
 		List<DirectMeasurement> positionOne = new ArrayList<DirectMeasurement>();
 		for (DirectMeasurement dm : directMeasurements) {
-			positionOne.add(new DirectMeasurement(dm.idAP, dm.idPos-8000, dm.distance, dm.level));
+			positionOne.add(new DirectMeasurement(dm.idAP, dm.idPos-8000, dm.distance, dm.level, dm.frequency));
 			posOccurrence.set(dm.idPos-10000, posOccurrence.get(dm.idPos-10000) + 1);
 		}
 		
@@ -145,11 +146,11 @@ public class WiFiDirect {
 	/*
 	 * Convert measurement from dBm to meters with some propagation model
 	 */
-	private double convertLevelToMeters(double level) {
+	private double convertLevelToMeters(double level, double freq) {
 //		double tmp = -40 + Math.abs(level);
 //		tmp = tmp / 40;
 //		return Math.pow(10, tmp);
-		 double exp = (27.55 - (20 * Math.log10(2412)) + Math.abs(level)) / 20.0;
+		 double exp = (27.55 - (20 * Math.log10(freq)) + Math.abs(level)) / 20.0;
 		 return Math.pow(10.0, exp);
 	}
 }

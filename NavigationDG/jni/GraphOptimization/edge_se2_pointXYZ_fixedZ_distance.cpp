@@ -36,104 +36,120 @@
 
 namespace g2o {
 
-  EdgeSE2PointXYZfixedZDistance::EdgeSE2PointXYZfixedZDistance()
-  {
-  }
+EdgeSE2PointXYZfixedZDistance::EdgeSE2PointXYZfixedZDistance() {
+	frequency = 2412;
+}
 
-  void EdgeSE2PointXYZfixedZDistance::initialEstimate(const OptimizableGraph::VertexSet& from, OptimizableGraph::Vertex* /*to*/)
-  {
-    assert(from.size() == 1 && from.count(_vertices[0]) == 1 && "Can not initialize VertexSE2 position by VertexPointXY");
+EdgeSE2PointXYZfixedZDistance::EdgeSE2PointXYZfixedZDistance(
+		double _frequency) {
+	frequency = _frequency;
+}
 
-    if (from.count(_vertices[0]) != 1)
-      return;
-    double r=2.;
-    const VertexSE2* v1 = static_cast<const VertexSE2*>(_vertices[0]);
-    VertexPointXYZ* l2 = static_cast<VertexPointXYZ*>(_vertices[1]);
-    SE2 t=v1->estimate();
-    Vector3d vr;
-    vr[0]=t.translation().x(); vr[1]=t.translation().y(); vr[2] = 10.0;
-    l2->setEstimate(vr);
-  }
+void EdgeSE2PointXYZfixedZDistance::initialEstimate(
+		const OptimizableGraph::VertexSet& from,
+		OptimizableGraph::Vertex* /*to*/) {
+	assert(
+			from.size() == 1 && from.count(_vertices[0]) == 1
+					&& "Can not initialize VertexSE2 position by VertexPointXY");
 
-  bool EdgeSE2PointXYZfixedZDistance::read(std::istream& is)
-  {
-    is >> _measurement >> information()(0,0);
-    return true;
-  }
+	if (from.count(_vertices[0]) != 1)
+		return;
+	double r = 2.;
+	const VertexSE2* v1 = static_cast<const VertexSE2*>(_vertices[0]);
+	VertexPointXYZ* l2 = static_cast<VertexPointXYZ*>(_vertices[1]);
+	SE2 t = v1->estimate();
+	Vector3d vr;
+	vr[0] = t.translation().x();
+	vr[1] = t.translation().y();
+	vr[2] = 10.0;
+	l2->setEstimate(vr);
+}
 
-  bool EdgeSE2PointXYZfixedZDistance::write(std::ostream& os) const
-  {
-    os << measurement() << " " << information()(0,0);
-    return os.good();
-  }
+bool EdgeSE2PointXYZfixedZDistance::read(std::istream& is) {
+	is >> _measurement >> information()(0, 0);
+	return true;
+}
 
+bool EdgeSE2PointXYZfixedZDistance::write(std::ostream& os) const {
+	os << measurement() << " " << information()(0, 0);
+	return os.good();
+}
 
-  EdgeSE2PointXYZfixedZDistanceWriteGnuplotAction::EdgeSE2PointXYZfixedZDistanceWriteGnuplotAction(): WriteGnuplotAction(typeid(EdgeSE2PointXYZfixedZDistance).name()){}
+EdgeSE2PointXYZfixedZDistanceWriteGnuplotAction::EdgeSE2PointXYZfixedZDistanceWriteGnuplotAction() :
+		WriteGnuplotAction(typeid(EdgeSE2PointXYZfixedZDistance).name()) {
+}
 
-  HyperGraphElementAction* EdgeSE2PointXYZfixedZDistanceWriteGnuplotAction::operator()(HyperGraph::HyperGraphElement* element,
-                         HyperGraphElementAction::Parameters* params_){
-    if (typeid(*element).name()!=_typeName)
-      return 0;
-    WriteGnuplotAction::Parameters* params=static_cast<WriteGnuplotAction::Parameters*>(params_);
-    if (!params->os){
-      std::cerr << __PRETTY_FUNCTION__ << ": warning, on valid os specified" << std::endl;
-      return 0;
-    }
+HyperGraphElementAction* EdgeSE2PointXYZfixedZDistanceWriteGnuplotAction::operator()(
+		HyperGraph::HyperGraphElement* element,
+		HyperGraphElementAction::Parameters* params_) {
+	if (typeid(*element).name() != _typeName)
+		return 0;
+	WriteGnuplotAction::Parameters* params =
+			static_cast<WriteGnuplotAction::Parameters*>(params_);
+	if (!params->os) {
+		std::cerr << __PRETTY_FUNCTION__ << ": warning, on valid os specified"
+				<< std::endl;
+		return 0;
+	}
 
-    EdgeSE2PointXYZfixedZDistance* e =  static_cast<EdgeSE2PointXYZfixedZDistance*>(element);
-    VertexSE2* fromEdge = static_cast<VertexSE2*>(e->vertex(0));
-    VertexPointXYZ* toEdge   = static_cast<VertexPointXYZ*>(e->vertex(1));
-    *(params->os) << fromEdge->estimate().translation().x() << " " << fromEdge->estimate().translation().y()
-      << " " << fromEdge->estimate().rotation().angle() << std::endl;
-    *(params->os) << toEdge->estimate().x() << " " << toEdge->estimate().y() << std::endl;
-    *(params->os) << std::endl;
-    return this;
-  }
+	EdgeSE2PointXYZfixedZDistance* e =
+			static_cast<EdgeSE2PointXYZfixedZDistance*>(element);
+	VertexSE2* fromEdge = static_cast<VertexSE2*>(e->vertex(0));
+	VertexPointXYZ* toEdge = static_cast<VertexPointXYZ*>(e->vertex(1));
+	*(params->os) << fromEdge->estimate().translation().x() << " "
+			<< fromEdge->estimate().translation().y() << " "
+			<< fromEdge->estimate().rotation().angle() << std::endl;
+	*(params->os) << toEdge->estimate().x() << " " << toEdge->estimate().y()
+			<< std::endl;
+	*(params->os) << std::endl;
+	return this;
+}
 
 #ifdef G2O_HAVE_OPENGL
-  EdgeSE2PointXYDistanceDrawAction::EdgeSE2PointXYZfixedZDistanceDrawAction(): DrawAction(typeid(EdgeSE2PointXYZfixedZDistance).name()){}
+EdgeSE2PointXYDistanceDrawAction::EdgeSE2PointXYZfixedZDistanceDrawAction(): DrawAction(typeid(EdgeSE2PointXYZfixedZDistance).name()) {}
 
-  HyperGraphElementAction* EdgeSE2PointXYZfixedZDistanceDrawAction::operator()(HyperGraph::HyperGraphElement* element,  HyperGraphElementAction::Parameters* params_){
-    if (typeid(*element).name()!=_typeName)
-      return 0;
+HyperGraphElementAction* EdgeSE2PointXYZfixedZDistanceDrawAction::operator()(HyperGraph::HyperGraphElement* element, HyperGraphElementAction::Parameters* params_) {
+	if (typeid(*element).name()!=_typeName)
+	return 0;
 
-    refreshPropertyPtrs(params_);
-    if (! _previousParams)
-      return this;
+	refreshPropertyPtrs(params_);
+	if (! _previousParams)
+	return this;
 
-    if (_show && !_show->value())
-      return this;
+	if (_show && !_show->value())
+	return this;
 
-    EdgeSE2PointXYDistance* e =  static_cast<EdgeSE2PointXYDistance*>(element);
-    VertexSE2* from = static_cast<VertexSE2*>(e->vertex(0));
-    VertexPointXY* to   = static_cast<VertexPointXY*>(e->vertex(1));
-    if (! from)
-      return this;
-    double guessRange=5;
-    double theta = e->measurement();
-    Vector2D p(cos(theta)*guessRange, sin(theta)*guessRange);
-    glPushAttrib(GL_ENABLE_BIT|GL_LIGHTING|GL_COLOR);
-    glDisable(GL_LIGHTING);
-    if (!to){
-      p=from->estimate()*p;
-      glColor3f(LANDMARK_EDGE_GHOST_COLOR);
-      glPushAttrib(GL_POINT_SIZE);
-      glPointSize(3);
-      glBegin(GL_POINTS);
-      glVertex3f((float)p.x(),(float)p.y(),0.f);
-      glEnd();
-      glPopAttrib();
-    } else {
-      p=to->estimate();
-      glColor3f(LANDMARK_EDGE_COLOR);
-    }
-    glBegin(GL_LINES);
-    glVertex3f((float)from->estimate().translation().x(),(float)from->estimate().translation().y(),0.f);
-    glVertex3f((float)p.x(),(float)p.y(),0.f);
-    glEnd();
-    glPopAttrib();
-    return this;
-  }
+	EdgeSE2PointXYDistance* e = static_cast<EdgeSE2PointXYDistance*>(element);
+	VertexSE2* from = static_cast<VertexSE2*>(e->vertex(0));
+	VertexPointXY* to = static_cast<VertexPointXY*>(e->vertex(1));
+	if (! from)
+	return this;
+	double guessRange=5;
+	double theta = e->measurement();
+	Vector2D p(cos(theta)*guessRange, sin(theta)*guessRange);
+	glPushAttrib(GL_ENABLE_BIT|GL_LIGHTING|GL_COLOR);
+	glDisable(GL_LIGHTING);
+	if (!to) {
+		p=from->estimate()*p;
+		glColor3f(LANDMARK_EDGE_GHOST_COLOR);
+		glPushAttrib(GL_POINT_SIZE);
+		glPointSize(3);
+		glBegin(GL_POINTS);
+		glVertex3f((float)p.x(),(float)p.y(),0.f);
+		glEnd();
+		glPopAttrib();
+	} else {
+		p=to->estimate();
+		glColor3f(LANDMARK_EDGE_COLOR);
+	}
+	glBegin(GL_LINES);
+	glVertex3f((float)from->estimate().translation().x(),(float)from->estimate().translation().y(),0.f);
+	glVertex3f((float)p.x(),(float)p.y(),0.f);
+	glEnd();
+	glPopAttrib();
+	return this;
+}
 #endif
 
-} // end namespace
+}
+ // end namespace

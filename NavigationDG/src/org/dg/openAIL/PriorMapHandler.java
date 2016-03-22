@@ -96,11 +96,11 @@ public class PriorMapHandler {
 		Log.d(moduleLogName, "Image directory length: " + imageFiles.length);
 
 		// Check that the we have the same number of WiFi scans and images
-		if (wifiScanFiles.length != imageFiles.length) {
-			Log.e(moduleLogName,
-					"Different number of wifi scans and images -- something went wrong and map was not read");
-			return new ArrayList<MapPosition>();
-		}
+//		if (wifiScanFiles.length != imageFiles.length) {
+//			Log.e(moduleLogName,
+//					"Different number of wifi scans and images -- something went wrong and map was not read");
+//			return new ArrayList<MapPosition>();
+//		}
 
 		// Preparations to read positions
 		Scanner positionScanner = null;
@@ -117,8 +117,8 @@ public class PriorMapHandler {
 		for (int i = 0; i < wifiScanFiles.length; i++) {
 			MapPosition mapPosition = new MapPosition();
 
-			Log.d(moduleLogName, "Processing: " + wifiScanFiles[i].getName()
-					+ " & " + imageFiles[i].getName());
+//			Log.d(moduleLogName, "Processing: " + wifiScanFiles[i].getName()
+//					+ " & " + imageFiles[i].getName());
 
 			try {
 				// Reading position
@@ -133,8 +133,8 @@ public class PriorMapHandler {
 						+ mapPosition.Z + " " + mapPosition.angle);
 
 				// Reading image
-				Mat image = Highgui.imread(mapDirectoryPath + "images/"
-						+ imageFiles[i].getName(), 0);
+//				Mat image = Highgui.imread(mapDirectoryPath + "images/"
+//						+ imageFiles[i].getName(), 0);
 
 				// Reading WiFi
 				Scanner wifiScanScanner = new Scanner(new BufferedReader(
@@ -149,11 +149,11 @@ public class PriorMapHandler {
 						wifiScanScanner, wifiCount);
 
 				// Checking that ids of position and WiFi are correctly matched
-				if (mapPosition.id != idWiFi) {
-					Log.e(moduleLogName,
-							"Different ids of wifi scans and images -- something went wrong and map was not read");
-					return new ArrayList<MapPosition>();
-				}
+//				if (mapPosition.id != idWiFi) {
+//					Log.e(moduleLogName,
+//							"Different ids of wifi scans and images -- something went wrong and map was not read");
+//					return new ArrayList<MapPosition>();
+//				}
 
 			} catch (FileNotFoundException e) {
 				e.printStackTrace();

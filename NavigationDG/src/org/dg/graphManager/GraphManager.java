@@ -415,7 +415,7 @@ public class GraphManager {
 		for (DirectMeasurement measurement: measurements)
 		{
 			//String edgeWiFi = createWiFi_SE2_XY_EdgeString(measurement.idAP, measurement.idPos, measurement.distance);
-			String edgeWiFi = createWiFi_SE2_XYZ_EdgeString(measurement.idPos, measurement.idAP, measurement.distance);
+			String edgeWiFi = createWiFi_SE2_XYZ_EdgeString(measurement.idPos, measurement.idAP, measurement.distance, measurement.frequency);
 			
 			g2oString = g2oString + edgeWiFi;
 		}
@@ -662,8 +662,8 @@ public class GraphManager {
 	/**
 	 * Creates a WiFi measurement string from values
 	 */
-	private String createWiFi_SE2_XYZ_EdgeString(int id, int id2, double distance) {
-		String edgeWiFi ="EDGE_SE2:WIFI_SE2_XYZ " + id + " " + id2 + " " + distance + " " + parameters.informationMatrixOfWiFi + "\n";
+	private String createWiFi_SE2_XYZ_EdgeString(int id, int id2, double distance, double freq) {
+		String edgeWiFi ="EDGE_SE2:WIFI_SE2_XYZ " + id + " " + id2 + " " + freq + " " + distance + " 1.0 \n";
 		return edgeWiFi;
 	}
 	

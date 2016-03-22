@@ -153,11 +153,21 @@ public class ScreenSlidePageFragment extends Fragment {
 			surfView.setOnLongClickListener(new OnLongClickListener() {
 				@Override
 				public boolean onLongClick(View v) {
-					Log.d("Camera::preview", "on touch");
+					Log.d("Camera::preview", "onLongClick");
 
 					onSomeClick(v, "Decode QR");
 					return false;
 
+				}
+			});
+			
+			// If you you touch for short time -> take image
+			surfView.setOnClickListener(new OnClickListener() {
+				@Override
+				public void onClick(View v) {
+					Log.d("Camera::preview", "onClick");
+
+					onSomeClick(v, "Take picture");
 				}
 			});
 

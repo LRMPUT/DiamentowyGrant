@@ -211,7 +211,15 @@ public class OpenAndroidIndoorLocalization {
 			apPositions[i] = new AP();
 		
 		for (DirectMeasurement dm : measurements) {
-			MapPosition mapPos = mapPositions.get(dm.idPos - 10000);
+			MapPosition mapPos = null;
+			for ( MapPosition mp : mapPositions) {
+				if (mp.id == dm.idPos) {
+					mapPos = mp;
+					break;
+				}
+					
+			}
+			
 			
 			apPositions[dm.idAP].X += mapPos.X;
 			apPositions[dm.idAP].Y += mapPos.Y;
@@ -233,14 +241,14 @@ public class OpenAndroidIndoorLocalization {
 		
 		Log.d(moduleLogName, "Reverse problem! ");
 		
-		measurements = wifiDirect.getReverseTest();
-		
-		for (MapPosition mapPos : mapPositions) {
-			graphManager.addVertexSE2(mapPos.id-8000, mapPos.X,
-					mapPos.Y, 0);
-		}
-		
-		graphManager.addMultipleWiFiMeasurements(measurements);
+//		measurements = wifiDirect.getReverseTest();
+//		
+//		for (MapPosition mapPos : mapPositions) {
+//			graphManager.addVertexSE2(mapPos.id-8000, mapPos.X,
+//					mapPos.Y, 0);
+//		}
+//		
+//		graphManager.addMultipleWiFiMeasurements(measurements);
 		
 		Log.d(moduleLogName, "directWiFiTest() - optimize");
 		
