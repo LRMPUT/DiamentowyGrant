@@ -12,40 +12,88 @@
         android:layout_weight="0.20"
         android:orientation="vertical" >
 
-        <TextView
-            android:id="@+id/textViewBarometer1"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_weight="0.79"
-            android:text="Floor: " />
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" >
 
-        <TextView
-            android:id="@+id/textViewBarometer2"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_weight="0.79"
-            android:text="Height: " />
+            <TextView
+                android:id="@+id/textViewBarometer1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="0.79"
+                android:text="Floor: " />
 
-        <TextView
-            android:id="@+id/textViewStepometer1"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_weight="0.79"
-            android:text="Found freq: " />
+            <TextView
+                android:id="@+id/textViewBarometer2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="0.79"
+                android:text="Height: " />
+            
+            <TextView
+                android:id="@+id/textViewDeviceOrientation"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="0.79"
+                android:text="devOrient: " />
 
-        <TextView
-            android:id="@+id/textViewStepometer2"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_weight="0.79"
-            android:text="Step counter: " />
+        </LinearLayout>
 
-        <TextView
-            android:id="@+id/textViewStepometer3"
-            android:layout_width="wrap_content"
+        <LinearLayout
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_weight="0.79"
-            android:text="Distance: " />
+            android:layout_weight="0.20" >
+
+            <TextView
+                android:id="@+id/textViewStepometer1"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="0.79"
+                android:text="Freq: " />
+
+            <TextView
+                android:id="@+id/textViewStepometer2"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="0.79"
+                android:text="Steps: " />
+            
+            <TextView
+                android:id="@+id/textViewStepometer3"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="0.79"
+                android:text="Dist: " />
+
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_weight="0.20" >
+
+            <TextView
+                android:id="@+id/textViewStepometer4"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="0.79"
+                android:text="Angle: " />
+            
+            <TextView
+                android:id="@+id/textViewStepometer5"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="0.79"
+                android:text="Acc var: " />
+            
+             <TextView
+                android:id="@+id/textViewStepometer6"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="0.79"
+                android:text="Gyro var: " />
+
+        </LinearLayout>
 
         <TextView
             android:id="@+id/textViewWiFi1"

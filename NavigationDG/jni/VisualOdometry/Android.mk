@@ -13,10 +13,11 @@ include $(LOCAL_PATH)/DetectDescribe/Android.mk
 
 
 LOCAL_MODULE    := VisualOdometryModule
-#LOCAL_SRC_FILES += FivePoint/FivePointAlgorithm.cpp VisualOdometryModuleExport.cpp
+LOCAL_C_INCLUDES += Eigen
+LOCAL_SRC_FILES += Triangulate/triangulate.cpp VOsystem/VOsystem.cpp FivePoint/FivePointAlgorithm.cpp VisualOdometryModuleExport.cpp
 
 
-#LOCAL_C_INCLUDES := Eigen
+
 #LOCAL_SRC_FILES += FivePointMadeEasy/Rpoly.cpp FivePointMadeEasy/5point.cpp FivePointMadeEasy/main.cpp
 
 

@@ -5,27 +5,27 @@
 #include <opencv2/video/tracking.hpp>
 
 
-#include "NonFree/nonfree/features2d.hpp"
-#include "NonFree/nonfree/nonfree.hpp"
+#include "DetectDescribe/NonFree/features2d.hpp"
+#include "DetectDescribe/NonFree/nonfree.hpp"
 
 #include <vector>
 #include <android/log.h>
 
 #include "FivePoint/FivePointAlgorithm.h"
 //#include "../FivePoint/FivePointAlgorithm.h"
-#include "FivePointMadeEasy/5point.h"
+//#include "FivePointMadeEasy/5point.h"
 #include "DetectDescribe/DetectDescribe.h"
 #include "Triangulate/triangulate.h"
 
 #include "VOsystem/VOsystem.h"
 
-#include "LDB/ldb.h"
+#include "DetectDescribe/LDB/ldb.h"
 
 
 using namespace std;
 using namespace cv;
 
-#define DEBUG_TAG "NDK_MainActivity"
+#define DEBUG_TAG "NDK_VisualOdometry"
 #define DEBUG_TAG_PEMRA "PEMRA"
 #define DEBUG_TAG_DETDES "DetectDescribe"
 #define DEBUG_TAG_MSC "MScThesis"
@@ -68,10 +68,62 @@ JNIEXPORT int JNICALL Java_org_dg_camera_VisualOdometry_RANSACTest(JNIEnv*,
 		jobject, jlong addrPoints1, jlong addrPoints2, jint numOfThreads, jint Npoint);
 
 
+// Visual Compass
+JNIEXPORT void JNICALL Java_org_dg_camera_VisualCompass_NDKEstimateRotation(JNIEnv*,
+		jobject, jlong addrImg1, jlong addrImg2);
 
 
 // Implementation
+JNIEXPORT void JNICALL Java_org_dg_camera_VisualCompass_NDKEstimateRotation(JNIEnv*,
+		jobject, jlong addrImg1, jlong addrImg2)
+{
+	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "NDKEstimateRotation called correctly");
 
+	Mat& image = *(Mat*) addrImg1;
+	Mat& image2 = *(Mat*) addrImg2;
+
+	vector<KeyPoint> v[2];
+	cv::Mat descriptors[2];
+
+	// ORB detection
+	DetectDescribe::performDetection(image, v[0], 5);
+	DetectDescribe::performDetection(image2, v[1], 5);
+
+	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "Detected: %d & %d", v[0].size(), v[1].size());
+
+	// ORB description
+	DetectDescribe::performDescription(image,v[0],descriptors[0],3);
+	DetectDescribe::performDescription(image2,v[1],descriptors[1],3);
+
+	// Matching with Hamming distance - can be changed to tracking
+	std::vector<cv::DMatch> matches;
+	DetectDescribe::performMatching(descriptors[0], descriptors[1], matches, 3);
+
+	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "Matches: %d", matches.size());
+
+	// Copying data for matches
+	std::vector<cv::Point2f> vTmp1, vTmp2;
+	for (int i = 0; i < matches.size(); i++) {
+		vTmp1.push_back(v[0][matches[i].queryIdx].pt);
+		vTmp2.push_back(v[1][matches[i].trainIdx].pt);
+	}
+
+	// Calling n-point algorithm with RANSAC, n = 8, threshold = 3 px, focal = 525.0 px, cx
+	int Npoint = 8;
+	cv::Mat points1(vTmp1), points2(vTmp2), inliers, rotation, translation;
+	FP::RotationTranslationFromFivePointAlgorithm(points2, points1, 3.0, 1, Npoint, rotation, translation, inliers, 525.0, 319.5, 239.5);
+
+	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "Inlier matches: %d x %d", inliers.rows, inliers.cols);
+
+	for (int i = 0; i < 3; i++)
+		__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG, "Rot: %f %f %f\n",
+				rotation.at<double>(0, i), rotation.at<double>(1, i),
+				rotation.at<double>(2, i));
+
+	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG,
+			"Translation : %f %f %f\n", translation.at<double>(0),
+			translation.at<double>(1), translation.at<double>(2) );
+}
 
 
 /// MSc thesis

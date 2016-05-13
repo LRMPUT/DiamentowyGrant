@@ -1,5 +1,33 @@
+// OpenAIL - Open Android Indoor Localization
+// Copyright (C) 2015 Michal Nowicki (michal.nowicki@put.poznan.pl)
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright notice,
+//   this list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above copyright
+//   notice, this list of conditions and the following disclaimer in the
+//   documentation and/or other materials provided with the distribution.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+// IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+// TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+// PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+// HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+// TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+// PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+// LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+// NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 package org.dg.inertialSensors;
 
+
+import org.dg.openAIL.ConfigurationReader.Parameters;
 
 import android.util.Log;
 
@@ -11,27 +39,21 @@ public class Stepometer implements Runnable{
 	public native float fftFindDominantFrequency(float [] accWindow, float accelerometerMeasurementFrequency);
 	
 	// Parameters
-	final int verboseLevel = 0;
+	Parameters.InertialSensors.Stepometer parameters;
 	
 	// Loading the NDK library
-	public Stepometer() {
+	public Stepometer(Parameters.InertialSensors.Stepometer _parameters) {
 		System.loadLibrary("StepometerModule");
+		parameters = _parameters;
 	}
 
 	// Last detected frequency (in Hz)
 	float lastDetectedFrequency = 0.0f;
 	
-	// Step size in meters - 0.7 m as default
-	final float personalStepSize = 0.65f;
-	
 	// Total number of steps and total number of distance covered
 	float detectedNumberOfSteps = 0;
 	float coveredStepDistance = 0.0f;
 	float lastReportedCoveredStepDistance = 0.0f;
-	
-	// The walking frequencies borders
-	final float leftWalkingFrequencyBorder = 1.3f;
-	final float rightWalkingFrequencyBorder = 2.1f;
 	
 	// Accelerometer measurement frequency (in Hz)
 	final float accelerometerMeasurementFrequency = 200.0f;
@@ -49,7 +71,7 @@ public class Stepometer implements Runnable{
 	@Override
 	public void run() {
 		
-		if (verboseLevel > 0)
+		if (parameters.verbose > 0)
 			Log.d("Stepometer", "Starting fft test, size of window : " + Integer.toString(accWindowSize));
 		
 		// We need to copy the data into the float array to pass into NDK
@@ -69,14 +91,14 @@ public class Stepometer implements Runnable{
 		// Perform frequency detection
 		lastDetectedFrequency = fftFindDominantFrequency(accWindow, accelerometerMeasurementFrequency);
 		
-		if (verboseLevel > 0)
+		if (parameters.verbose > 0)
 			Log.d("Stepometer", "Found frequency: " + lastDetectedFrequency + " Hz");
 		
 		// If the detected frequency is inside walking frequencies
-		if (leftWalkingFrequencyBorder <= lastDetectedFrequency
-				&& lastDetectedFrequency <= rightWalkingFrequencyBorder) {
+		if (parameters.minFrequency <= lastDetectedFrequency
+				&& lastDetectedFrequency <= parameters.maxFrequency) {
 			// new distance = step of a person * frequency 
-			coveredStepDistance = coveredStepDistance + personalStepSize * lastDetectedFrequency;
+			coveredStepDistance = (float) (coveredStepDistance + parameters.stepSize * lastDetectedFrequency);
 			detectedNumberOfSteps = detectedNumberOfSteps + lastDetectedFrequency;
 		}
 		
@@ -93,7 +115,7 @@ public class Stepometer implements Runnable{
 		return coveredStepDistance;
 	}
 	
-	public float getGraphStepDistance() {
+	public float getStepDistance() {
 		float distance =  coveredStepDistance - lastReportedCoveredStepDistance;
 		lastReportedCoveredStepDistance = coveredStepDistance;
 		return distance;

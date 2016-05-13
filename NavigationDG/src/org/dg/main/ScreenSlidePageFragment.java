@@ -1,3 +1,29 @@
+// OpenAIL - Open Android Indoor Localization
+// Copyright (C) 2015 Michal Nowicki (michal.nowicki@put.poznan.pl)
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions are
+// met:
+//
+// * Redistributions of source code must retain the above copyright notice,
+//   this list of conditions and the following disclaimer.
+// * Redistributions in binary form must reproduce the above copyright
+//   notice, this list of conditions and the following disclaimer in the
+//   documentation and/or other materials provided with the distribution.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+// IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+// TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+// PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+// HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+// SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED
+// TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+// PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+// LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+// NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
 package org.dg.main;
 
 import java.util.ArrayList;
@@ -5,8 +31,6 @@ import java.util.List;
 
 import org.dg.camera.CameraSaver;
 import org.dg.camera.Preview;
-import org.dg.main.MainActivity.UpdateGraph;
-import org.dg.main.MainActivity.UpdateWiFiSRecognitionGUI;
 
 import android.app.Activity;
 import android.app.Fragment;
@@ -18,12 +42,16 @@ import android.util.Pair;
 import android.view.LayoutInflater;
 import android.view.SurfaceView;
 import android.view.View;
+import android.view.View.OnLongClickListener;
 import android.view.ViewGroup;
 import android.view.View.OnClickListener;
 import android.view.ViewGroup.LayoutParams;
 import android.widget.Button;
+import android.widget.CompoundButton;
+import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.EditText;
 import android.widget.FrameLayout;
+import android.widget.Switch;
 import android.widget.TextView;
 
 /**
@@ -36,26 +64,26 @@ import android.widget.TextView;
  * </p>
  */
 public class ScreenSlidePageFragment extends Fragment {
-    private final String TAG = "ScreenSlidePageFragment";
-    
+	private final String TAG = "ScreenSlidePageFragment";
+
 	/**
 	 * The argument key for the page number this fragment represents.
 	 */
 	public static final String ARG_PAGE = "page";
-//	public static final String DEVICE_ORIENTATION = "deviceOrientation";
+	// public static final String DEVICE_ORIENTATION = "deviceOrientation";
 
 	/**
-	 * The fragment's page number, which is set to the argument value for
+	 * f The fragment's page number, which is set to the argument value for
 	 * {@link #ARG_PAGE}.
 	 */
 	private int mPageNumber;
-	
+
 	/**
 	 * The orientation of device, which is set to the argument value for
 	 * {@link #DEVICE_ORIENTATION}.
 	 * 
 	 */
-//	private int mDeviceOrientation;
+	// private int mDeviceOrientation;
 
 	/**
 	 * Handlers to change GUI
@@ -66,7 +94,7 @@ public class ScreenSlidePageFragment extends Fragment {
 	 * 
 	 */
 	public Preview preview = null;
-	
+
 	/**
 	 * 
 	 */
@@ -78,11 +106,12 @@ public class ScreenSlidePageFragment extends Fragment {
 	 * Factory method for this fragment class. Constructs a new fragment for the
 	 * given page number.
 	 */
-	public static ScreenSlidePageFragment create(int pageNumber) {//, int deviceOrientation
+	public static ScreenSlidePageFragment create(int pageNumber) {// , int
+																	// deviceOrientation
 		ScreenSlidePageFragment fragment = new ScreenSlidePageFragment();
 		Bundle args = new Bundle();
 		args.putInt(ARG_PAGE, pageNumber);
-		//args.putInt(DEVICE_ORIENTATION, deviceOrientation);
+		// args.putInt(DEVICE_ORIENTATION, deviceOrientation);
 		fragment.setArguments(args);
 		return fragment;
 	}
@@ -94,7 +123,7 @@ public class ScreenSlidePageFragment extends Fragment {
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		mPageNumber = getArguments().getInt(ARG_PAGE);
-	//mDeviceOrientation = getArguments().getInt(DEVICE_ORIENTATION);
+		// mDeviceOrientation = getArguments().getInt(DEVICE_ORIENTATION);
 	}
 
 	@Override
@@ -105,133 +134,182 @@ public class ScreenSlidePageFragment extends Fragment {
 		final ViewGroup rootView;
 		if (mPageNumber == 0) {
 			Log.d("TEST", "Created camera view");
-			
-	    	Log.d(TAG, String.format("mPageNumber = %d", mPageNumber));
-	    	
+
+			Log.d(TAG, String.format("mPageNumber = %d", mPageNumber));
+
 			rootView = (ViewGroup) inflater.inflate(
 					R.layout.fragment_screen_slide_page0, container, false);
-			
-//			Camera.Parameters parameters = camera.getParameters();
-//			parameters.setPreviewSize(640, 480);
-//			camera.setParameters(parameters);
-			
+
+			// Camera.Parameters parameters = camera.getParameters();
+			// parameters.setPreviewSize(640, 480);
+			// camera.setParameters(parameters);
+
 			// Camera preview stuff
-			SurfaceView surfView = (SurfaceView)rootView.findViewById(R.id.SurfaceView01);
+			SurfaceView surfView = (SurfaceView) rootView
+					.findViewById(R.id.SurfaceView01);
 			preview = new Preview(surfView);
+
+			// If you you touch for longer time -> do the QR code scanning
+			surfView.setOnLongClickListener(new OnLongClickListener() {
+				@Override
+				public boolean onLongClick(View v) {
+					Log.d("Camera::preview", "onLongClick");
+
+					onSomeClick(v, "Decode QR");
+					return false;
+
+				}
+			});
 			
-//			android.hardware.Camera.CameraInfo info = new android.hardware.Camera.CameraInfo();
-//		    android.hardware.Camera.getCameraInfo(0, info);
-//		    int rotation = activity.getWindowManager().getDefaultDisplay().getRotation();
-			
+			// If you you touch for short time -> take image
+			surfView.setOnClickListener(new OnClickListener() {
+				@Override
+				public void onClick(View v) {
+					Log.d("Camera::preview", "onClick");
+
+					onSomeClick(v, "Take picture");
+				}
+			});
+
+			// android.hardware.Camera.CameraInfo info = new
+			// android.hardware.Camera.CameraInfo();
+			// android.hardware.Camera.getCameraInfo(0, info);
+			// int rotation =
+			// activity.getWindowManager().getDefaultDisplay().getRotation();
+
 			preview.setCamera(camera);
-			
+
 			preview.measure(surfView.getWidth(), surfView.getHeight());
-			
+
 			preview.setLayoutParams(new LayoutParams(LayoutParams.FILL_PARENT,
 					LayoutParams.FILL_PARENT));
 
-//			((FrameLayout) rootView.findViewById(R.id.previewFrameLayout)).addView(preview);
+			// ((FrameLayout)
+			// rootView.findViewById(R.id.previewFrameLayout)).addView(preview);
 			preview.setKeepScreenOn(true);
 
 		} else if (mPageNumber == 1) {
 			rootView = (ViewGroup) inflater.inflate(
 					R.layout.fragment_screen_slide_page1, container, false);
-
-			// 1. Take picute
-			initButtonTakePicture(rootView, R.id.buttonMainView1);
-
-			// 2. Start presenting orientation
-			initButtonStartOrientation(rootView, R.id.buttonMainView2,
-					R.id.buttonMainView3);
-
-			// 3. Record inertial sensors
-			initButtonRecordinertialSensors(rootView, R.id.buttonMainView3,
-					R.id.buttonMainView2);
-
-			// 4. Do a single WiFi scan
-			initButtonRecordSingleWiFiScan(rootView, R.id.buttonMainView4);
-
-			// 5. Record continuous WiFi scans
-			initButtonRecordContinuousWiFiScans(rootView, R.id.buttonMainView5,
-					R.id.buttonMainView4);
-
-			// 6. Add WiFi scan to recognition list
-			initButtonAddWiFiScanToRecognition(rootView, R.id.buttonMainView6);
-
-			// 7. Run stepometer
-			initButtonRunStepometer(rootView, R.id.buttonMainView7);
-
-			// Side View 1
-			initButtonStartFloorDetection(rootView, R.id.buttonSideView1);
-
-			// Side View 2
-			initButtonStartGraphOnline(rootView, R.id.buttonSideView2);
-
-			// Side View 3
-			initButtonStartGraphTestFromFile(rootView, R.id.buttonSideView3);
-
-			// Side View 4 - Add magnetic place to recognition
-			initButtonAddMagneticPlaceToRecognition(rootView,
-					R.id.buttonSideView4);
-
-			// Side View 5 - Run/Stop complementary filter
-			initButtonStartStopComplementaryFilter(rootView,
-					R.id.buttonSideView5);
 			
-			// Side View 6 - Process orientation estimation data from file
-			initButtonStartOrientationEstimationFromFile(rootView, R.id.buttonSideView6);
 			
-			// Side View 7 - Process Visual Place Recognition
-			initButtonVisualPlaceRecognition(rootView, R.id.buttonSideView7);
+			// Start/stop localization
+			initButtonStartLocalization(rootView, R.id.buttonStartLocalization);
+
+			// Barometer on/off
+			initSwitchBarometer(rootView, R.id.switchBarometer);
+
+			// Inertial sensors on/off
+			initSwitchInertialSensors(rootView, R.id.switchInertialSensors);
+
+			// Stepometer on/off
+			initSwitchStepometer(rootView, R.id.switchStepometer);
+
+			// WiFi on/off
+			initSwitchWiFi(rootView, R.id.switchWiFi);
+
+			/*
+			 *  --------------------
+			 */
 			
+			// Optimize graph from file
+			initButtonStartGraphTestFromFile(rootView,
+					R.id.buttonOptimizeGraphFromFile);
+
+			// Process orientation estimation data from file
+			initButtonStartOrientationEstimationFromFile(rootView,
+					R.id.buttonOrientationTestFromFile);
+
 			// Save WiFi Map
 			initButtonSaveMapPoint(rootView, R.id.buttonSaveMapPoint);
-			
+
 			// Save VPR
 			initButtonSaveVPR(rootView, R.id.buttonSaveVPR);
-			
 
-		} else if (mPageNumber == 2 ) {
+			// Record All
+			initButtonRecordAll(rootView, R.id.buttonRecordAll);
+
+			// Take picute
+//			initButtonTakePicture(rootView, R.id.buttonTakePicture);
+
+			// Record inertial sensors
+//			initButtonRecordinertialSensors(rootView, R.id.buttonRecordInertial);
+			
+			// Clear map
+			initButtonClearNewMap(rootView, R.id.buttonClearNewMap);
+			
+			// Playback
+			initButtonPlayback(rootView, R.id.buttonPlayback);
+			
+			// Test new functions
+			initButtonTest(rootView, R.id.buttonTest);
+
+			/**
+			 * OLD: 
+			 * 
+			 * onSomeClick(v, "Add magnetic place to recognition");
+			 * 
+			 * onSomeClick(v, "Start complementary filter"); onSomeClick(v,
+			 * "Stop complementary filter");
+			 * 
+			 * onSomeClick(v, "Visual Place Recognition");
+			 * 
+			 * onSomeClick(v, "Decode QR");
+			 * 
+			 * onSomeClick(v, "Do a single WiFi scan");
+			 * 
+			 * onSomeClick(v, "Add WiFi to recognition");
+			 * 
+			 * onSomeClick(v, "Take picture");
+			 * 
+			 * onSomeClick(v, "Start record inertial sensors");
+			 * onSomeClick(v, "Stop record inertial sensors");
+			 */
+
+		} else if (mPageNumber == 2) {
 			rootView = (ViewGroup) inflater.inflate(
 					R.layout.fragment_screen_slide_page2, container, false);
 		} else if (mPageNumber == 3 || true) {
 			Log.d("TEST", "Created localization view");
-			
-			rootView = (ViewGroup) inflater.inflate(
-					R.layout.fragment_screen_slide_page_visualization, container, false);
-			
-			localizationView = (LocalizationView) rootView.findViewById(R.id.SurfaceViewLocalization);
-			
-//            // Add some data for testing
-//			List<Pair<Double, Double>> wifiScanLocations = new ArrayList<Pair<Double, Double>>();
-//			
-//            Pair<Double, Double> x = new Pair<Double, Double>(10.0, 10.0);
-//            wifiScanLocations.add(x);
-//            
-////            
-//            x = new Pair<Double, Double>(-10.0, -10.0);
-//            wifiScanLocations.add(x);
-//            
-//            x = new Pair<Double, Double>(10.0, -10.0);
-//            wifiScanLocations.add(x);
-//            
-//            x = new Pair<Double, Double>(-10.0, 10.0);
-//            wifiScanLocations.add(x);
-//            
-//			localizationView.setWiFiScanLocations(wifiScanLocations);
-//			
-//			List<Pair<Double, Double>> userLocations = new ArrayList<Pair<Double, Double>>();
-//			
-//			x = new Pair<Double, Double>(0.0, 0.0);
-//	        userLocations.add(x);
-//	        x = new Pair<Double, Double>(0.5, 0.5);
-//	        userLocations.add(x);
-//	        x = new Pair<Double, Double>(-0.5, 0.5);
-//	        userLocations.add(x);
-//	            
-//			localizationView.setUserLocations(userLocations);
-		}
 
+			rootView = (ViewGroup) inflater.inflate(
+					R.layout.fragment_screen_slide_page_visualization,
+					container, false);
+
+			localizationView = (LocalizationView) rootView
+					.findViewById(R.id.SurfaceViewLocalization);
+
+			// // Add some data for testing
+			// List<Pair<Double, Double>> wifiScanLocations = new
+			// ArrayList<Pair<Double, Double>>();
+			//
+			// Pair<Double, Double> x = new Pair<Double, Double>(10.0, 10.0);
+			// wifiScanLocations.add(x);
+			//
+			// //
+			// x = new Pair<Double, Double>(-10.0, -10.0);
+			// wifiScanLocations.add(x);
+			//
+			// x = new Pair<Double, Double>(10.0, -10.0);
+			// wifiScanLocations.add(x);
+			//
+			// x = new Pair<Double, Double>(-10.0, 10.0);
+			// wifiScanLocations.add(x);
+			//
+			// localizationView.setWiFiScanLocations(wifiScanLocations);
+			//
+			// List<Pair<Double, Double>> userLocations = new
+			// ArrayList<Pair<Double, Double>>();
+			//
+			// x = new Pair<Double, Double>(0.0, 0.0);
+			// userLocations.add(x);
+			// x = new Pair<Double, Double>(0.5, 0.5);
+			// userLocations.add(x);
+			// x = new Pair<Double, Double>(-0.5, 0.5);
+			// userLocations.add(x);
+			//
+			// localizationView.setUserLocations(userLocations);
+		}
 
 		// Create those handlers
 		mHandlerOrient = new Handler();
@@ -240,172 +318,93 @@ public class ScreenSlidePageFragment extends Fragment {
 		return rootView;
 	}
 
-	private void initButtonTakePicture(final ViewGroup rootView, int id) {
-		Button buttonTakePicture = (Button) rootView.findViewById(id);
-		buttonTakePicture.setText("Take picture");
-		buttonTakePicture.setOnClickListener(new OnClickListener() {
-			public void onClick(View v) {
-				onSomeClick(v, "Take picture");
-			}
-		});
-	}
 
 	/**
 	 * @param rootView
 	 */
-	private void initButtonStartOrientation(final ViewGroup rootView,
-			final int id, final int idToBlock) {
-		Button buttonStartOrientation = (Button) rootView.findViewById(id);
-		buttonStartOrientation.setText("Run inertial sensors");
-		buttonStartOrientation.setOnClickListener(new OnClickListener() {
-			public void onClick(View v) {
-				Button inertialSensors = (Button) rootView
-						.findViewById(idToBlock);
-				Button buttonStartOrientation = (Button) rootView
-						.findViewById(id);
-				if (inertialSensors.isEnabled()) {
-					inertialSensors.setEnabled(false);
-					buttonStartOrientation.setText("Stop inertial sensors");
-					onSomeClick(v, "Run inertial sensors");
-				} else {
-					inertialSensors.setEnabled(true);
-					buttonStartOrientation.setText("Run inertial sensors");
-					onSomeClick(v, "Stop inertial sensors");
-				}
-
-			}
-		});
-	}
-
-	/**
-	 * 
-	 */
-	private void initButtonRecordinertialSensors(final ViewGroup rootView,
-			final int id, final int idToBlock) {
-		Button buttonRecordinertialSensors = (Button) rootView.findViewById(id);
-		buttonRecordinertialSensors.setText("Record inertial sensors");
-
-		buttonRecordinertialSensors.setOnClickListener(new OnClickListener() {
-			public void onClick(View v) {
-				Button buttonRecordinertialSensors = (Button) rootView
-						.findViewById(id);
-				Button buttonStartOrientation = (Button) rootView
-						.findViewById(idToBlock);
-				if (buttonStartOrientation.isEnabled()) {
-					buttonStartOrientation.setEnabled(false);
-					buttonRecordinertialSensors
-							.setText("Stop record inertial sensors");
-					onSomeClick(v, "Start record inertial sensors");
-
-				} else {
-					buttonStartOrientation.setEnabled(true);
-					buttonRecordinertialSensors
-							.setText("Record inertial sensors");
-					onSomeClick(v, "Stop record inertial sensors");
-				}
-
-			}
-		});
-	}
-
-	private void initButtonRecordSingleWiFiScan(final ViewGroup rootView, int id) {
-		Button buttonRecordSingleWiFiScan = (Button) rootView.findViewById(id);
-		buttonRecordSingleWiFiScan.setText("Do a single WiFi scan");
-		buttonRecordSingleWiFiScan.setOnClickListener(new OnClickListener() {
-			public void onClick(View v) {
-				onSomeClick(v, "Do a single WiFi scan");
-			}
-		});
-	}
-
-	private void initButtonRecordContinuousWiFiScans(final ViewGroup rootView,
-			final int id, final int idToBlock) {
-		Button buttonRecordContinuousWiFiScans = (Button) rootView
-				.findViewById(id);
-		buttonRecordContinuousWiFiScans.setText("Start WiFi scans");
-		buttonRecordContinuousWiFiScans
-				.setOnClickListener(new OnClickListener() {
-					public void onClick(View v) {
-						Button buttonRecordContinuousWiFiScans = (Button) rootView
-								.findViewById(id);
-						Button buttonRecordSingleWiFiScan = (Button) rootView
-								.findViewById(idToBlock);
-
-						if (buttonRecordContinuousWiFiScans.getText()
-								.toString().equals("Stop WiFi scans")) {
-							buttonRecordContinuousWiFiScans
-									.setText("Start WiFi scans");
-							buttonRecordSingleWiFiScan.setEnabled(true);
-							onSomeClick(v, "Stop WiFi scans");
-
-						} else {
-							buttonRecordContinuousWiFiScans
-									.setText("Stop WiFi scans");
-							buttonRecordSingleWiFiScan.setEnabled(false);
-							onSomeClick(v, "Start WiFi scans");
-						}
-					}
-				});
-	}
-
-	/**
-	 * 
-	 */
-	private void initButtonRunStepometer(final ViewGroup rootView, final int id) {
-		Button buttonRunStepometer = (Button) rootView.findViewById(id);
-		buttonRunStepometer.setText("Run stepometer");
-		buttonRunStepometer.setOnClickListener(new OnClickListener() {
-			public void onClick(View v) {
-				Button buttonRunStepometer = (Button) rootView.findViewById(id);
-				if (buttonRunStepometer.getText().toString()
-						.equals("Stop stepometer")) {
-					buttonRunStepometer.setText("Start stepometer");
-					onSomeClick(v, "Stop stepometer");
-				} else {
-					buttonRunStepometer.setText("Stop stepometer");
-					onSomeClick(v, "Start stepometer");
-				}
-
-			}
-		});
-	}
-
-	/**
-	 * 
-	 */
-	private void initButtonAddWiFiScanToRecognition(final ViewGroup rootView,
-			int id) {
-		Button buttonAddWiFiScanToRecognition = (Button) rootView
-				.findViewById(id);
-		buttonAddWiFiScanToRecognition.setText("Add WiFi to recognition");
-		buttonAddWiFiScanToRecognition
-				.setOnClickListener(new OnClickListener() {
-					public void onClick(View v) {
-						onSomeClick(v, "Add WiFi to recognition");
-					}
-				});
-	}
-
-	/**
-	 * 
-	 */
-	private void initButtonStartFloorDetection(final ViewGroup rootView,
+	private void initSwitchInertialSensors(final ViewGroup rootView,
 			final int id) {
-		Button buttonStartFloorDetection = (Button) rootView.findViewById(id);
-		buttonStartFloorDetection.setText("Start barometer");
-		buttonStartFloorDetection.setOnClickListener(new OnClickListener() {
-			public void onClick(View v) {
-				Button buttonStartFloorDetection = (Button) rootView
-						.findViewById(id);
-				if (buttonStartFloorDetection.getText().toString()
-						.equals("Stop barometer")) {
-					buttonStartFloorDetection.setText("Start barometer");
-					onSomeClick(v, "Stop barometer");
-				} else {
-					buttonStartFloorDetection.setText("Stop barometer");
-					onSomeClick(v, "Start barometer");
-				}
 
+		Switch switchInterialSensors = (Switch) rootView.findViewById(id);
+		switchInterialSensors.setEnabled(false);
+		switchInterialSensors.setChecked(false);
+		switchInterialSensors.setText("Inertial sensors");
+		switchInterialSensors
+				.setOnCheckedChangeListener(new OnCheckedChangeListener() {
+					@Override
+					public void onCheckedChanged(CompoundButton buttonView,
+							boolean isChecked) {
+						if (isChecked)
+							onSomeClick(buttonView, "Run inertial sensors");
+						else
+							onSomeClick(buttonView, "Stop inertial sensors");
+					}
+				});
+	}
+
+	
+	
+	/**
+	 * 
+	 */
+	private void initButtonClearNewMap(final ViewGroup rootView,
+			final int id) {
+		Button buttonClearNewMap = (Button) rootView.findViewById(id);
+		buttonClearNewMap.setText("Clear new map");
+
+		buttonClearNewMap.setOnClickListener(new OnClickListener() {
+			public void onClick(View v) {
+					EditText mapName = (EditText) rootView
+						.findViewById(R.id.editTextMapName);
+					onSomeClick(v, "Clear new map &"+mapName.getText());
+			}
+		});
+	}
+	
+	/**
+	 * 
+	 */
+	private void initButtonPlayback(final ViewGroup rootView,
+			final int id) {
+		Button buttonPlayback = (Button) rootView.findViewById(id);
+		buttonPlayback.setText("Playback");
+
+		buttonPlayback.setOnClickListener(new OnClickListener() {
+			public void onClick(View v) {
+					onSomeClick(v, "Playback");
+			}
+		});
+	}
+	
+	/**
+	 * 
+	 */
+	private void initButtonTest(final ViewGroup rootView,
+			final int id) {
+		Button buttonTest = (Button) rootView.findViewById(id);
+		buttonTest.setText("Test sth new!");
+
+		buttonTest.setOnClickListener(new OnClickListener() {
+			public void onClick(View v) {
+					onSomeClick(v, "Test");
+			}
+		});
+	}
+
+	private void initSwitchWiFi(final ViewGroup rootView, final int id) {
+
+		Switch switchWiFi = (Switch) rootView.findViewById(id);
+//		switchWiFi.setEnabled(false);
+		switchWiFi.setChecked(false);
+		switchWiFi.setText("WiFi");
+		switchWiFi.setOnCheckedChangeListener(new OnCheckedChangeListener() {
+			@Override
+			public void onCheckedChanged(CompoundButton buttonView,
+					boolean isChecked) {
+				if (isChecked)
+					onSomeClick(buttonView, "Start WiFi scans");
+				else
+					onSomeClick(buttonView, "Stop WiFi scans");
 			}
 		});
 	}
@@ -413,22 +412,87 @@ public class ScreenSlidePageFragment extends Fragment {
 	/**
 	 * 
 	 */
-	private void initButtonStartGraphOnline(final ViewGroup rootView,
+	private void initSwitchStepometer(final ViewGroup rootView, final int id) {
+
+		Switch switchStepometer = (Switch) rootView.findViewById(id);
+		switchStepometer.setEnabled(false);
+		switchStepometer.setChecked(false);
+		switchStepometer.setText("Stepometer");
+		switchStepometer
+				.setOnCheckedChangeListener(new OnCheckedChangeListener() {
+					@Override
+					public void onCheckedChanged(CompoundButton buttonView,
+							boolean isChecked) {
+						if (isChecked)
+							onSomeClick(buttonView, "Start stepometer");
+						else
+							onSomeClick(buttonView, "Stop stepometer");
+					}
+				});
+	}
+
+	/**
+	 * 
+	 */
+	private void initSwitchBarometer(final ViewGroup rootView, final int id) {
+		Switch switchStartFloorDetection = (Switch) rootView.findViewById(id);
+		switchStartFloorDetection.setEnabled(false);
+		switchStartFloorDetection.setChecked(false);
+		switchStartFloorDetection.setText("Barometer");
+		switchStartFloorDetection
+				.setOnCheckedChangeListener(new OnCheckedChangeListener() {
+					@Override
+					public void onCheckedChanged(CompoundButton buttonView,
+							boolean isChecked) {
+						if (isChecked)
+							onSomeClick(buttonView, "Start barometer");
+						else
+							onSomeClick(buttonView, "Stop barometer");
+					}
+				});
+
+	}
+
+	/**
+	 * 
+	 */
+	private void initButtonStartLocalization(final ViewGroup rootView,
 			final int id) {
 		Button buttonStartGraphOnline = (Button) rootView.findViewById(id);
-		buttonStartGraphOnline.setText("Start graph");
+		buttonStartGraphOnline.setText("Start Localization");
 		buttonStartGraphOnline.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
 				{
 					Button buttonStartGraphOnline = (Button) rootView
 							.findViewById(id);
+
+					Switch switchStartFloorDetection = (Switch) rootView
+							.findViewById(R.id.switchBarometer);
+					Switch switchInterialSensors = (Switch) rootView
+							.findViewById(R.id.switchInertialSensors);
+					Switch switchStepometer = (Switch) rootView
+							.findViewById(R.id.switchStepometer);
+//					Switch switchWiFi = (Switch) rootView
+//							.findViewById(R.id.switchWiFi);
+
 					if (buttonStartGraphOnline.getText().toString()
-							.equals("Start graph")) {
-						buttonStartGraphOnline.setText("Optimize graph");
+							.equals("Start Localization")) {
+						buttonStartGraphOnline.setText("Stop Localization");
+
+						switchStartFloorDetection.setEnabled(true);
+						switchInterialSensors.setEnabled(true);
+						switchStepometer.setEnabled(true);
+//						switchWiFi.setEnabled(true);
+
 						onSomeClick(v, "Start graph");
 					} else {
-						buttonStartGraphOnline.setText("Start graph");
+						buttonStartGraphOnline.setText("Start Localization");
 						onSomeClick(v, "Optimize graph");
+
+						switchStartFloorDetection.setEnabled(false);
+						switchInterialSensors.setEnabled(false);
+						switchStepometer.setEnabled(false);
+//						switchWiFi.setEnabled(false);
 					}
 
 				}
@@ -457,52 +521,6 @@ public class ScreenSlidePageFragment extends Fragment {
 	/**
 	 * 
 	 */
-	private void initButtonAddMagneticPlaceToRecognition(
-			final ViewGroup rootView, final int id) {
-		Button buttonAddMagneticPlaceToRecognition = (Button) rootView
-				.findViewById(id);
-		buttonAddMagneticPlaceToRecognition
-				.setText("Add magnetic place to recognition");
-		buttonAddMagneticPlaceToRecognition
-				.setOnClickListener(new OnClickListener() {
-					public void onClick(View v) {
-						onSomeClick(v, "Add magnetic place to recognition");
-					}
-				});
-	}
-
-	/**
-	 * 
-	 */
-	private void initButtonStartStopComplementaryFilter(
-			final ViewGroup rootView, final int id) {
-		Button buttonStartStopComplementaryFilter = (Button) rootView
-				.findViewById(id);
-		buttonStartStopComplementaryFilter
-				.setText("Start complementary filter");
-		buttonStartStopComplementaryFilter
-				.setOnClickListener(new OnClickListener() {
-					public void onClick(View v) {
-						Button buttonStartStopComplementaryFilter = (Button) rootView
-								.findViewById(id);
-						if (buttonStartStopComplementaryFilter.getText()
-								.toString()
-								.equals("Start complementary filter")) {
-							buttonStartStopComplementaryFilter
-									.setText("Stop complementary filter");
-							onSomeClick(v, "Start complementary filter");
-						} else {
-							buttonStartStopComplementaryFilter
-									.setText("Start complementary filter");
-							onSomeClick(v, "Stop complementary filter");
-						}
-					}
-				});
-	}
-	
-	/**
-	 * 
-	 */
 	// Side View 6 - Process orientation estimation data from file
 	private void initButtonStartOrientationEstimationFromFile(
 			final ViewGroup rootView, int id) {
@@ -514,67 +532,89 @@ public class ScreenSlidePageFragment extends Fragment {
 			}
 		});
 	}
-	
-	/**
-	 * 
-	 */
-	// Side View 7 - Process Visual Place Recognition
-	private void initButtonVisualPlaceRecognition(
-			final ViewGroup rootView, int id) {
-		Button buttonStartOrientFromFile = (Button) rootView.findViewById(id);
-		buttonStartOrientFromFile.setText("Visual Place Recognition");
-		buttonStartOrientFromFile.setOnClickListener(new OnClickListener() {
-			public void onClick(View v) {
-				onSomeClick(v, "Visual Place Recognition");
-			}
-		});
-	}
-	
+
 	// Save map point
-	private void initButtonSaveMapPoint(
-			final ViewGroup rootView, int id) {
+	private void initButtonSaveMapPoint(final ViewGroup rootView, int id) {
 		EditText x = (EditText) rootView.findViewById(R.id.editTextWiFiPosX);
 		EditText y = (EditText) rootView.findViewById(R.id.editTextWiFiPosY);
 		EditText z = (EditText) rootView.findViewById(R.id.editTextWiFiPosZ);
+		EditText idText = (EditText) rootView
+				.findViewById(R.id.editTextMapPosID);
 		x.setText("0.0");
 		y.setText("0.0");
 		z.setText("0.0");
-		
-		EditText mapName = (EditText) rootView.findViewById(R.id.editTextMapName);
+		idText.setText("10000");
+
+		EditText mapName = (EditText) rootView
+				.findViewById(R.id.editTextMapName);
 		mapName.setText("newMap");
-		
+
 		Button buttonStartOrientFromFile = (Button) rootView.findViewById(id);
 		buttonStartOrientFromFile.setText("Save map point");
 		buttonStartOrientFromFile.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
-				EditText x = (EditText) rootView.findViewById(R.id.editTextWiFiPosX);
-				EditText y = (EditText) rootView.findViewById(R.id.editTextWiFiPosY);
-				EditText z = (EditText) rootView.findViewById(R.id.editTextWiFiPosZ);
-				EditText mapName = (EditText) rootView.findViewById(R.id.editTextMapName);
-				onSomeClick(v, "Save map point :&" + mapName.getText() + "&" + x.getText() + "&" + y.getText() + "&" + z.getText());
+				EditText x = (EditText) rootView
+						.findViewById(R.id.editTextWiFiPosX);
+				EditText y = (EditText) rootView
+						.findViewById(R.id.editTextWiFiPosY);
+				EditText z = (EditText) rootView
+						.findViewById(R.id.editTextWiFiPosZ);
+				EditText mapName = (EditText) rootView
+						.findViewById(R.id.editTextMapName);
+				EditText id = (EditText) rootView
+						.findViewById(R.id.editTextMapPosID);
+				onSomeClick(v, "Save map point :&" + mapName.getText() + "&"
+						+ id.getText() + "&" + x.getText() + "&" + y.getText()
+						+ "&" + z.getText());
+
+				int idNum = Integer.parseInt(id.getText().toString());
+				id.setText(String.format("%d", idNum + 1));
 			}
 		});
 	}
-	
+
 	// Save VPR image
-	private void initButtonSaveVPR(final ViewGroup rootView, int id)
-	{
+	private void initButtonSaveVPR(final ViewGroup rootView, int id) {
 		EditText x = (EditText) rootView.findViewById(R.id.editTextWiFiPosX);
 		EditText y = (EditText) rootView.findViewById(R.id.editTextWiFiPosY);
 		EditText z = (EditText) rootView.findViewById(R.id.editTextWiFiPosZ);
-		
+
 		x.setText("0.0");
 		y.setText("0.0");
 		z.setText("0.0");
-		
+
 		Button buttonStartOrientFromFile = (Button) rootView.findViewById(id);
-		buttonStartOrientFromFile.setText("Save VPR place");
+		buttonStartOrientFromFile.setText("Save image");
 		buttonStartOrientFromFile.setOnClickListener(new OnClickListener() {
 			public void onClick(View v) {
-				EditText x = (EditText) rootView.findViewById(R.id.editTextWiFiPosX);
-				EditText y = (EditText) rootView.findViewById(R.id.editTextWiFiPosY);
-				EditText z = (EditText) rootView.findViewById(R.id.editTextWiFiPosZ);
-				onSomeClick(v, "Save VPR place: " + x.getText() + " " + y.getText() + " " + z.getText());
+				EditText x = (EditText) rootView
+						.findViewById(R.id.editTextWiFiPosX);
+				EditText y = (EditText) rootView
+						.findViewById(R.id.editTextWiFiPosY);
+				EditText z = (EditText) rootView
+						.findViewById(R.id.editTextWiFiPosZ);
+				onSomeClick(v,
+						"Save VPR place: " + x.getText() + " " + y.getText()
+								+ " " + z.getText());
+			}
+		});
+	}
+
+	// Button record all
+	private void initButtonRecordAll(final ViewGroup rootView, final int id) {
+		Button buttonRecordAll = (Button) rootView.findViewById(id);
+		buttonRecordAll.setText("Start record all");
+		buttonRecordAll.setOnClickListener(new OnClickListener() {
+			public void onClick(View v) {
+
+				Button buttonRecordAll = (Button) rootView.findViewById(id);
+				if (buttonRecordAll.getText().toString()
+						.equals("Start record all")) {
+					buttonRecordAll.setText("Stop record all");
+				} else {
+					buttonRecordAll.setText("Start record all");
+				}
+				onSomeClick(v, "Record all");
 			}
 		});
 	}
@@ -592,7 +632,7 @@ public class ScreenSlidePageFragment extends Fragment {
 	public LocalizationView getLocalizationView() {
 		return localizationView;
 	}
-	
+
 	// ...
 	// Define the listener of the interface type
 	// listener is the activity itself
@@ -624,10 +664,13 @@ public class ScreenSlidePageFragment extends Fragment {
 	public void updateGUIData(float[] _orient, float[] _compOrient,
 			String _strongestWiFi, int _wiFiCount, float _foundFreq,
 			float _stepCount, float _stepDistance, int _currentFloor,
-			float _estimatedHeight) {
+			float _estimatedHeight, float _accVariance, int _deviceOrientation,
+			float _stepometerAngle, float _gyroVariance) {
 		UpdateMeasurementsInGUI obj = new UpdateMeasurementsInGUI(_orient,
 				_compOrient, _strongestWiFi, _wiFiCount, _foundFreq,
-				_stepCount, _stepDistance, _currentFloor, _estimatedHeight);
+				_stepCount, _stepDistance, _currentFloor, _estimatedHeight,
+				_accVariance, _deviceOrientation, _stepometerAngle,
+				_gyroVariance);
 		mHandlerOrient.post(obj);
 	}
 
@@ -647,11 +690,15 @@ public class ScreenSlidePageFragment extends Fragment {
 		float stepCount, stepDistance;
 		int currentFloor;
 		float estimatedHeight;
+		float accVariance, gyroVariance, stepometerAngle;
+		int deviceOrientation;
 
 		public UpdateMeasurementsInGUI(float[] _orient, float[] _compOrient,
 				String _strongestWiFi, int _wiFiCount, float _foundFreq,
 				float _stepCount, float _stepDistance, int _currentFloor,
-				float _estimatedHeight) {
+				float _estimatedHeight, float _accVariance,
+				int _deviceOrientation, float _stepometerAngle,
+				float _gyroVariance) {
 			orient = _orient.clone();
 			compOrient = _compOrient.clone();
 			strongestWiFi = _strongestWiFi;
@@ -661,6 +708,11 @@ public class ScreenSlidePageFragment extends Fragment {
 			stepDistance = _stepDistance;
 			currentFloor = _currentFloor;
 			estimatedHeight = _estimatedHeight;
+			accVariance = _accVariance;
+			deviceOrientation = _deviceOrientation;
+			stepometerAngle = _stepometerAngle;
+			gyroVariance = _gyroVariance;
+
 		}
 
 		public void run() {
@@ -713,38 +765,62 @@ public class ScreenSlidePageFragment extends Fragment {
 						.findViewById(R.id.textViewStepometer2);
 				TextView mTextViewStepDistance = (TextView) getView()
 						.findViewById(R.id.textViewStepometer3);
+				TextView mTextViewAngle = (TextView) getView().findViewById(
+						R.id.textViewStepometer4);
+				TextView mTextViewAccVariance = (TextView) getView()
+						.findViewById(R.id.textViewStepometer5);
+				TextView mTextViewGyroVariance = (TextView) getView()
+						.findViewById(R.id.textViewStepometer6);
 
-				mTextViewFoundFrequency.setText("Found freq: "
+				mTextViewFoundFrequency.setText("Freq: "
 						+ String.format("%.2f", foundFreq) + " Hz");
-				mTextViewStepCounter.setText("Step counter: "
+				mTextViewStepCounter.setText("Steps: "
 						+ String.format("%.2f", stepCount));
-				mTextViewStepDistance.setText("Distance: "
+				mTextViewStepDistance.setText("Dist: "
 						+ String.format("%.2f", stepDistance) + " m");
+				mTextViewAngle.setText("Raw angle: "
+						+ String.format("%.2f", stepometerAngle));
+				mTextViewAccVariance.setText("Acc var: "
+						+ String.format("%.2f", accVariance));
+				mTextViewGyroVariance.setText("Gyro var: "
+						+ String.format("%.2f", gyroVariance));
 
 				TextView mTextViewCurrentFloor = (TextView) getView()
 						.findViewById(R.id.textViewBarometer1);
 				TextView mTextViewEstimatedHeight = (TextView) getView()
 						.findViewById(R.id.textViewBarometer2);
+				TextView mTextViewDeviceOrientation = (TextView) getView()
+						.findViewById(R.id.textViewDeviceOrientation);
 
 				mTextViewCurrentFloor.setText("Floor: "
 						+ Integer.toString(currentFloor));
 				mTextViewEstimatedHeight.setText("Height: "
 						+ String.format("%.2f", estimatedHeight) + " m");
+
+				if (deviceOrientation == 0)
+					mTextViewDeviceOrientation.setText("devOrient: VERT");
+				else if (deviceOrientation == 1)
+					mTextViewDeviceOrientation.setText("devOrient: HOR LEFT");
+				else if (deviceOrientation == 2)
+					mTextViewDeviceOrientation.setText("devOrient: HOR RIGHT");
+				else if (deviceOrientation == 3)
+					mTextViewDeviceOrientation.setText("devOrient: UNKNOWN");
 			}
 		}
 	}
-	
-	public void setCamera(Camera icamera){
-//    	Log.d(TAG, String.format("setCamera, mPageNumber = %d", mPageNumber));
-    	
-    	camera = icamera;
-    	if(preview != null){
-    		preview.setCamera(camera);
-    	}
-    	
-//		Camera.Parameters parameters = camera.getParameters();
-//		parameters.setPreviewSize(640, 480);
-//		camera.setParameters(parameters);
+
+	public void setCamera(Camera icamera) {
+		// Log.d(TAG, String.format("setCamera, mPageNumber = %d",
+		// mPageNumber));
+
+		camera = icamera;
+		if (preview != null) {
+			preview.setCamera(camera);
+		}
+
+		// Camera.Parameters parameters = camera.getParameters();
+		// parameters.setPreviewSize(640, 480);
+		// camera.setParameters(parameters);
 	}
 
 	class UpdateWiFiInGUI implements Runnable {

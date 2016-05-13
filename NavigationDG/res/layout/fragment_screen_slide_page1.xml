@@ -5,166 +5,152 @@
     android:keepScreenOn="true" >
 
     <!-- Dummy content. -->
-    <LinearLayout android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:padding="16dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical" >
+
+        <Button
+            android:id="@+id/buttonStartLocalization"
+            android:layout_width="200dp"
+            android:layout_height="45dp"
+            android:text="Start Localization" />
+
+        <Switch
+            android:id="@+id/switchBarometer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Barometer" />
+
+        <Switch
+            android:id="@+id/switchInertialSensors"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Inertial sensors" />
+
+        <Switch
+            android:id="@+id/switchStepometer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Stepometer" />
+
+        <Switch
+            android:id="@+id/switchWiFi"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="WiFi" />
+
+        <View
+            android:layout_width="match_parent"
+            android:layout_height="1dp"
+            android:background="@android:color/darker_gray" />
 
         <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:layout_weight="0.00"
-            android:orientation="vertical" >
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:padding="16dp" >
 
-            <Button
-                android:id="@+id/buttonSideView1"
-                android:layout_width="120dp"
-                android:layout_height="60dp"
-                android:text="Nothing" />
-
-            <Button
-                android:id="@+id/buttonSideView2"
-                android:layout_width="120dp"
-                android:layout_height="60dp"
-                android:text="Nothing" />
-
-            <Button
-                android:id="@+id/buttonSideView3"
-                android:layout_width="120dp"
-                android:layout_height="60dp"
-                android:text="Nothing" />
-
-            <Button
-                android:id="@+id/buttonSideView4"
-                android:layout_width="120dp"
-                android:layout_height="60dp"
-                android:text="Nothing" />
-
-            <Button
-                android:id="@+id/buttonSideView5"
-                android:layout_width="120dp"
-                android:layout_height="60dp"
-                android:text="Nothing" />
-            
-            <Button
-                android:id="@+id/buttonSideView6"
-                android:layout_width="120dp"
-                android:layout_height="60dp"
-                android:text="Nothing" />
-            
-            <Button
-                android:id="@+id/buttonSideView7"
-                android:layout_width="120dp"
-                android:layout_height="60dp"
-                android:text="Nothing" />
-
-        </LinearLayout>
-        
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:layout_weight="0.06"
-            android:orientation="vertical" >
-
-            <TextView
-                android:id="@+id/textView1"
+            <LinearLayout
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Gathering WiFi map"
-                android:textAppearance="?android:attr/textAppearanceMedium" />
+                android:layout_height="match_parent"
+                android:layout_weight="0.06"
+                android:orientation="vertical" >
 
-            <EditText
-                android:id="@+id/editTextWiFiPosX"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="numberDecimal" >
-            </EditText>
+                <TextView
+                    android:id="@+id/textView1"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Gathering WiFi map"
+                    android:textAppearance="?android:attr/textAppearanceMedium" />
 
-            <EditText
-                android:id="@+id/editTextWiFiPosY"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="numberDecimal" />
+                <EditText
+                    android:id="@+id/editTextWiFiPosX"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="numberDecimal" >
+                </EditText>
 
-            <EditText
-                android:id="@+id/editTextWiFiPosZ"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:inputType="numberDecimal" />
-            
-            <EditText
-                android:id="@+id/editTextMapName"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"/>
+                <EditText
+                    android:id="@+id/editTextWiFiPosY"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="numberDecimal" />
 
-            <Button
-                android:id="@+id/buttonSaveMapPoint"
+                <EditText
+                    android:id="@+id/editTextWiFiPosZ"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:inputType="numberDecimal" />
+
+                <EditText
+                    android:id="@+id/editTextMapName"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
+
+                <EditText
+                    android:id="@+id/editTextMapPosID"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
+
+                <Button
+                    android:id="@+id/buttonSaveMapPoint"
+                    android:layout_width="160dp"
+                    android:layout_height="45dp"
+                    android:text="Save map point" />
+
+                <Button
+                    android:id="@+id/buttonClearNewMap"
+                    android:layout_width="160dp"
+                    android:layout_height="45dp"
+                    android:text="Clear new map" />
+            </LinearLayout>
+
+            <LinearLayout
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Nothing" />
+                android:layout_height="match_parent"
+                android:layout_weight="0.00"
+                android:orientation="vertical" >
 
-            <Button
-                android:id="@+id/buttonSaveVPR"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="Button" />
+                <Button
+                    android:id="@+id/buttonOptimizeGraphFromFile"
+                    android:layout_width="160dp"
+                    android:layout_height="45dp"
+                    android:text="Graph from file" />
 
+                <Button
+                    android:id="@+id/buttonOrientationTestFromFile"
+                    android:layout_width="160dp"
+                    android:layout_height="45dp"
+                    android:text="Orient file test" />
+
+                <Button
+                    android:id="@+id/buttonSaveVPR"
+                    android:layout_width="160dp"
+                    android:layout_height="45dp"
+                    android:text="Save image" />
+
+                <Button
+                    android:id="@+id/buttonRecordAll"
+                    android:layout_width="160dp"
+                    android:layout_height="45dp"
+                    android:text="Record all" />
+                
+                <Button
+                    android:id="@+id/buttonPlayback"
+                    android:layout_width="160dp"
+                    android:layout_height="45dp"
+                    android:text="Playback!" />
+                
+                <Button
+                    android:id="@+id/buttonTest"
+                    android:layout_width="160dp"
+                    android:layout_height="45dp"
+                    android:text="Test sth new!" />
+
+            </LinearLayout>
         </LinearLayout>
-        <LinearLayout
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:orientation="vertical" >
-
-            <Button
-                android:id="@+id/buttonMainView1"
-                android:layout_width="120dp"
-                android:layout_height="60dp"
-                android:layout_weight="0.14"
-                android:text="Nothing" />
-
-            <Button
-                android:id="@+id/buttonMainView2"
-                android:layout_width="120dp"
-                android:layout_height="60dp"
-                android:layout_weight="0.14"
-                android:text="Nothing" />
-
-            <Button
-                android:id="@+id/buttonMainView3"
-                android:layout_width="120dp"
-                android:layout_height="60dp"
-                android:layout_weight="0.14"
-                android:text="Nothing" />
-
-            <Button
-                android:id="@+id/buttonMainView4"
-                android:layout_width="120dp"
-                android:layout_height="60dp"
-                android:layout_weight="0.14"
-                android:text="Nothing" />
-
-            <Button
-                android:id="@+id/buttonMainView5"
-                android:layout_width="120dp"
-                android:layout_height="60dp"
-                android:layout_weight="0.21"
-                android:text="Nothing" />
-
-            <Button
-                android:id="@+id/buttonMainView6"
-                android:layout_width="120dp"
-                android:layout_height="60dp"
-                android:layout_weight="0.21"
-                android:text="Nothing" />
-
-            <Button
-                android:id="@+id/buttonMainView7"
-                android:layout_width="120dp"
-                android:layout_height="60dp"
-                android:layout_weight="0.21"
-                android:text="Nothing" />
-        </LinearLayout>
-
     </LinearLayout>
 
 </ScrollView>

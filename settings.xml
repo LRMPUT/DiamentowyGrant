@@ -2,10 +2,26 @@
 
 <OpenAIL>
 	<MainProcessing 	frequencyOfNewDataQuery="5" 
-								priorMapName="newMap"
-								usePriorMap="True"/>
+								priorMapName="CM_ver3"
+								usePriorMap="True"
+								imageAccVarianceThreshold="0.1"
+								imageCaptureStep="2"
+								imageCaptureVarianceThreshold="0.15"
+								useNavigation="False"
+								showMapWithoutMapConnection="True"
+								/>
+								
+	<Playback	 			simulationSpeed ="0.5"
+								inertialSleepTimeInMs="5"
+								wifiSleepTimeInMs="100"
+								inertialMaxDelay="15"
+								/>
 
-	<InertialSensors useModule="True" stepometer="True">
+	<InertialSensors 	useModule="True" 
+								useStepometer="True" 
+								verticalOrientation="False" 
+								priorMapStepometerBiasVertical="75" 
+								priorMapStepometerBiasHorizontal="75">
 		<Record 
 						accelerometer="True"
 						gyroscope="False"
@@ -14,26 +30,45 @@
 						accelerometerWithoutGravity="False"
 						orientationAndroid="True"
 						orientationAndroidEuler="False"
-						orientationAEKF="True"
+						orientationAEKF="False"
 						orientationAEKFEuler="False"
 						orientationCF="False"
 						orientationCFEuler="False"		/>
+		<!--
+			verbose -> 0 - no logging, 1 - shows found frequency
+			minFrequency -> we detect steps if frequency is above minFrequency, see @maxFrequency
+			maxFrequency -> we detect steps if frequency is below maxFrequency, see @minFrequency
+			stepSize -> typical step size of a person in metres.
+			windowSize -> number of samples, suggested to be the power of 2. Accelerometer frequency is 200 samples/s. Different window sizes offer different gains:
+				- 2048 samples - ~10 seconds window, frequency detection precision is 0,0976 Hz
+				- 1024 samples - ~5 seconds window, frequency detection precision is 0,1953 Hz
+				- 512 samples - ~ 2.5 seconds window, frequency detection precision is 0,3906 Hz
+		-->
+		<Stepometer 
+						verbose="0"
+						minFrequency="1.5"
+						maxFrequency="2.0"
+						stepSize="0.65"
+						windowSize="1024"/>
 	</InertialSensors>
 
 	<GraphManager	vprVicinityDeadBandRadius="10.0"
 								informationMatrixOfVPRVicinity="2.0"
-								wifiFingerprintDeadBandRadius="6.0"
-								informationMatrixOfWiFiFingerprint="1.0"
+								wifiFingerprintDeadBandRadius="2.0"
+								informationMatrixOfWiFiFingerprint="5.0"
 								informationMatrixOfWiFi="1.0"
 								optimizeFromFileIterationCount="100"/>	
 	
 	<WiFiPlaceRecognition 	useModule="True" 
+										recordRawData="True"
 										maxPlaceDatabaseSize="500" 
-										maxQueueSize="200" 
+										maxQueueSize="1000" 
 										fractionOfQueueAfterReduction="0.3" 
 										minNumberOfSharedNetworks="7"
 										minPercentOfSharedNetworks="0.75"
-										maxAvgErrorThreshold="8" /> 
+										maxAvgErrorThreshold="8" 
+										directWiFiMeasurements="False"
+										addUserWiFiToRecognition="False"/> 
 										
 	<VisualOdometry useModule="True"/>
 	<VisualPlaceRecognition useModule="True"/>
