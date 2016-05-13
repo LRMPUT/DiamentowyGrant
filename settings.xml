@@ -2,12 +2,12 @@
 
 <OpenAIL>
 	<MainProcessing 	frequencyOfNewDataQuery="5" 
-								priorMapName="CM_ver3"
+								priorMapName="CM_ver4"
 								usePriorMap="True"
 								imageAccVarianceThreshold="0.1"
 								imageCaptureStep="2"
 								imageCaptureVarianceThreshold="0.15"
-								useNavigation="False"
+								useNavigation="True"
 								showMapWithoutMapConnection="True"
 								/>
 								
@@ -20,15 +20,15 @@
 	<InertialSensors 	useModule="True" 
 								useStepometer="True" 
 								verticalOrientation="False" 
-								priorMapStepometerBiasVertical="75" 
-								priorMapStepometerBiasHorizontal="75">
+								priorMapStepometerBiasVertical="0"
+								priorMapStepometerBiasHorizontal="0">
 		<Record 
 						accelerometer="True"
-						gyroscope="False"
+						gyroscope="True"
 						magnetometer="False"
 						barometer="False"
 						accelerometerWithoutGravity="False"
-						orientationAndroid="True"
+						orientationAndroid="False"
 						orientationAndroidEuler="False"
 						orientationAEKF="False"
 						orientationAEKFEuler="False"
@@ -53,11 +53,11 @@
 	</InertialSensors>
 
 	<GraphManager	vprVicinityDeadBandRadius="10.0"
-								informationMatrixOfVPRVicinity="2.0"
+								informationMatrixOfVPRVicinity="4.0"
 								wifiFingerprintDeadBandRadius="2.0"
 								informationMatrixOfWiFiFingerprint="5.0"
 								informationMatrixOfWiFi="1.0"
-								optimizeFromFileIterationCount="100"/>	
+								optimizeFromFileIterationCount="2000"/>	
 	
 	<WiFiPlaceRecognition 	useModule="True" 
 										recordRawData="True"
@@ -65,8 +65,8 @@
 										maxQueueSize="1000" 
 										fractionOfQueueAfterReduction="0.3" 
 										minNumberOfSharedNetworks="7"
-										minPercentOfSharedNetworks="0.75"
-										maxAvgErrorThreshold="8" 
+										minPercentOfSharedNetworks="0.85"
+										maxAvgErrorThreshold="4.5" 
 										directWiFiMeasurements="False"
 										addUserWiFiToRecognition="False"/> 
 										

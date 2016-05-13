@@ -6,14 +6,11 @@
 class Node {
 public:
 	int pixelX, pixelY, id;
-	double metricX, metricY;
 	Node() {}
-	Node(int _id, int _pixelX, int _pixelY, double _metricX, double _metricY) {
+	Node(int _id, int _pixelX, int _pixelY) {
 		id = _id;
 		pixelX = _pixelX;
 		pixelY = _pixelY;
-		metricX = _metricX;
-		metricY = _metricY;
 	}
 
 	friend std::ostream& operator<<(std::ostream &file, const Node &n);
@@ -30,9 +27,17 @@ Node findInNodes(std::set<Node> &nodes, Node currentNode, double distanceThresho
 	return currentNode;
 }
 
+Node findById(std::set<Node> &nodes, int id) {
+	for (auto &n : nodes) {
+		if (n.id == id)
+			return n;
+	}
+	return Node(-1,0,0);
+}
+
 std::ostream& operator<<(std::ostream & file, const Node & n)
 {
-	file << "NODE " << n.id << " " << n.pixelX << " " << n.pixelY << " " << n.metricX << " " << n.metricY << std::endl;
+	file << "NODE " << n.id << " " << n.pixelX << " " << n.pixelY << std::endl;
 	return file;
 }
 

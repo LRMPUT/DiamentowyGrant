@@ -5,6 +5,10 @@ VisualStudioVersion = 14.0.23107.0
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "MapCreator", "MapCreator\MapCreator.vcxproj", "{7A885131-23A4-4215-8BC2-D8A5B1CB3182}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "showResult", "showResult\showResult.vcxproj", "{621A7F1D-7469-4421-A5DE-A8B2D2F15613}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "wifiPlaceRecognitionRandomForest", "wifiPlaceRecognitionRandomForest\wifiPlaceRecognitionRandomForest.vcxproj", "{C90CFE19-A271-4CD7-8499-C326C6FB2031}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -21,6 +25,22 @@ Global
 		{7A885131-23A4-4215-8BC2-D8A5B1CB3182}.Release|x64.Build.0 = Release|x64
 		{7A885131-23A4-4215-8BC2-D8A5B1CB3182}.Release|x86.ActiveCfg = Release|Win32
 		{7A885131-23A4-4215-8BC2-D8A5B1CB3182}.Release|x86.Build.0 = Release|Win32
+		{621A7F1D-7469-4421-A5DE-A8B2D2F15613}.Debug|x64.ActiveCfg = Debug|x64
+		{621A7F1D-7469-4421-A5DE-A8B2D2F15613}.Debug|x64.Build.0 = Debug|x64
+		{621A7F1D-7469-4421-A5DE-A8B2D2F15613}.Debug|x86.ActiveCfg = Debug|Win32
+		{621A7F1D-7469-4421-A5DE-A8B2D2F15613}.Debug|x86.Build.0 = Debug|Win32
+		{621A7F1D-7469-4421-A5DE-A8B2D2F15613}.Release|x64.ActiveCfg = Release|x64
+		{621A7F1D-7469-4421-A5DE-A8B2D2F15613}.Release|x64.Build.0 = Release|x64
+		{621A7F1D-7469-4421-A5DE-A8B2D2F15613}.Release|x86.ActiveCfg = Release|Win32
+		{621A7F1D-7469-4421-A5DE-A8B2D2F15613}.Release|x86.Build.0 = Release|Win32
+		{C90CFE19-A271-4CD7-8499-C326C6FB2031}.Debug|x64.ActiveCfg = Debug|x64
+		{C90CFE19-A271-4CD7-8499-C326C6FB2031}.Debug|x64.Build.0 = Debug|x64
+		{C90CFE19-A271-4CD7-8499-C326C6FB2031}.Debug|x86.ActiveCfg = Debug|Win32
+		{C90CFE19-A271-4CD7-8499-C326C6FB2031}.Debug|x86.Build.0 = Debug|Win32
+		{C90CFE19-A271-4CD7-8499-C326C6FB2031}.Release|x64.ActiveCfg = Release|x64
+		{C90CFE19-A271-4CD7-8499-C326C6FB2031}.Release|x64.Build.0 = Release|x64
+		{C90CFE19-A271-4CD7-8499-C326C6FB2031}.Release|x86.ActiveCfg = Release|Win32
+		{C90CFE19-A271-4CD7-8499-C326C6FB2031}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

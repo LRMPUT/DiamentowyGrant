@@ -20,8 +20,16 @@ std::pair<int, int> fitToMyScreen(int cols, int rows, double &scale) {
 	std::pair<int, int> sizeToScreen;
 
 	// I assume 1920x1080
-	sizeToScreen.first = 960;
-	sizeToScreen.second = (sizeToScreen.first * 1.0 / cols) * rows;
+	if (1920.0 / cols < 1080.0 / rows)
+	{
+		sizeToScreen.first = 1850;
+		sizeToScreen.second = (sizeToScreen.first * 1.0 / cols) * rows;
+	}
+	else {
+		sizeToScreen.second = 1000;
+		sizeToScreen.first = (sizeToScreen.second * 1.0 / rows) * cols;
+	}
+
 
 	scale = (cols * 1.0) / (sizeToScreen.first);
 
@@ -49,7 +57,7 @@ std::tuple<double, double, double> pinpointOriginOfCoordinateSystem(Mat image) {
 	putText(imgToShow, "X", cvPoint(x1 + 10, y1 + 10), CV_FONT_NORMAL, 2, cvScalar(0, 255.0, 0, 0), 3);
 
 	double xbis = x0;
-	double ybis = y0 - imgToShow.cols / 8;
+	double ybis = y0 + imgToShow.cols / 8;
 
 	line(imgToShow, cvPoint(coordinateSystem[0].first, coordinateSystem[0].second), cvPoint(xbis, ybis), cvScalar(0, 0, 255.0, 0), 5);
 	putText(imgToShow, "Y", cvPoint(xbis, ybis), CV_FONT_NORMAL, 2, cvScalar(0, 0.0, 255.0, 0), 3);
@@ -89,45 +97,58 @@ void acquireScale(Mat image) {
 
 	pixelsToMetres = pixelDistance / metricDistance;
 
-	
+	cout << "pixelDistance = " << pixelDistance << endl;
+	cout << "metricDistance = " << metricDistance << endl;
 	
 }
 
 void saveMap(std::tuple<double, double, double> &origin, double currentViewScale) {
 
-	ofstream mapFile("cmbin.map");
+	ofstream mapFile("buildingPlan.map");
 	mapFile << "ORIGIN " << std::get<0>(origin)*currentViewScale << " " << std::get<1>(origin)*currentViewScale << " " << std::get<2>(origin)*currentViewScale << endl;
 
 	mapFile << "SCALE " << pixelsToMetres*currentViewScale << endl;
 	for (auto it = nodes.begin(); it != nodes.end(); ++it)
 	{
-		mapFile << "NODE " << it->id << " " << it->pixelX*currentViewScale << " " << it->pixelY*currentViewScale << " " << it->metricX*currentViewScale << " " << it->metricY*currentViewScale << std::endl;
+		mapFile << "NODE " << it->id << " " << it->pixelX*currentViewScale << " " << it->pixelY*currentViewScale << " " << (it->pixelX- std::get<0>(origin))/ pixelsToMetres << " " << (it->pixelY - std::get<1>(origin))/ pixelsToMetres << std::endl;
 	}
 	for (auto &link : links) {
-		mapFile << "EDGE " << link.first.id << " " << link.second.id << endl;
+		if (link.first.id != link.second.id) {
+			Node x = findById(nodes, link.first.id), y = findById(nodes, link.second.id);
+			std::cout << "preEDGE: " << x.pixelX << " " << x.pixelY << " " << y.pixelX << " " << y.pixelY << std::endl;
+			double dist = sqrt(pow(x.pixelX - y.pixelX, 2) + pow(x.pixelY - y.pixelY, 2)) / pixelsToMetres;
+
+
+			mapFile << "EDGE " << link.first.id << " " << link.second.id << " " << dist << endl;
+		}
+			
 	}
 
 	mapFile.close();
 }
 
-void saveWiFiPositions() {
+void saveWiFiPositions(std::tuple<double, double, double> &origin) {
 	ofstream positionsFile("positions.list");
 	for (auto it = nodes.begin(); it != nodes.end(); ++it)
 	{
-		positionsFile << 10000 + it->id << " " << it->metricX << " " << it->metricY << " 0.0 0.0" << endl;
+		positionsFile << 10000 + it->id << " " << (it->pixelX - std::get<0>(origin)) / pixelsToMetres << " " << (it->pixelY - std::get<1>(origin)) / pixelsToMetres << " 0.0 0.0" << endl;
 	}
 	positionsFile.close();
 }
 
 int main(int argc, char** argv)
 {
+	cout << "What is the name of the background plan image?" << endl;
+	//string fileName;
+	//cin >> fileName;
+
 	// Name of the file
-	string fileName = "CMBiN.jpg";
-	//string fileName = "mtp.jpg";
+	string fileName = "buildingPlan.jpg";
 
 	// Reading image
 	Mat image,dst;
 	image = imread(fileName, IMREAD_COLOR); 
+	//imwrite("buildingPlan.jpg", image);
 
 	// Rescaling to screen
 	double viewScale = 0.0;
@@ -148,36 +169,66 @@ int main(int argc, char** argv)
 	// Now write the distance in metres
 	acquireScale(dst);
 
+	// Corridors
 	shouldBreak = false;
-	namedWindow("Display window", WINDOW_AUTOSIZE); // Create a window for display.
-	setMouseCallback("Display window", CallBackFunc, NULL);
-	imshow("Display window", dst); // Show our image inside it.
+	Mat imgToShow = dst.clone();
+	namedWindow("Map possible corridors", WINDOW_AUTOSIZE); // Create a window for display.
+	setMouseCallback("Map possible corridors", CallBackFunc, NULL);
+	imshow("Map possible corridors", imgToShow); // Show our image inside it.
 	while (!shouldBreak) {
-		/*for (int i = 0; i < nodes.size(); i++)
-			circle(dst, cvPoint(nodes[i].first, nodes[i].second), 6, cvScalar(255.0, 0, 0, 0), 5);*/
-		
 		for (auto it = nodes.begin(); it != nodes.end(); ++it)
 		{
 			// Position
-			circle(dst, cvPoint(it->pixelX, it->pixelY), 6, cvScalar(255.0, 0, 0, 0), 5);
+			circle(imgToShow, cvPoint(it->pixelX, it->pixelY), 6, cvScalar(255.0, 0, 0, 0), 5);
 			// Area of force
-			circle(dst, cvPoint(it->pixelX, it->pixelY), distanceThreshold * pixelsToMetres, cvScalar(255.0, 0, 0, 0), 1);
+			circle(imgToShow, cvPoint(it->pixelX, it->pixelY), distanceThreshold * pixelsToMetres, cvScalar(255.0, 0, 0, 0), 1);
 		}
 		for (int i = 0; i < links.size(); i++)
 		{
 			// Link
-			line(dst, cvPoint(links[i].first.pixelX, links[i].first.pixelY), cvPoint(links[i].second.pixelX, links[i].second.pixelY), cvScalar(255.0, 0, 0, 0), 5);
+			line(imgToShow, cvPoint(links[i].first.pixelX, links[i].first.pixelY), cvPoint(links[i].second.pixelX, links[i].second.pixelY), cvScalar(255.0, 0, 0, 0), 5);
 		}
-		imshow("Display window", dst); // Show our image inside it.
+		imshow("Map possible corridors", imgToShow); // Show our image inside it.
 		cvWaitKey(10);
 	}
-	
+	cvDestroyWindow("Map possible corridors");
 
 	// Saving to map file
 	saveMap(origin, viewScale);
 
+	// WiFi/Image positions
+	nodes.clear();
+	id = 0;
+	shouldBreak = false;
+	namedWindow("WiFi / Image positions", WINDOW_AUTOSIZE); // Create a window for display.
+	setMouseCallback("WiFi / Image positions", CallBackWiFi, NULL);
+	imshow("WiFi / Image positions", dst); // Show our image inside it.
+	std::cout << "We add each point 4 times!" << std::endl;
+	while (!shouldBreak) {
+		for (auto it = nodes.begin(); it != nodes.end(); ++it)
+		{
+			// Position
+			circle(dst, cvPoint(it->pixelX, it->pixelY), 4, cvScalar(0, 0, 255.0, 0), 5);
+
+			// 
+			if (it->id % 20 == 0)
+			{
+				stringstream ss;
+				ss << it->id/20;
+				putText(dst, ss.str(), cvPoint(it->pixelX+5, it->pixelY-5), CV_FONT_NORMAL, 1, cvScalar(0, 0.0, 255.0, 0), 3);
+			}
+			
+		}
+		imshow("WiFi / Image positions", dst); // Show our image inside it.
+		cvWaitKey(10);
+	}
+	cvDestroyWindow("WiFi / Image positions");
+
+	// Save image with WiFi positions
+	imwrite("buildingPlan_WIFI.jpg", dst);
+
 	// Saving wifi positions
-	saveWiFiPositions();
+	saveWiFiPositions(origin);
 	
 	return 0;
 }

@@ -320,7 +320,7 @@ public class Preview extends ViewGroup implements SurfaceHolder.Callback, Previe
 			folder.mkdirs();
 		}
 
-		String file = String.format(folder.getAbsolutePath() + "/%05d.png",
+		String file = String.format(folder.getAbsolutePath() + "/%08d.png",
 				value);
 		Highgui.imwrite(file, image);
     

@@ -33,7 +33,7 @@ void CallBackFunc(int event, int x, int y, int flags, void* userdata)
 	{
 		std::cout << "Left button of the mouse is clicked - position (" << x << ", " << y << ")" << std::endl;
 
-		Node tmp(id, x, y, x / pixelsToMetres, y / pixelsToMetres);
+		Node tmp(id, x, y);
 		Node current = findInNodes(nodes, tmp, distanceThreshold*pixelsToMetres);
 
 		std::cout << "current node - position (" << x << ", " << y << ")" << std::endl;
@@ -57,6 +57,28 @@ void CallBackFunc(int event, int x, int y, int flags, void* userdata)
 	{
 		std::cout << "Right button of the mouse is clicked - position (" << x << ", " << y << ")" << std::endl;
 		rightClick = true;
+	}
+	else if (event == cv::EVENT_MBUTTONDOWN) {
+		std::cout << "Middle button of the mouse is clicked - position (" << x << ", " << y << ")" << std::endl;
+		shouldBreak = true;
+	}
+}
+
+void CallBackWiFi(int event, int x, int y, int flags, void* userdata)
+{
+	if (event == cv::EVENT_LBUTTONDOWN)
+	{
+		std::cout << "Left button of the mouse is clicked - position (" << x << ", " << y << ")" << std::endl;
+		std::cout << "Now id = " << id << std::endl;
+
+		
+		for (int i = 0; i < 20; i++)
+		{
+			Node tmp(id, x, y);
+
+			nodes.insert(tmp);
+			id++;
+		}
 	}
 	else if (event == cv::EVENT_MBUTTONDOWN) {
 		std::cout << "Middle button of the mouse is clicked - position (" << x << ", " << y << ")" << std::endl;
