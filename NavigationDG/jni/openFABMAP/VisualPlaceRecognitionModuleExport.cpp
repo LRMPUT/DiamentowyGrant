@@ -203,14 +203,18 @@ JNIEXPORT jlong JNICALL Java_org_dg_camera_VisualPlaceRecognition_createAndLoadF
 	cv::Mat vocab;
 	std::string vocabPath = workingDir + "/" + string(fsSettings["FilePaths"]["Vocabulary"]);
 	cv::FileStorage fsVocab(vocabPath, cv::FileStorage::READ);
-	fsVocab["Vocab"] >> vocab;
+	fsVocab["Vocabulary"] >> vocab;
 	fsVocab.release();
+	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG_FABMAP,
+				"vocab size = (%d, %d)\n", vocab.rows, vocab.cols);
 
 	cv::Mat trainData;
 	std::string trainDataPath = workingDir + "/" + string(fsSettings["FilePaths"]["TrainImagDesc"]);
 	cv::FileStorage fsTrainData(trainDataPath, cv::FileStorage::READ);
-	fsTrainData["TrainData"] >> trainData;
+	fsTrainData["BOWImageDescs"] >> trainData;
 	fsTrainData.release();
+	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG_FABMAP,
+					"trainData size = (%d, %d)\n", trainData.rows, trainData.cols);
 
 	cv::Mat clTree;
 	std::string clTreePath = workingDir + "/" + string(fsSettings["FilePaths"]["ChowLiuTree"]);
@@ -415,12 +419,12 @@ JNIEXPORT jlong JNICALL Java_org_dg_camera_VisualPlaceRecognition_createAndTrain
 										"Saving results\n");
 		std::string vocabPath = workingDir + "/" + string(fsSettings["FilePaths"]["Vocabulary"]);
 		cv::FileStorage fsVocab(vocabPath, cv::FileStorage::WRITE);
-		fsVocab << "Vocab" << vocab;
+		fsVocab << "Vocabulary" << vocab;
 		fsVocab.release();
 
 		std::string trainDataPath = workingDir + "/" + string(fsSettings["FilePaths"]["TrainImagDesc"]);
 		cv::FileStorage fsTrainData(trainDataPath, cv::FileStorage::WRITE);
-		fsTrainData << "TrainData" << trainData;
+		fsTrainData << "BOWImageDescs" << trainData;
 		fsTrainData.release();
 
 		std::string clTreePath = workingDir + "/" + string(fsSettings["FilePaths"]["ChowLiuTree"]);
@@ -521,6 +525,20 @@ JNIEXPORT jint JNICALL Java_org_dg_camera_VisualPlaceRecognition_testLocationFab
 	__android_log_print(ANDROID_LOG_DEBUG,  DEBUG_TAG_FABMAP,
 										"Called testLocationNDK\n");
 
+	static int count = 0;
+	static float detSum = 0.0;
+	static float descSum = 0.0;
+	static float compSum = 0.0;
+
+	timeval start;
+	timeval endDet;
+	timeval endDesc;
+	timeval endComp;
+
+
+	gettimeofday(&start, NULL);
+
+
 	// The image to test location
 	cv::Mat& testImage = *(cv::Mat*) addrTestImage;
 
@@ -530,7 +548,12 @@ JNIEXPORT jint JNICALL Java_org_dg_camera_VisualPlaceRecognition_testLocationFab
 	std::vector<cv::KeyPoint> kpts;
 
 	fabMapEnv->detector->detect(testImage, kpts);
+
+	gettimeofday(&endDet, NULL);
+
 	fabMapEnv->bide.compute(testImage, kpts, bow);
+
+	gettimeofday(&endDesc, NULL);
 
 	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG_FABMAP,
 					"kpts.size() = %d\n", kpts.size());
@@ -545,6 +568,23 @@ JNIEXPORT jint JNICALL Java_org_dg_camera_VisualPlaceRecognition_testLocationFab
 	if(!bow.empty()){
 		fabMapEnv->fabmap->compare(bow, matches, addToTest);
 	}
+
+	gettimeofday(&endComp, NULL);
+
+	++count;
+	detSum += ((endDet.tv_sec * 1000000 + endDet.tv_usec)
+			- (start.tv_sec * 1000000 + start.tv_usec)) / 1000.0;
+	descSum += ((endDesc.tv_sec * 1000000 + endDesc.tv_usec)
+				- (endDet.tv_sec * 1000000 + endDet.tv_usec)) / 1000.0;
+	compSum += ((endComp.tv_sec * 1000000 + endComp.tv_usec)
+					- (endDesc.tv_sec * 1000000 + endDesc.tv_usec)) / 1000.0;
+
+	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG_FABMAP,
+						"mean detection time = %f ms\n", detSum/count);
+	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG_FABMAP,
+						"mean description time = %f ms\n", descSum/count);
+	__android_log_print(ANDROID_LOG_DEBUG, DEBUG_TAG_FABMAP,
+						"mean comparison time = %f ms\n", compSum/count);
 
 //	static const double matchThresh = 0.5;
 	double bestMatchProb = 0.0;

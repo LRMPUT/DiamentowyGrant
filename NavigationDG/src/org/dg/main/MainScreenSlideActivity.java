@@ -484,11 +484,12 @@ public class MainScreenSlideActivity extends Activity implements
 			Log.v(TAG, "Test");
 			
 			// TEST: IPIN
-			if (openAIL.visualCompass.isThreadRunning() == false)
-				openAIL.visualCompass.startThread();
-			else
-				openAIL.visualCompass.stopThread();
+//			if (openAIL.visualCompass.isThreadRunning() == false)
+//				openAIL.visualCompass.startThread();
+//			else
+//				openAIL.visualCompass.stopThread();
 			
+			openAIL.visualPlaceRecognition.callAndVerifyAllMethods();
 	
 			// TEST: Record sequence of images
 //			ScreenSlidePageFragment cameraFragment = (ScreenSlidePageFragment) ((ScreenSlidePagerAdapter) mPagerAdapter)

@@ -51,6 +51,7 @@ JNIEXPORT void JNICALL Java_org_dg_camera_VisualOdometry_kmeans(JNIEnv* env,
 
 
 
+
 // IWCMC/ICIAR
 
 JNIEXPORT void JNICALL Java_org_dg_camera_VisualOdometry_detectDescribeFeatures(JNIEnv*,
