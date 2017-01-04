@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/OpenAIL.iml" filepath="$PROJECT_DIR$/OpenAIL.iml" />
+      <module fileurl="file://$PROJECT_DIR$/openAILdemo/openAILdemo.iml" filepath="$PROJECT_DIR$/openAILdemo/openAILdemo.iml" />
+      <module fileurl="file://$PROJECT_DIR$/openCVLibrary2410/openCVLibrary2410.iml" filepath="$PROJECT_DIR$/openCVLibrary2410/openCVLibrary2410.iml" />
+    </modules>
+  </component>
+</project>

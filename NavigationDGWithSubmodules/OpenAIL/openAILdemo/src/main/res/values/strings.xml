@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+
+    <string name="app_name">OpenAIL</string>
+    <string name="title_activity_main_screen_slide">MainScreenSlideActivity</string>
+    <string name="hello_world">Hello world!</string>
+    <string name="action_settings">Settings</string>
+    
+    
+     <!-- Actions -->
+    <string name="action_previous">Prev</string>
+    <string name="action_next">Next</string>
+    <string name="action_finish">Finish</string>
+
+</resources>

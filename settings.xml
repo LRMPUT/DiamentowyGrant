@@ -22,6 +22,15 @@
 								verticalOrientation="False" 
 								priorMapStepometerBiasVertical="0"
 								priorMapStepometerBiasHorizontal="0">
+								
+								<!-- previewSize possible values:
+					0 - 640x480
+					1 - 1280x720
+					2 - 1920x1080
+			-->
+	<Camera
+			previewSize="0"
+			>
 		<Record 
 						accelerometer="True"
 						gyroscope="True"
