@@ -43,10 +43,12 @@ import org.dg.camera.CameraSaver;
 import org.dg.camera.Preview;
 import org.dg.inertialSensors.ProcessRecorded;
 import org.dg.openAIL.OpenAndroidIndoorLocalization;
+import org.dg.openAIL.OpenAndroidIndoorLocalization.STATE;
 import org.opencv.android.BaseLoaderCallback;
 import org.opencv.android.LoaderCallbackInterface;
 import org.opencv.android.OpenCVLoader;
 import org.opencv.core.Mat;
+import org.opencv.highgui.Highgui;
 
 import android.app.Activity;
 import android.app.Fragment;
@@ -145,7 +147,10 @@ public class MainScreenSlideActivity extends Activity implements
 					.getItem(0);
 			openAIL.preview = cameraFragment.preview;
 			
-			openAIL.preview.saveSinglePreviewToFile();
+			Integer	positionId = -1;
+			if (openAIL.getState() == STATE.STARTED)
+				positionId = openAIL.graphManager.getCurrentPoseId();
+			openAIL.preview.saveSinglePreviewToFile(positionId);
 				
 			
 		}
@@ -413,17 +418,16 @@ public class MainScreenSlideActivity extends Activity implements
 
 		// Decode QR code
 		if (link.contains("Decode QR")) {
-			// Mat image = getCurPreviewImage();
+//			 Mat image = getCurPreviewImage();
 			// String text = QRCode.decodeQRImage(image);
 			// Toast.makeText(getApplicationContext(), text,
 			// Toast.LENGTH_LONG).show();
 
-			Log.e(TAG, "Reading image");
-			// File file = new File(
-			// Environment.getExternalStorageDirectory() +
-			// "/OpenAIL/exemplaryQRCode.png");
-			//
-			// Mat image = Highgui.imread(file.toString());
+//			Log.e(TAG, "Reading image");
+//			File file = new File(Environment.getExternalStorageDirectory()
+//					+ "/OpenAIL/rawData/Imgs/test.png");
+//
+//			Mat image = Highgui.imread(file.toString());
 
 			Mat image = getCurPreviewImage();
 
@@ -483,15 +487,13 @@ public class MainScreenSlideActivity extends Activity implements
 		if (link.contains("Test")) {
 			Log.v(TAG, "Test");
 			
-			// TEST: IPIN
-//			if (openAIL.visualCompass.isThreadRunning() == false)
-//				openAIL.visualCompass.startThread();
-//			else
-//				openAIL.visualCompass.stopThread();
-			
-			openAIL.visualPlaceRecognition.callAndVerifyAllMethods();
+			// TEST: IPIN - checking fastABLE
+			if (openAIL.visualCompass.isThreadRunning() == false)
+				openAIL.visualCompass.startThread();
+			else
+				openAIL.visualCompass.stopThread();
 	
-			// TEST: Record sequence of images
+//			// TEST: Record sequence of images
 //			ScreenSlidePageFragment cameraFragment = (ScreenSlidePageFragment) ((ScreenSlidePagerAdapter) mPagerAdapter)
 //					.getItem(0);
 //			openAIL.preview = cameraFragment.preview;
@@ -514,6 +516,9 @@ public class MainScreenSlideActivity extends Activity implements
 //			openAIL.graphManager.optimizeGraphInFile("lastCreatedGraph.g2o");
 //			openAIL.directWiFiTest();
 //			openAIL.graphManager.optimizeGraphInFile("test4.g2o");
+			
+			// TEST: ???
+//			openAIL.visualPlaceRecognition.callAndVerifyAllMethods();
 
 
 		}
@@ -571,7 +576,11 @@ public class MainScreenSlideActivity extends Activity implements
 		openAIL = new OpenAndroidIndoorLocalization(getApplicationContext(),
 				sensorManager, wifiManager);
 
-		// Reguster wifi scanner
+		ScreenSlidePageFragment cameraFragment = (ScreenSlidePageFragment) ((ScreenSlidePagerAdapter) mPagerAdapter)
+				.getItem(0);
+		cameraFragment.setPreviewSize(openAIL.getPreviewSize());
+		
+		// Register wifi scanner
 		registerReceiver(openAIL.wifiScanner, new IntentFilter(
 				WifiManager.SCAN_RESULTS_AVAILABLE_ACTION));
 

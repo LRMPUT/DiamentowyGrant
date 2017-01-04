@@ -65,6 +65,8 @@ public class Preview extends ViewGroup implements SurfaceHolder.Callback, Previe
 	
 	boolean savePreviewToFile = false, singlePreviewToFile = false;
 	long startSavePreviewTime = 0, singlePreviewCounter = 0 ;
+	int previewWidth = 640, previewHeight = 480;
+	int poseId = 0;
 
 
     public Preview(Context context, SurfaceView sv) {
@@ -78,7 +80,7 @@ public class Preview extends ViewGroup implements SurfaceHolder.Callback, Previe
     }
     
     // Just test
-    public Preview(SurfaceView sv) {
+    public Preview(SurfaceView sv, int previewWidthVal, int previewHeightVal) {
         super(sv.getContext());
 
         mSurfaceView = sv;
@@ -86,6 +88,10 @@ public class Preview extends ViewGroup implements SurfaceHolder.Callback, Previe
         mHolder = mSurfaceView.getHolder();
         mHolder.addCallback(this);
         mHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+        
+        previewWidth = previewWidthVal;
+        previewHeight = previewHeightVal;
+        
     }
     
     @Override
@@ -114,6 +120,7 @@ public class Preview extends ViewGroup implements SurfaceHolder.Callback, Previe
     		}*/
 //    		params.setPictureSize(640, 480);
     		params.setFocusMode(Camera.Parameters.FOCUS_MODE_INFINITY);
+//    		params.setFocusMode(Camera.Parameters.FOCUS_MODE_EDOF);
     		
     		//mCamera.setDisplayOrientation(90);
     		mCamera.setParameters(params);
@@ -132,6 +139,11 @@ public class Preview extends ViewGroup implements SurfaceHolder.Callback, Previe
 
         if (mSupportedPreviewSizes != null) {
             mPreviewSize = getOptimalPreviewSize(mSupportedPreviewSizes, width, height);
+            
+            for (Size s : mSupportedPreviewSizes) {
+            	Log.d(TAG, String.format("previewSize possibility = (%d, %d)", s.width, s.height));
+            }
+            
         	Log.d(TAG, String.format("mPreviewSize = (%d, %d)", mPreviewSize.width, mPreviewSize.height));
         }
     }
@@ -204,7 +216,12 @@ public class Preview extends ViewGroup implements SurfaceHolder.Callback, Previe
     	return savePreviewToFile;
     }
     
-    public void saveSinglePreviewToFile() {
+    public void saveSinglePreviewToFile(Integer id) {
+    	Log.d(TAG, "saveSinglePreviewToFile " + id);
+    	if ( poseId == -1 || poseId != id) {
+    		poseId = id;
+    		singlePreviewCounter = 0;
+    	}
     	singlePreviewToFile = true;
     }
     
@@ -251,7 +268,8 @@ public class Preview extends ViewGroup implements SurfaceHolder.Callback, Previe
             mCamera.stopPreview();
             
     		Camera.Parameters parameters = mCamera.getParameters();
-    		parameters.setPreviewSize(640, 480);
+    		//parameters.setPreviewSize(previewWidth, previewHeight);
+    		parameters.setPreviewSize(previewWidth, previewHeight);
     		
     //		parameters.setPreviewSize(mPreviewSize.width, mPreviewSize.height);
 //    		parameters.setPreviewSize(mPreviewSize.width, mPreviewSize.height);
@@ -263,6 +281,8 @@ public class Preview extends ViewGroup implements SurfaceHolder.Callback, Previe
     		
     	}
     }
+    
+
     
     @Override
 	public void onPreviewFrame(byte[] data, Camera camera) {
@@ -293,11 +313,13 @@ public class Preview extends ViewGroup implements SurfaceHolder.Callback, Previe
 				curPreviewImage = imageBGRA;
 				if ( savePreviewToFile )
 				{
-					saveImageFromPreview(curPreviewImage, System.currentTimeMillis() - startSavePreviewTime);
+					Log.d(TAG, "if ( savePreviewToFile )");
+					saveImageFromPreview(curPreviewImage, 0, System.currentTimeMillis() - startSavePreviewTime);
 					singlePreviewToFile = false;
 				}
 				if ( singlePreviewToFile ) {
-					saveImageFromPreview(curPreviewImage, singlePreviewCounter);
+					Log.d(TAG, "if ( singlePreviewToFile ) " + poseId + " " + singlePreviewCounter);
+					saveImageFromPreview(curPreviewImage, poseId, singlePreviewCounter);
 					singlePreviewToFile = false;
 					singlePreviewCounter++;
 				}
@@ -312,7 +334,7 @@ public class Preview extends ViewGroup implements SurfaceHolder.Callback, Previe
 
 	}
     
-    private void saveImageFromPreview(Mat image, long value) {
+    private void saveImageFromPreview(Mat image, int id, long value) {
     	Log.d(TAG, "saveImageFromPreview");
     	File folder = new File(Environment.getExternalStorageDirectory()
     			+ "/OpenAIL/rawData/Imgs");
@@ -320,7 +342,7 @@ public class Preview extends ViewGroup implements SurfaceHolder.Callback, Previe
 			folder.mkdirs();
 		}
 
-		String file = String.format(folder.getAbsolutePath() + "/%08d.png",
+		String file = String.format(folder.getAbsolutePath() + "/%04d_%08d.png", id,
 				value);
 		Highgui.imwrite(file, image);
     

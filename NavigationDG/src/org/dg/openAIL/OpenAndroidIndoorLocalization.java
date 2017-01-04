@@ -111,6 +111,11 @@ public class OpenAndroidIndoorLocalization {
 
 	// Timestamp
 	long processingStartTimestamp = 0;
+	
+	
+	// STATE
+	public enum STATE {STARTED, STOPPED};
+	STATE state = STATE.STOPPED;
 
 	// TODO STILL TESTING!
 	WiFiPlayback wifiPlayback;
@@ -170,6 +175,7 @@ public class OpenAndroidIndoorLocalization {
 		
 		// Creating visual compass
 		visualCompass = new VisualCompass();
+		
 	}
 
 	class AP {
@@ -264,6 +270,7 @@ public class OpenAndroidIndoorLocalization {
 	 */
 	public void startLocalization() {
 		Log.d(moduleLogName, "startLocalization()");
+		state = STATE.STARTED;
 
 		// Let's read map plan
 		BuildingPlan buildingPlan = priorMapHandler
@@ -357,7 +364,8 @@ public class OpenAndroidIndoorLocalization {
 	 * Stopping the localization
 	 */
 	public void stopLocalization() {
-
+		state = STATE.STOPPED;
+		
 		// Stop checking for new data
 		updateGraphTimer.cancel();
 		updateGraphTimer = null;
@@ -474,22 +482,22 @@ public class OpenAndroidIndoorLocalization {
 
 			// Visual place recognition - take the image if acc variance is
 			// reasonable
-			float accVariance = inertialSensors.getAccVariance();
-			if (iterationCounter - lastImageSaveIterationCounter >= parameters.mainProcessing.imageCaptureStep
-					&& accVariance < parameters.mainProcessing.imageCaptureVarianceThreshold) {
-				Log.d(moduleLogName,
-						"Mobicase version: saving image when in motion");
-				if (preview != null) {
-					Log.d(moduleLogName, "Mobicase version: preview OK");
-					Mat image = preview.getCurPreviewImage();
-
-					int poseId = graphManager.getCurrentPoseId();
-					visualPlaceRecognition.savePlace(0, 0, 0, image, poseId);
-				} else
-					Log.d(moduleLogName, "Mobicase version: preview FAILED");
-
-				lastImageSaveIterationCounter = iterationCounter;
-			}
+//			float accVariance = inertialSensors.getAccVariance();
+//			if (iterationCounter - lastImageSaveIterationCounter >= parameters.mainProcessing.imageCaptureStep
+//					&& accVariance < parameters.mainProcessing.imageCaptureVarianceThreshold) {
+//				Log.d(moduleLogName,
+//						"Mobicase version: saving image when in motion");
+//				if (preview != null) {
+//					Log.d(moduleLogName, "Mobicase version: preview OK");
+//					Mat image = preview.getCurPreviewImage();
+//
+//					int poseId = graphManager.getCurrentPoseId();
+//					visualPlaceRecognition.savePlace(0, 0, 0, image, poseId);
+//				} else
+//					Log.d(moduleLogName, "Mobicase version: preview FAILED");
+//
+//				lastImageSaveIterationCounter = iterationCounter;
+//			}
 
 			// WiFi place recognition
 			List<IdPair<Integer, Integer>> recognizedPlaces = wifiScanner
@@ -687,5 +695,13 @@ public class OpenAndroidIndoorLocalization {
 		if (!folder.exists()) {
 			folder.mkdir();
 		}
+	}
+	
+	public STATE getState() {
+		return state;
+	}
+	
+	public int getPreviewSize() {
+		return parameters.camera.previewSize;
 	}
 }

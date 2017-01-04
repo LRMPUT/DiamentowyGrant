@@ -182,6 +182,8 @@ public class WiFiPlaceRecognition implements Runnable {
 					synchronized (newPlaces) {
 						newPlacesSize = newPlaces.size();
 					}
+					
+					Log.d(moduleLogName, "newPlacesSize = " + newPlacesSize);
 					if (newPlacesSize > 0) {
 						addNewPlaceInRecognitionThread();
 					}

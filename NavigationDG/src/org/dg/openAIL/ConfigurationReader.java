@@ -41,7 +41,7 @@ public class ConfigurationReader {
 	private static final String moduleLogName = "ConfigurationReader";
 
 	public enum Modules {
-		MAINPROCESSING, PLAYBACK, INERTIALSENSORS, GRAPHMANAGER, WIFIPLACERECOGNITION, VISUALODOMETRY, VISUALPLACERECOGNITION,
+		MAINPROCESSING, PLAYBACK, CAMERA, INERTIALSENSORS, GRAPHMANAGER, WIFIPLACERECOGNITION, VISUALODOMETRY, VISUALPLACERECOGNITION,
 	}
 
 	// Class to store all parameters used in OpenAIL
@@ -87,6 +87,10 @@ public class ConfigurationReader {
 			public Record record = new Record();
 			public Stepometer stepometer = new Stepometer();
 		}
+		
+		public class CameraParams {
+			public int previewSize;
+		}
 
 		public class GraphManager {
 			public double vprVicinityDeadBandRadius;
@@ -113,6 +117,7 @@ public class ConfigurationReader {
 		MainProcessing mainProcessing = new MainProcessing();
 		Playback playback = new Playback();
 		InertialSensors inertialSensors = new InertialSensors();
+		CameraParams camera = new CameraParams();
 		GraphManager graphManager = new GraphManager();
 		WiFiPlaceRecognition wifiPlaceRecognition = new WiFiPlaceRecognition();
 	}
@@ -128,6 +133,8 @@ public class ConfigurationReader {
 	public Parameters readParameters(String path)
 			throws XmlPullParserException, IOException {
 
+		parameters.camera.previewSize = 0;
+		
 		Log.d(moduleLogName, "Starting ...");
 
 		FileInputStream ifs = new FileInputStream(new File(path));
@@ -222,6 +229,9 @@ public class ConfigurationReader {
 				+ parameters.inertialSensors.stepometer.stepSize
 				+ "\n------ windowSize="
 				+ parameters.inertialSensors.stepometer.windowSize);
+		
+		Log.d(moduleLogName, "Camera:" + "\n--- previewSize="
+				+ parameters.camera.previewSize);
 
 		Log.d(moduleLogName, "GraphManager:"
 				+ "\n--- vprVicinityDeadBandRadius="
@@ -277,6 +287,9 @@ public class ConfigurationReader {
 				break;
 			case PLAYBACK:
 				readPlayback(parser);
+				break;
+			case CAMERA:
+				readCamera(parser);
 				break;
 			case INERTIALSENSORS:
 				readInertialSensors(parser);
@@ -558,6 +571,27 @@ public class ConfigurationReader {
 
 		parser.require(XmlPullParser.END_TAG, ns, "InertialSensors");
 		Log.d(moduleLogName, "</InertialSensors>");
+	}
+	
+	// Parses the contents of an entry.
+	private void readCamera(XmlPullParser parser)
+			throws XmlPullParserException, IOException {
+		Log.d(moduleLogName, "<Camera>");
+		parser.require(XmlPullParser.START_TAG, ns, "Camera");
+
+		// Reading attributes
+		String previewSizeString = parser
+				.getAttributeValue(null, "previewSize");
+
+		// Logging those values
+		Log.d(moduleLogName, "previewSize = " + previewSizeString);
+
+		// Storing read values
+		parameters.camera.previewSize = Integer.parseInt(previewSizeString);
+
+		parser.nextTag();
+		parser.require(XmlPullParser.END_TAG, ns, "Camera");
+		Log.d(moduleLogName, "</Camera>");
 	}
 
 	// Parses the contents of an entry.

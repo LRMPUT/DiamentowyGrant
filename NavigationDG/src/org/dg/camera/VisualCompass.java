@@ -8,14 +8,23 @@ import org.opencv.highgui.Highgui;
 import android.os.Environment;
 import android.util.Log;
 
+
+import java.util.ArrayList;
+import java.util.Locale;
+
 public class VisualCompass implements Runnable  {
 	final String moduleLogName = "VisualCompass";
+	String TAG = "FastABLE";
 	
 	static {
 		System.loadLibrary("VisualOdometryModule");
 	}
 	
 	public native void NDKEstimateRotation(long matAddrImg1, long matAddrImg2);
+
+	public native float[] NDKTestFASTABLE(String configFile,
+			String[] trainImgsArray, int[] trainLengths,
+			String[] testImgsArray, int testLength);
 	public native void WTF();
 	
 	Thread visualCompassThread;
@@ -44,8 +53,8 @@ public class VisualCompass implements Runnable  {
 	@Override
 	public void run() {
 		System.loadLibrary("VisualOdometryModule");
-		
-		testRun();
+		testFastABLE();
+		//testRun();
 		Log.d(moduleLogName, "Finished test run!");
 		
 		while ( visualCompassThreadRun ) {
@@ -74,6 +83,83 @@ public class VisualCompass implements Runnable  {
 		
 		NDKEstimateRotation(img1.getNativeObjAddr(), img2.getNativeObjAddr());
 
+	}
+	
+	private void testFastABLE() {
+		// Config file
+        String configFile = String.format(Locale.getDefault(), Environment
+                .getExternalStorageDirectory().toString()
+                + "/FastABLE"
+                + "/config.txt");
+
+        // Train data
+        String[] trainImagesFiles;
+        String[] testImagesFiles;
+
+        // Lengths of segments
+        int[] trainLengths;
+        {
+            String trainPath = String.format(Locale.getDefault(), Environment
+                    .getExternalStorageDirectory().toString()
+                    + "/FastABLE"
+                    + "/train/");
+
+            // Get segment dirs inside training dir
+            File trainDir = new File(trainPath);
+            File trainDirsArr[] = trainDir.listFiles();
+            Log.d(TAG, "Train segments: " + trainDirsArr.length);
+
+            // Read segment dirs and put into ArrayList
+            ArrayList<String> trainImgsList = new ArrayList<String>();
+            ArrayList<Integer> trainLengthsList = new ArrayList<Integer>();
+            for (int d = 0; d < trainDirsArr.length; d++) {
+                if (trainDirsArr[d].isDirectory()) {
+                    File curTrainFiles[] = trainDirsArr[d].listFiles();
+                    Log.d(TAG, "Train dir:" + trainDirsArr[d].getName());
+                    Log.d(TAG, "Train size:" + curTrainFiles.length);
+                    trainLengthsList.add(curTrainFiles.length);
+                    for (int i = 0; i < curTrainFiles.length; ++i) {
+                        trainImgsList.add(curTrainFiles[i].getAbsoluteFile().toString());
+                    }
+                }
+            }
+            // Move data to arrays
+            trainLengths = new int[trainLengthsList.size()];
+            for (int i = 0; i < trainLengthsList.size(); ++i) {
+                trainLengths[i] = trainLengthsList.get(i);
+            }
+            trainImagesFiles = trainImgsList.toArray(new String[trainImgsList.size()]);
+        }
+
+        // Test data
+
+        // Length of test data
+        int testLength = 0;
+        {
+            String testPath = String.format(Locale.getDefault(), Environment
+                    .getExternalStorageDirectory().toString()
+                    + "/FastABLE"
+                    + "/test/");
+
+            File testDir = new File(testPath);
+            File testFiles[] = testDir.listFiles();
+            Log.d(TAG, "Test size: " + testFiles.length);
+
+            testLength = testFiles.length;
+            testImagesFiles = new String[testFiles.length];
+            for (int i = 0; i < testFiles.length; ++i) {
+                testImagesFiles[i] = testFiles[i].getAbsoluteFile().toString();
+            }
+        }
+
+        // Run NDK function to compute results
+        float[] res = NDKTestFASTABLE(configFile,
+                                trainImagesFiles,
+                                trainLengths,
+                                testImagesFiles,
+                                testLength);
+
+        Log.d(TAG, "RESULT: oa = " + res[0] + "\t fa = " + res[1]);
 	}
 
 }

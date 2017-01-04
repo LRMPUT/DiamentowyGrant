@@ -64,10 +64,23 @@ void DetectDescribe::performDetection(const cv::Mat& image,
 	default:
 		detector = new cv::FastFeatureDetector();
 	}
+
+	struct timeval start;
+	struct timeval end;
+
+	gettimeofday(&start, NULL);
 	detector->detect(image, v);
+
+	gettimeofday(&end, NULL);
+
+	int ret = ((end.tv_sec * 1000000 + end.tv_usec)
+			- (start.tv_sec * 1000000 + start.tv_usec)) / 1000;
+
+	__android_log_print(ANDROID_LOG_DEBUG, "VisualCompass",
+			"detection took : %d ms\n", ret);
+
 	delete detector;
 }
-
 
 void DetectDescribe::performDescription(const cv::Mat& image,
 		std::vector<cv::KeyPoint> &v, cv::Mat & descriptors,

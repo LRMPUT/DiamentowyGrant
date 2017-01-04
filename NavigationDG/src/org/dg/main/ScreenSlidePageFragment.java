@@ -102,6 +102,8 @@ public class ScreenSlidePageFragment extends Fragment {
 
 	Camera camera = null;
 
+	int previewWidth = 640, previewHeight = 480;
+	
 	/**
 	 * Factory method for this fragment class. Constructs a new fragment for the
 	 * given page number.
@@ -147,7 +149,7 @@ public class ScreenSlidePageFragment extends Fragment {
 			// Camera preview stuff
 			SurfaceView surfView = (SurfaceView) rootView
 					.findViewById(R.id.SurfaceView01);
-			preview = new Preview(surfView);
+			preview = new Preview(surfView, previewWidth, previewHeight);
 
 			// If you you touch for longer time -> do the QR code scanning
 			surfView.setOnLongClickListener(new OnLongClickListener() {
@@ -319,6 +321,22 @@ public class ScreenSlidePageFragment extends Fragment {
 	}
 
 
+	public void setPreviewSize(int previewSizeParam) {
+		Log.d(TAG, "setPreviewSize");
+
+		if (previewSizeParam == 0) {
+			previewWidth = 640;
+			previewHeight = 480;
+		} else if (previewSizeParam == 1) {
+			previewWidth = 1280;
+			previewHeight = 720;
+		} else if (previewSizeParam == 2) {
+			previewWidth = 1920;
+			previewHeight = 1080;
+		}
+	}
+    
+	
 	/**
 	 * @param rootView
 	 */

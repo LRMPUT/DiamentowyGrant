@@ -2,8 +2,8 @@ LOCAL_PATH := $(call my-dir)
 include $(CLEAR_VARS)
 
 # Visual Odometry library
-#include C:/DiamentowyGrant/OpenCV-2.4.10-android-sdk/sdk/native/jni/OpenCV.mk
-include /home/jachu/lib/NVPACK/OpenCV-2.4.10-android-sdk/sdk/native/jni/OpenCV.mk
+include C:/DiamentowyGrant/OpenCV-2.4.10-android-sdk/sdk/native/jni/OpenCV.mk
+#include /home/jachu/lib/NVPACK/OpenCV-2.4.10-android-sdk/sdk/native/jni/OpenCV.mk
 
 # DetectDescriebe contains:
 #	- LDB
@@ -16,7 +16,7 @@ LOCAL_MODULE    := VisualOdometryModule
 LOCAL_C_INCLUDES += Eigen
 LOCAL_SRC_FILES += Triangulate/triangulate.cpp VOsystem/VOsystem.cpp FivePoint/FivePointAlgorithm.cpp VisualOdometryModuleExport.cpp
 
-
+LOCAL_SRC_FILES += OpenABLE/dbscan.cpp OpenABLE/OpenABLE.cpp
 
 #LOCAL_SRC_FILES += FivePointMadeEasy/Rpoly.cpp FivePointMadeEasy/5point.cpp FivePointMadeEasy/main.cpp
 
